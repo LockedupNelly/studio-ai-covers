@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Disc3, Sparkles, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export const Header = () => {
   const { user, signInWithGoogle, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
   const avatarUrl = user?.user_metadata?.avatar_url || "";
@@ -13,7 +15,10 @@ export const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <div 
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           <div className="relative">
             <div className="w-10 h-10 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
               <Disc3 className="w-5 h-5 text-foreground" />
@@ -47,13 +52,18 @@ export const Header = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="bg-secondary text-xs">
-                  {displayName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="hidden sm:block text-sm font-medium">{displayName}</span>
+              <button
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="bg-secondary text-xs">
+                    {displayName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:block text-sm font-medium">{displayName}</span>
+              </button>
               <Button variant="ghost" size="icon" onClick={signOut}>
                 <LogOut className="w-4 h-4" />
               </Button>
