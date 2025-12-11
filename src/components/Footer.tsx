@@ -7,9 +7,9 @@ export const Footer = () => {
             <span className="font-display text-lg tracking-wide">
               COVER ART <span className="text-primary">MAKER</span>
             </span>
-            <p className="text-xs text-muted-foreground mt-1">DESIGN DIVISION</p>
+            <p className="text-xs text-foreground/60 mt-1">DESIGN DIVISION</p>
           </div>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+          <nav className="flex items-center gap-6 text-sm text-foreground/70">
             <a href="#" className="hover:text-primary transition-colors">Terms</a>
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
             <a href="#" className="hover:text-primary transition-colors">Licensing</a>
