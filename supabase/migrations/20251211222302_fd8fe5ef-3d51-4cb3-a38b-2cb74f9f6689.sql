@@ -1,0 +1,36 @@
+-- Create table for storing user generations
+CREATE TABLE public.generations (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  prompt TEXT NOT NULL,
+  genre TEXT NOT NULL,
+  style TEXT NOT NULL,
+  mood TEXT NOT NULL,
+  image_url TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.generations ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own generations
+CREATE POLICY "Users can view their own generations" 
+ON public.generations 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+-- Users can create their own generations
+CREATE POLICY "Users can insert their own generations" 
+ON public.generations 
+FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+-- Users can delete their own generations
+CREATE POLICY "Users can delete their own generations" 
+ON public.generations 
+FOR DELETE 
+USING (auth.uid() = user_id);
+
+-- Create index for faster queries
+CREATE INDEX idx_generations_user_id ON public.generations(user_id);
+CREATE INDEX idx_generations_created_at ON public.generations(created_at DESC);

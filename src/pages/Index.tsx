@@ -13,8 +13,11 @@ const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
+  const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
+
   const handleGenerate = async (prompt: string, genre: string, style: string, mood: string) => {
     setIsGenerating(true);
+    setLastGenParams({ prompt, genre, style, mood });
     
     try {
       const { data, error } = await supabase.functions.invoke("generate-cover", {
@@ -29,6 +32,23 @@ const Index = () => {
 
       if (data?.imageUrl) {
         setGeneratedImage(data.imageUrl);
+
+        // Save to database
+        if (user) {
+          const { error: saveError } = await supabase.from("generations").insert({
+            user_id: user.id,
+            prompt,
+            genre,
+            style,
+            mood,
+            image_url: data.imageUrl,
+          });
+
+          if (saveError) {
+            console.error("Error saving generation:", saveError);
+          }
+        }
+
         toast({
           title: "Cover art generated!",
           description: `${genre} cover with ${style} style is ready.`,
