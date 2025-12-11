@@ -183,7 +183,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   onClick={() => setThemeMode("dark")}
                   className={`p-1.5 md:p-2 rounded transition-colors ${
                     themeMode === "dark" 
-                      ? themeMode === "light" ? "bg-gray-800 text-white" : "bg-primary text-primary-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : themeMode === "light" ? "text-gray-500 hover:text-gray-800" : "text-foreground/60 hover:text-foreground"
                   }`}
                 >
