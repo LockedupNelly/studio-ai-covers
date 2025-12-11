@@ -5,6 +5,7 @@ import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -15,25 +16,34 @@ const Index = () => {
   const handleGenerate = async (prompt: string, genre: string, style: string, mood: string) => {
     setIsGenerating(true);
     
-    // Simulate AI generation delay - will be replaced with actual AI
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    // Demo images for now
-    const demoImages = [
-      "https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=1000&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=1000&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1618556450994-a6a128ef0d9d?w=1000&h=1000&fit=crop",
-    ];
-    
-    const randomImage = demoImages[Math.floor(Math.random() * demoImages.length)];
-    setGeneratedImage(randomImage);
-    setIsGenerating(false);
-    
-    toast({
-      title: "Cover art generated!",
-      description: `${genre} cover with ${style} style is ready.`,
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-cover", {
+        body: { prompt, genre, style, mood },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.imageUrl) {
+        setGeneratedImage(data.imageUrl);
+        toast({
+          title: "Cover art generated!",
+          description: `${genre} cover with ${style} style is ready.`,
+        });
+      }
+    } catch (error) {
+      console.error("Generation error:", error);
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (loading) {
