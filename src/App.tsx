@@ -10,6 +10,8 @@ import Profile from "./pages/Profile";
 import AddOns from "./pages/AddOns";
 import PurchaseCredits from "./pages/PurchaseCredits";
 import ProAccess from "./pages/ProAccess";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
               <Route path="/addons" element={<AddOns />} />
               <Route path="/purchase-credits" element={<PurchaseCredits />} />
               <Route path="/pro-access" element={<ProAccess />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
