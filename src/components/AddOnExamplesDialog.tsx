@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Sparkles } from "lucide-react";
 
 interface AddOnExamplesDialogProps {
   open: boolean;
@@ -38,65 +38,80 @@ export const AddOnExamplesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-card border-border p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="font-display text-lg">{title} Examples</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => onOpenChange(false)}
-              className="text-foreground/70 hover:text-foreground"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+      <DialogContent className="max-w-3xl bg-gradient-to-b from-card to-background border-primary/30 p-0 overflow-hidden rounded-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-border bg-card/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg tracking-wide">{title}</h3>
+              <p className="text-sm text-foreground/50">Example Gallery</p>
+            </div>
           </div>
-        </DialogHeader>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onOpenChange(false)}
+            className="text-foreground/70 hover:text-foreground hover:bg-secondary rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
         
-        <div className="relative">
-          {/* Main Image */}
-          <div className="aspect-square bg-secondary">
+        <div className="relative p-6">
+          {/* Main Image Container */}
+          <div className="relative aspect-square bg-secondary/50 rounded-xl overflow-hidden border border-border shadow-2xl">
             <img
               src={images[currentIndex]}
               alt={`${title} example ${currentIndex + 1}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-opacity duration-300"
             />
+            
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
+            
+            {/* Navigation Arrows */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background text-foreground rounded-full w-12 h-12 shadow-lg border border-border"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNext}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background text-foreground rounded-full w-12 h-12 shadow-lg border border-border"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Button>
           </div>
 
-          {/* Navigation Arrows */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background text-foreground"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background text-foreground"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-
-          {/* Dots Indicator */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {images.map((_, idx) => (
+          {/* Thumbnails */}
+          <div className="flex justify-center gap-3 mt-4">
+            {images.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  idx === currentIndex ? "bg-primary" : "bg-foreground/30"
+                className={`relative w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                  idx === currentIndex 
+                    ? "ring-2 ring-primary scale-105" 
+                    : "opacity-60 hover:opacity-100"
                 }`}
-              />
+              >
+                <img src={img} alt="" className="w-full h-full object-cover" />
+              </button>
             ))}
           </div>
-        </div>
-
-        <div className="p-4 text-center text-sm text-foreground/60">
-          {currentIndex + 1} of {images.length}
+          
+          {/* Counter */}
+          <div className="text-center mt-4 text-sm text-foreground/50">
+            <span className="text-primary font-semibold">{currentIndex + 1}</span> / {images.length}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
