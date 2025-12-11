@@ -3,46 +3,22 @@ import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { Footer } from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock user for demo - will be replaced with real auth
-type User = { name: string; photo: string } | null;
-
 const Index = () => {
-  const [user, setUser] = useState<User>(null);
+  const { user, loading, signInWithGoogle } = useAuth();
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const handleSignIn = () => {
-    // Mock sign in for demo - will be replaced with real Google auth
-    setUser({
-      name: "Demo User",
-      photo: "",
-    });
-    toast({
-      title: "Signed in successfully",
-      description: "Welcome to Cover Art Maker!",
-    });
-  };
-
-  const handleSignOut = () => {
-    setUser(null);
-    setGeneratedImage(null);
-    toast({
-      title: "Signed out",
-      description: "Come back soon!",
-    });
-  };
-
   const handleGenerate = async (prompt: string, genre: string, style: string, mood: string) => {
     setIsGenerating(true);
     
-    // Simulate AI generation delay
+    // Simulate AI generation delay - will be replaced with actual AI
     await new Promise((resolve) => setTimeout(resolve, 2000));
     
-    // For demo, we'll use a placeholder image
-    // This will be replaced with actual AI generation via Lovable AI
+    // Demo images for now
     const demoImages = [
       "https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=1000&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&h=1000&fit=crop",
@@ -60,9 +36,20 @@ const Index = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-muted-foreground">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Header user={user} onSignIn={handleSignIn} onSignOut={handleSignOut} />
+      <Header />
       
       <main className="pt-16">
         <HeroSection />
@@ -79,7 +66,7 @@ const Index = () => {
               Sign in with Google to start creating your cover art
             </p>
             <button 
-              onClick={handleSignIn}
+              onClick={signInWithGoogle}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-foreground text-background font-semibold hover:bg-foreground/90 transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
