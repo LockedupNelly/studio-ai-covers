@@ -10,16 +10,22 @@ interface AddOn {
   price: number;
   description: string;
   image: string;
-  isSelected?: boolean;
 }
 
-const addOns: AddOn[] = [
+const row1: AddOn[] = [
   {
     id: "motion-upgrade",
     title: "Motion Upgrade",
     price: 45.00,
     description: "Animated version of your cover art for social media.",
     image: "/addons/motion-cover.gif",
+  },
+  {
+    id: "spotify-canvas",
+    title: "Spotify Canvas",
+    price: 25.00,
+    description: "8-second loop video for Spotify backgrounds.",
+    image: "/addons/song-promo-video.gif",
   },
   {
     id: "apple-music-motion",
@@ -35,6 +41,9 @@ const addOns: AddOn[] = [
     description: "15-second teaser video with audio visualizer.",
     image: "/addons/song-promo-video.gif",
   },
+];
+
+const row2: AddOn[] = [
   {
     id: "motion-promo-ad",
     title: "Motion Promo Ad",
@@ -50,12 +59,22 @@ const addOns: AddOn[] = [
     image: "/addons/motion-promo-billboard.gif",
   },
   {
+    id: "promo-ads-texture",
+    title: "Promo Ads Texture",
+    price: 10.99,
+    description: "Textured promotional graphic assets.",
+    image: "/addons/promo-ads-texture.jpg",
+  },
+  {
     id: "promo-ads-phone",
     title: "Promo Ads Phone",
     price: 10.99,
     description: "Social media phone mockup promotion.",
     image: "/addons/promo-ads-phone.jpg",
   },
+];
+
+const row3: AddOn[] = [
   {
     id: "spotify-banner",
     title: "Spotify Banner",
@@ -86,6 +105,45 @@ const addOns: AddOn[] = [
   },
 ];
 
+const AddOnCard = ({ addOn, onAddToCart }: { addOn: AddOn; onAddToCart: (addOn: AddOn) => void }) => (
+  <div
+    className="bg-card rounded-xl border border-border overflow-hidden group hover:border-primary transition-colors"
+  >
+    {/* Square Image Container */}
+    <div className="relative aspect-square bg-secondary overflow-hidden">
+      <img
+        src={addOn.image}
+        alt={addOn.title}
+        className="w-full h-full object-cover"
+      />
+      <Badge 
+        variant="secondary" 
+        className="absolute top-2 right-2 bg-background/90 text-foreground text-[10px] font-semibold"
+      >
+        PREVIEW
+      </Badge>
+    </div>
+
+    {/* Content */}
+    <div className="p-3">
+      <h3 className="font-semibold text-sm mb-0.5">{addOn.title}</h3>
+      <p className="text-primary font-bold text-sm mb-2">
+        ${addOn.price.toFixed(2)}
+      </p>
+      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+        {addOn.description}
+      </p>
+      <Button
+        variant="outline"
+        className="w-full uppercase text-[10px] tracking-wider font-semibold h-8"
+        onClick={() => onAddToCart(addOn)}
+      >
+        Add to Cart
+      </Button>
+    </div>
+  </div>
+);
+
 const AddOns = () => {
   const { toast } = useToast();
 
@@ -101,9 +159,9 @@ const AddOns = () => {
       <Header />
 
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 max-w-6xl">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <h1 className="font-display text-4xl md:text-5xl tracking-wide mb-4">
               PREMIUM <span className="text-primary">ADD-ONS</span>
             </h1>
@@ -112,46 +170,24 @@ const AddOns = () => {
             </p>
           </div>
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {addOns.map((addOn) => (
-              <div
-                key={addOn.id}
-                className="bg-card rounded-xl border border-border overflow-hidden group hover:border-primary/50 transition-colors"
-              >
-                {/* Image Container */}
-                <div className="relative aspect-[4/3] bg-secondary">
-                  <img
-                    src={addOn.image}
-                    alt={addOn.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute top-3 right-3 bg-background/90 text-foreground text-xs font-semibold"
-                  >
-                    PREVIEW
-                  </Badge>
-                </div>
+          {/* Row 1 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {row1.map((addOn) => (
+              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
+            ))}
+          </div>
 
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1">{addOn.title}</h3>
-                  <p className="text-primary font-bold mb-3">
-                    ${addOn.price.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {addOn.description}
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full uppercase text-xs tracking-wider font-semibold"
-                    onClick={() => handleAddToCart(addOn)}
-                  >
-                    Add to Cart
-                  </Button>
-                </div>
-              </div>
+          {/* Row 2 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {row2.map((addOn) => (
+              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
+            ))}
+          </div>
+
+          {/* Row 3 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {row3.map((addOn) => (
+              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
             ))}
           </div>
         </div>
