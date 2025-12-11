@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Palette } from "lucide-react";
 
 const plans = [
   {
@@ -29,6 +29,7 @@ const plans = [
       "10% Off Add-Ons",
       "Priority Support",
       "Early Access Features",
+      "Real Designer Edits",
     ],
     popular: true,
   },
@@ -45,6 +46,7 @@ const plans = [
       "Early Access Features",
       "Commercial License",
       "API Access",
+      "Real Designer Edits (Priority)",
     ],
     popular: false,
   },
@@ -69,6 +71,23 @@ const ProAccess = () => {
             <p className="text-foreground/70 max-w-xl mx-auto">
               Get unlimited generations, priority processing, and exclusive discounts on add-on products.
             </p>
+          </div>
+
+          {/* Real Designer Edits Feature */}
+          <div className="mb-12 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-2xl p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Palette className="w-8 h-8 text-primary" />
+              </div>
+              <div className="text-center md:text-left">
+                <h3 className="font-display text-xl mb-2">REAL DESIGNER EDITS</h3>
+                <p className="text-foreground/70">
+                  Pro and Studio subscribers get access to our professional design team. 
+                  Request touch-ups, imperfection fixes, and enhancements on any generated cover. 
+                  Our designers will refine your artwork to perfection.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Plans */}

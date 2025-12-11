@@ -32,17 +32,17 @@ export const CartSheet = () => {
                     key={item.id}
                     className="flex items-center gap-3 bg-secondary rounded-lg p-3"
                   >
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-14 h-14 rounded-lg object-cover"
-                    />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate text-foreground">{item.title}</p>
                       <p className="text-primary font-bold text-sm">
                         ${item.price.toFixed(2)}
                       </p>
                     </div>
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-14 h-14 rounded-lg object-cover"
+                    />
                     <Button
                       variant="ghost"
                       size="icon"
