@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Disc3, Sparkles, LogOut } from "lucide-react";
+import { Disc3, Sparkles, LogOut, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +14,13 @@ export const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Cart Icon */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <ShoppingCart className="w-5 h-5" />
+          </Button>
+        </div>
+
         {/* Logo */}
         <div 
           className="flex items-center gap-3 cursor-pointer"
@@ -36,12 +43,14 @@ export const Header = () => {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <button 
-            onClick={() => navigate("/")}
+          <a 
+            href="https://coverartmarket.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            PREMADE
-          </button>
+            Pre-Made
+          </a>
           <button 
             onClick={() => navigate("/addons")}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"

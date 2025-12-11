@@ -28,9 +28,9 @@ export const HeroSection = () => {
 
       {/* Feature Badges */}
       <div className="flex flex-wrap items-center justify-center gap-4">
-        <FeatureBadge icon={Music} text="Spotify Ready" variant="outline" />
-        <FeatureBadge icon={ImageIcon} text="3000px Resolution" variant="filled" />
-        <FeatureBadge icon={Layers} text="100% Unique" variant="outline" />
+        <FeatureBadge icon={Music} text="Streaming Ready" color="green" />
+        <FeatureBadge icon={ImageIcon} text="3000px Resolution" color="default" />
+        <FeatureBadge icon={Layers} text="100% Unique" color="yellow" />
       </div>
     </section>
   );
@@ -39,11 +39,11 @@ export const HeroSection = () => {
 interface FeatureBadgeProps {
   icon: React.ElementType;
   text: string;
-  variant: "outline" | "filled";
+  color: "green" | "yellow" | "default";
 }
 
-const FeatureBadge = ({ icon: Icon, text, variant }: FeatureBadgeProps) => {
-  if (variant === "filled") {
+const FeatureBadge = ({ icon: Icon, text, color }: FeatureBadgeProps) => {
+  if (color === "default") {
     return (
       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border">
         <Icon className="w-4 h-4 text-foreground" />
@@ -52,10 +52,15 @@ const FeatureBadge = ({ icon: Icon, text, variant }: FeatureBadgeProps) => {
     );
   }
 
+  const colorClasses = {
+    green: "border-green-500/50 bg-green-500/10 text-green-500",
+    yellow: "border-yellow-500/50 bg-yellow-500/10 text-yellow-500",
+  };
+
   return (
-    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/50 bg-primary/5">
-      <Icon className="w-4 h-4 text-primary" />
-      <span className="text-xs font-semibold tracking-widest text-primary uppercase">{text}</span>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${colorClasses[color]}`}>
+      <Icon className="w-4 h-4" />
+      <span className="text-xs font-semibold tracking-widest uppercase">{text}</span>
     </div>
   );
 };
