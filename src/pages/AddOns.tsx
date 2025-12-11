@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { AddOnExamplesDialog } from "@/components/AddOnExamplesDialog";
+import { toast } from "sonner";
 
 interface AddOn {
   id: string;
@@ -151,7 +151,6 @@ const AddOnCard = ({ addOn, onAddToCart, onSeeExamples }: AddOnCardProps) => (
 );
 
 const AddOns = () => {
-  const { toast } = useToast();
   const { addItem } = useCart();
   const [examplesDialog, setExamplesDialog] = useState<{ open: boolean; addOn: AddOn | null }>({
     open: false,
@@ -165,9 +164,21 @@ const AddOns = () => {
       price: addOn.price,
       image: addOn.image,
     });
-    toast({
-      title: "Added to cart",
-      description: `${addOn.title} - $${addOn.price.toFixed(2)}`,
+    // Show toast with thumbnail
+    toast.custom((t) => (
+      <div className="bg-card border border-primary/30 rounded-xl p-4 shadow-xl flex items-center gap-4 max-w-sm">
+        <div className="flex-1 min-w-0">
+          <p className="text-primary font-semibold text-sm">Added to cart</p>
+          <p className="text-foreground text-sm truncate">{addOn.title} - ${addOn.price.toFixed(2)}</p>
+        </div>
+        <img 
+          src={addOn.image} 
+          alt={addOn.title}
+          className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+        />
+      </div>
+    ), {
+      duration: 3000,
     });
   };
 
@@ -180,10 +191,10 @@ const AddOns = () => {
       <Header />
 
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-8 max-w-6xl">
+        <div className="container mx-auto px-4 md:px-8 max-w-6xl">
           {/* Header */}
           <div className="text-center mb-10">
-            <h1 className="font-display text-4xl md:text-5xl tracking-wide mb-4">
+            <h1 className="font-display text-3xl md:text-5xl tracking-wide mb-4">
               PREMIUM <span className="text-primary">ADD-ONS</span>
             </h1>
             <p className="text-foreground/60 max-w-xl mx-auto">
@@ -192,7 +203,7 @@ const AddOns = () => {
           </div>
 
           {/* Row 1 */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-3 md:mb-4">
             {row1.map((addOn) => (
               <AddOnCard 
                 key={addOn.id} 
@@ -204,7 +215,7 @@ const AddOns = () => {
           </div>
 
           {/* Row 2 */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-3 md:mb-4">
             {row2.map((addOn) => (
               <AddOnCard 
                 key={addOn.id} 
@@ -216,7 +227,7 @@ const AddOns = () => {
           </div>
 
           {/* Row 3 */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {row3.map((addOn) => (
               <AddOnCard 
                 key={addOn.id} 

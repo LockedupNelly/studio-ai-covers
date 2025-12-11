@@ -155,56 +155,66 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
-        <div className={`max-w-5xl mx-auto rounded-2xl border p-6 md:p-8 ${
+        <div className={`max-w-5xl mx-auto rounded-2xl border p-4 md:p-8 ${
           themeMode === "light" 
             ? "bg-white/95 border-gray-200" 
             : "bg-card border-border"
         }`}>
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col gap-4 mb-6">
+            {/* Title Row */}
             <div className="flex items-center gap-3">
-              <div className="w-1 h-8 bg-primary rounded-full" />
+              <div className={`w-1 h-8 rounded-full ${themeMode === "light" ? "bg-gray-800" : "bg-primary"}`} />
               <div>
-                <h2 className={`font-display text-2xl tracking-wide ${themeMode === "light" ? "text-gray-900" : ""}`}>
+                <h2 className={`font-display text-xl md:text-2xl tracking-wide ${themeMode === "light" ? "text-gray-900" : ""}`}>
                   DESIGN STUDIO
                 </h2>
-                <p className={`text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                <p className={`text-xs md:text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
                   AI trained on top-selling marketplace covers.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Controls Row */}
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               {/* Theme Toggle */}
-              <div className="flex items-center gap-2 bg-secondary rounded-lg p-1">
+              <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary"}`}>
                 <button
                   onClick={() => setThemeMode("dark")}
-                  className={`p-2 rounded transition-colors ${
-                    themeMode === "dark" ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
+                  className={`p-1.5 md:p-2 rounded transition-colors ${
+                    themeMode === "dark" 
+                      ? themeMode === "light" ? "bg-gray-800 text-white" : "bg-primary text-primary-foreground"
+                      : themeMode === "light" ? "text-gray-500 hover:text-gray-800" : "text-foreground/60 hover:text-foreground"
                   }`}
                 >
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </button>
                 <button
                   onClick={() => setThemeMode("light")}
-                  className={`p-2 rounded transition-colors ${
-                    themeMode === "light" ? "bg-primary text-primary-foreground" : "text-foreground/60 hover:text-foreground"
+                  className={`p-1.5 md:p-2 rounded transition-colors ${
+                    themeMode === "light" 
+                      ? "bg-gray-800 text-white"
+                      : "text-foreground/60 hover:text-foreground"
                   }`}
                 >
-                  <Sun className="w-4 h-4" />
+                  <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </button>
               </div>
 
               {/* Studio Mode Toggle */}
               <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")}>
-                <TabsList className="bg-secondary">
-                  <TabsTrigger value="basic" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Basic
+                <TabsList className={themeMode === "light" ? "bg-gray-100" : "bg-secondary"}>
+                  <TabsTrigger value="basic" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
+                    themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
+                  }`}>
+                    <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Basic</span>
                   </TabsTrigger>
-                  <TabsTrigger value="advanced" className="flex items-center gap-2">
-                    <Sliders className="w-4 h-4" />
-                    Advanced
+                  <TabsTrigger value="advanced" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
+                    themeMode === "light" && studioMode === "advanced" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
+                  }`}>
+                    <Sliders className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Advanced</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -213,15 +223,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
           {/* Token Info */}
           <div className="mb-6 flex items-center gap-2 text-sm">
-            <Coins className="w-4 h-4 text-primary" />
+            <Coins className={`w-4 h-4 ${themeMode === "light" ? "text-gray-800" : "text-primary"}`} />
             <span className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
-              <span className="font-semibold text-primary">1 Cover = 1 Token</span>
+              <span className={`font-semibold ${themeMode === "light" ? "text-gray-900" : "text-primary"}`}>1 Cover = 1 Token</span>
             </span>
           </div>
 
           {/* Cover Count Selection */}
-          <div className={`mb-6 p-4 rounded-lg ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
-            <Label className="text-xs font-semibold tracking-widest text-primary uppercase mb-3 block">
+          <div className={`mb-6 p-3 md:p-4 rounded-lg ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
+            <Label className={`text-xs font-semibold tracking-widest uppercase mb-3 block ${themeMode === "light" ? "text-gray-700" : "text-primary"}`}>
               Number of Covers to Generate
             </Label>
             <RadioGroup

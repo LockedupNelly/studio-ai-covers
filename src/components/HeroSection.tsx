@@ -1,4 +1,4 @@
-import { Music, ImageIcon, Layers } from "lucide-react";
+import { Music, ImageIcon, Layers, Sparkles } from "lucide-react";
 
 export const HeroSection = () => {
   return (
@@ -6,8 +6,16 @@ export const HeroSection = () => {
       {/* Background glow effect */}
       <div className="absolute inset-0 bg-red-glow pointer-events-none" />
       
+      {/* AI Trained Badge */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/50 bg-primary/20 mb-4 animate-pulse-slow">
+        <Sparkles className="w-4 h-4 text-primary" />
+        <span className="text-xs font-bold tracking-widest text-primary uppercase">
+          AI Trained Specifically on Cover Art
+        </span>
+      </div>
+
       {/* Status Badge */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8 animate-pulse-slow">
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8">
         <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
         <span className="text-xs font-semibold tracking-widest text-primary uppercase">
           System Online
@@ -22,8 +30,14 @@ export const HeroSection = () => {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-lg sm:text-xl text-muted-foreground text-center max-w-lg mb-10 tracking-wide">
+      <p className="text-lg sm:text-xl text-muted-foreground text-center max-w-lg mb-4 tracking-wide">
         AI-Generated Graphics for Music Artists
+      </p>
+
+      {/* Sub-tagline */}
+      <p className="text-sm text-foreground/60 text-center max-w-md mb-10">
+        The only AI model trained exclusively on professional album artwork. 
+        That's why artists choose us.
       </p>
 
       {/* Feature Badges */}
