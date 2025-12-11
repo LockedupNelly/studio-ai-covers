@@ -36,12 +36,18 @@ export const Header = () => {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <button 
+            onClick={() => navigate("/")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             PREMADE
-          </a>
-          <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          </button>
+          <button 
+            onClick={() => navigate("/addons")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             ADD-ONS
-          </a>
+          </button>
           <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
             <Sparkles className="w-3 h-3" />
             PRO ACCESS
