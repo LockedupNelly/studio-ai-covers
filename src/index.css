@@ -16,8 +16,8 @@
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
 
-    /* Red accent - the brand color */
-    --primary: 4 82% 56%;
+    /* Red accent - the brand color - more vibrant */
+    --primary: 0 100% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 12%;
@@ -34,7 +34,7 @@
 
     --border: 0 0% 18%;
     --input: 0 0% 12%;
-    --ring: 4 82% 56%;
+    --ring: 0 100% 50%;
 
     --radius: 0.5rem;
 
@@ -43,16 +43,16 @@
     --success-foreground: 0 0% 100%;
 
     /* Gradients */
-    --gradient-red-glow: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(4 82% 56% / 0.3), transparent);
+    --gradient-red-glow: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(0 100% 50% / 0.4), transparent);
     
     --sidebar-background: 0 0% 6%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 4 82% 56%;
+    --sidebar-primary: 0 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 4 82% 56%;
+    --sidebar-ring: 0 100% 50%;
   }
 }
 
@@ -76,11 +76,11 @@
   }
 
   .glow-red {
-    box-shadow: 0 0 60px hsl(4 82% 56% / 0.3), 0 0 100px hsl(4 82% 56% / 0.2);
+    box-shadow: 0 0 60px hsl(0 100% 50% / 0.4), 0 0 100px hsl(0 100% 50% / 0.3);
   }
 
   .glow-red-sm {
-    box-shadow: 0 0 20px hsl(4 82% 56% / 0.4);
+    box-shadow: 0 0 20px hsl(0 100% 50% / 0.5);
   }
 
   .bg-red-glow {
