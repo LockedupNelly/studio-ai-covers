@@ -6,6 +6,7 @@ import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders } from 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { GenreBanner } from "@/components/GenreBanner";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string) => void;
@@ -86,21 +87,6 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
   }
 };
 
-// Genre ad banner placeholder URLs - will be replaced with actual images
-const genreAdBanners: Record<string, string> = {
-  "Hip-Hop / Rap": "",
-  "Pop": "",
-  "EDM": "",
-  "R&B": "",
-  "Rock": "",
-  "Alternative": "",
-  "Indie": "",
-  "Metal": "",
-  "Country": "",
-  "Jazz": "",
-  "Classical": ""
-};
-
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
   const [prompt, setPrompt] = useState("");
   const [genre, setGenre] = useState("Hip-Hop / Rap");
@@ -146,7 +132,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               <div className="w-1 h-8 bg-primary rounded-full" />
               <div>
                 <h2 className="font-display text-2xl tracking-wide">DESIGN STUDIO</h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-foreground/60">
                   AI trained on top-selling marketplace covers.
                 </p>
               </div>
@@ -179,11 +165,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="1" id="cover-1" />
-                <Label htmlFor="cover-1" className="cursor-pointer">1 Cover</Label>
+                <Label htmlFor="cover-1" className="cursor-pointer text-foreground">1 Cover</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="2" id="cover-2" />
-                <Label htmlFor="cover-2" className="cursor-pointer">2 Covers</Label>
+                <Label htmlFor="cover-2" className="cursor-pointer text-foreground">2 Covers</Label>
               </div>
             </RadioGroup>
           </div>
@@ -211,7 +197,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               {/* Visual Style - Only show in Advanced mode */}
               {studioMode === "advanced" && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                  <label className="text-xs font-semibold tracking-widest text-foreground/60 uppercase">
                     2. Visual Style
                   </label>
                   <Select value={style} onValueChange={setStyle}>
@@ -224,7 +210,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-foreground/50">
                     {currentGenreData.description}
                   </p>
                 </div>
@@ -233,7 +219,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               {/* Mood / Vibe - Only show in Advanced mode */}
               {studioMode === "advanced" && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                  <label className="text-xs font-semibold tracking-widest text-foreground/60 uppercase">
                     3. Mood / Vibe
                   </label>
                   <Select value={mood} onValueChange={setMood}>
@@ -252,10 +238,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               {/* Basic Mode Info */}
               {studioMode === "basic" && (
                 <div className="p-4 bg-secondary/30 rounded-lg border border-border">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-foreground/70">
                     <span className="text-primary font-medium">Basic Mode:</span> Visual style and mood are automatically optimized for your selected genre.
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-2">
+                  <p className="text-xs text-foreground/50 mt-2">
                     Switch to Advanced for full control.
                   </p>
                 </div>
@@ -270,7 +256,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   <Type className="w-4 h-4" />
                   TEXT PROMPT
                 </button>
-                <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground pb-2 -mb-[10px] hover:text-foreground transition-colors">
+                <button className="flex items-center gap-2 text-sm font-medium text-foreground/60 pb-2 -mb-[10px] hover:text-foreground transition-colors">
                   <Mic className="w-4 h-4" />
                   AUDIO ANALYZER
                 </button>
@@ -281,14 +267,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[200px] bg-secondary border-border resize-none text-base placeholder:text-muted-foreground/60"
+                className="min-h-[200px] bg-secondary border-border resize-none text-base placeholder:text-foreground/40"
               />
             </div>
           </div>
 
           {/* Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-border">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-foreground/60">
               <Clock className="w-4 h-4" />
               <span className="font-semibold text-foreground">ESTIMATED TIME</span>
               <span>{"< 15 Seconds"}</span>
@@ -315,30 +301,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           </div>
         </div>
 
-        {/* Genre Ad Banner Placeholder */}
+        {/* Genre Banner */}
         <div className="max-w-5xl mx-auto mt-6">
-          <a 
-            href={`https://coverartmarket.com/genre/${genre.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-          >
-            <div className="bg-card rounded-xl border border-border p-4 hover:border-primary/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">
-                    Pre-Made {genre} Covers
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Browse professionally designed {genre.toLowerCase()} album covers on Cover Art Market
-                  </p>
-                </div>
-                <div className="w-24 h-16 bg-secondary rounded-lg flex items-center justify-center text-xs text-muted-foreground">
-                  Ad Banner
-                </div>
-              </div>
-            </div>
-          </a>
+          <GenreBanner genre={genre} />
         </div>
 
         {/* Generated Image Display */}
@@ -365,7 +330,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   className="w-full h-full object-cover"
                 />
               </div>
-              <p className="text-center text-sm text-muted-foreground mt-4">
+              <p className="text-center text-sm text-foreground/60 mt-4">
                 3000 × 3000px · Ready for Spotify, Apple Music & more
               </p>
             </div>

@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { AddOnExamplesDialog } from "@/components/AddOnExamplesDialog";
 
 interface AddOn {
   id: string;
@@ -105,10 +107,14 @@ const row3: AddOn[] = [
   },
 ];
 
-const AddOnCard = ({ addOn, onAddToCart }: { addOn: AddOn; onAddToCart: (addOn: AddOn) => void }) => (
-  <div
-    className="bg-card rounded-xl border border-border overflow-hidden group hover:border-primary transition-colors"
-  >
+interface AddOnCardProps {
+  addOn: AddOn;
+  onAddToCart: (addOn: AddOn) => void;
+  onSeeExamples: (addOn: AddOn) => void;
+}
+
+const AddOnCard = ({ addOn, onAddToCart, onSeeExamples }: AddOnCardProps) => (
+  <div className="bg-card rounded-xl border border-border overflow-hidden group hover:border-primary transition-colors">
     {/* Square Image Container */}
     <div className="relative aspect-square bg-secondary overflow-hidden">
       <img
@@ -116,21 +122,21 @@ const AddOnCard = ({ addOn, onAddToCart }: { addOn: AddOn; onAddToCart: (addOn: 
         alt={addOn.title}
         className="w-full h-full object-cover"
       />
-      <Badge 
-        variant="secondary" 
-        className="absolute top-2 right-2 bg-background/90 text-foreground text-[10px] font-semibold"
+      <button
+        onClick={() => onSeeExamples(addOn)}
+        className="absolute top-2 right-2 bg-background/90 text-foreground text-[10px] font-semibold px-2 py-1 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
       >
-        PREVIEW
-      </Badge>
+        See examples
+      </button>
     </div>
 
     {/* Content */}
     <div className="p-3">
-      <h3 className="font-semibold text-sm mb-0.5">{addOn.title}</h3>
+      <h3 className="font-semibold text-sm mb-0.5 text-foreground">{addOn.title}</h3>
       <p className="text-primary font-bold text-sm mb-2">
         ${addOn.price.toFixed(2)}
       </p>
-      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+      <p className="text-xs text-foreground/60 mb-3 line-clamp-2">
         {addOn.description}
       </p>
       <Button
@@ -146,12 +152,27 @@ const AddOnCard = ({ addOn, onAddToCart }: { addOn: AddOn; onAddToCart: (addOn: 
 
 const AddOns = () => {
   const { toast } = useToast();
+  const { addItem } = useCart();
+  const [examplesDialog, setExamplesDialog] = useState<{ open: boolean; addOn: AddOn | null }>({
+    open: false,
+    addOn: null,
+  });
 
   const handleAddToCart = (addOn: AddOn) => {
+    addItem({
+      id: addOn.id,
+      title: addOn.title,
+      price: addOn.price,
+      image: addOn.image,
+    });
     toast({
       title: "Added to cart",
       description: `${addOn.title} - $${addOn.price.toFixed(2)}`,
     });
+  };
+
+  const handleSeeExamples = (addOn: AddOn) => {
+    setExamplesDialog({ open: true, addOn });
   };
 
   return (
@@ -165,7 +186,7 @@ const AddOns = () => {
             <h1 className="font-display text-4xl md:text-5xl tracking-wide mb-4">
               PREMIUM <span className="text-primary">ADD-ONS</span>
             </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-foreground/60 max-w-xl mx-auto">
               Elevate your release with professional branding assets.
             </p>
           </div>
@@ -173,27 +194,52 @@ const AddOns = () => {
           {/* Row 1 */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {row1.map((addOn) => (
-              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
+              <AddOnCard 
+                key={addOn.id} 
+                addOn={addOn} 
+                onAddToCart={handleAddToCart}
+                onSeeExamples={handleSeeExamples}
+              />
             ))}
           </div>
 
           {/* Row 2 */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {row2.map((addOn) => (
-              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
+              <AddOnCard 
+                key={addOn.id} 
+                addOn={addOn} 
+                onAddToCart={handleAddToCart}
+                onSeeExamples={handleSeeExamples}
+              />
             ))}
           </div>
 
           {/* Row 3 */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {row3.map((addOn) => (
-              <AddOnCard key={addOn.id} addOn={addOn} onAddToCart={handleAddToCart} />
+              <AddOnCard 
+                key={addOn.id} 
+                addOn={addOn} 
+                onAddToCart={handleAddToCart}
+                onSeeExamples={handleSeeExamples}
+              />
             ))}
           </div>
         </div>
       </main>
 
       <Footer />
+
+      {/* Examples Dialog */}
+      {examplesDialog.addOn && (
+        <AddOnExamplesDialog
+          open={examplesDialog.open}
+          onOpenChange={(open) => setExamplesDialog({ ...examplesDialog, open })}
+          title={examplesDialog.addOn.title}
+          mainImage={examplesDialog.addOn.image}
+        />
+      )}
     </div>
   );
 };
