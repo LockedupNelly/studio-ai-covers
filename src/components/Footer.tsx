@@ -10,8 +10,8 @@ export const Footer = () => {
             <p className="text-xs text-foreground/60 mt-1">DESIGN DIVISION</p>
           </div>
           <nav className="flex items-center gap-6 text-sm text-foreground/70">
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
+            <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
             <a href="#" className="hover:text-primary transition-colors">Licensing</a>
           </nav>
         </div>
