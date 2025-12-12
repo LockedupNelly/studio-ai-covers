@@ -1,4 +1,5 @@
 import { Music, ImageIcon, Layers, Sparkles } from "lucide-react";
+import logoWhite from "@/assets/logo-white.png";
 
 export const HeroSection = () => {
   return (
@@ -22,12 +23,12 @@ export const HeroSection = () => {
         </span>
       </div>
 
-      {/* Main Heading */}
-      <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl text-center leading-none tracking-tight mb-6">
-        COVER ART
-        <br />
-        <span className="text-primary">MAKER</span>
-      </h1>
+      {/* Main Logo */}
+      <img 
+        src={logoWhite} 
+        alt="Cover Art Maker" 
+        className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto mb-6"
+      />
 
       {/* Subtitle */}
       <p className="text-lg sm:text-xl text-muted-foreground text-center max-w-lg mb-4 tracking-wide">
