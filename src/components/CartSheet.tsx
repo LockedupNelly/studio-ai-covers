@@ -1,10 +1,52 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Trash2, ShoppingBag, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { useCredits } from "@/hooks/useCredits";
 
 export const CartSheet = () => {
   const { items, removeItem, clearCart, isOpen, setIsOpen, total } = useCart();
+  const { user, signInWithGoogle } = useAuth();
+  const { subscriptionTier } = useCredits();
+  const [loading, setLoading] = useState(false);
+
+  // Calculate discount based on subscription
+  const discountPercent = subscriptionTier === "studio" ? 20 : subscriptionTier === "pro" || subscriptionTier === "starter" ? 10 : 0;
+  const discountAmount = total * (discountPercent / 100);
+  const finalTotal = total - discountAmount;
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast.error("Please sign in to checkout");
+      signInWithGoogle();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("addon-checkout", {
+        body: { items },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        clearCart();
+        setIsOpen(false);
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error(error instanceof Error ? error.message : "Checkout failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -55,13 +97,41 @@ export const CartSheet = () => {
                 ))}
               </div>
 
-              <div className="border-t border-border pt-4 mt-4 space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="border-t border-border pt-4 mt-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-foreground/70">Subtotal</span>
-                  <span className="font-bold text-lg text-foreground">${total.toFixed(2)}</span>
+                  <span className="text-foreground">${total.toFixed(2)}</span>
                 </div>
-                <Button variant="studio" className="w-full">
-                  Checkout
+                
+                {discountPercent > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-500 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      {subscriptionTier?.toUpperCase()} Discount ({discountPercent}% off)
+                    </span>
+                    <span className="text-green-500">-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <span className="font-semibold text-foreground">Total</span>
+                  <span className="font-bold text-lg text-foreground">${finalTotal.toFixed(2)}</span>
+                </div>
+                
+                <Button 
+                  variant="studio" 
+                  className="w-full"
+                  onClick={handleCheckout}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Checkout"
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
