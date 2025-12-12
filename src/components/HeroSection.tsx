@@ -7,27 +7,27 @@ export const HeroSection = () => {
       {/* Background glow effect */}
       <div className="absolute inset-0 bg-red-glow pointer-events-none" />
       
-      {/* AI Trained Badge */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/50 bg-primary/20 mb-4 animate-pulse-slow">
-        <Sparkles className="w-4 h-4 text-primary" />
-        <span className="text-xs font-bold tracking-widest text-primary uppercase">
-          AI Trained Specifically on Cover Art
-        </span>
-      </div>
-
-      {/* Status Badge */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8">
-        <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-        <span className="text-xs font-semibold tracking-widest text-primary uppercase">
-          System Online
-        </span>
+      {/* Status Badges - Horizontal */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
+          <Sparkles className="w-3 h-3 text-primary" />
+          <span className="text-[10px] font-semibold tracking-widest text-primary uppercase">
+            AI Trained on Cover Art Models
+          </span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <span className="text-[10px] font-semibold tracking-widest text-primary uppercase">
+            System Online
+          </span>
+        </div>
       </div>
 
       {/* Main Logo */}
       <img 
         src={logoWhite} 
         alt="Cover Art Maker" 
-        className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto mb-6"
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md h-auto mb-6 drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]"
       />
 
       {/* Subtitle */}
