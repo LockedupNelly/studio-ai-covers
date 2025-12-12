@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { GenreBanner } from "@/components/GenreBanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useCredits } from "@/hooks/useCredits";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string) => void;
@@ -91,6 +92,7 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
 };
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
+  const { hasUnlimitedGenerations, subscriptionTier } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
@@ -223,10 +225,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
           {/* Token Info */}
           <div className="mb-6 flex items-center gap-2 text-sm">
-            <Coins className={`w-4 h-4 ${themeMode === "light" ? "text-gray-800" : "text-primary"}`} />
-            <span className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
-              <span className={`font-semibold ${themeMode === "light" ? "text-gray-900" : "text-primary"}`}>1 Cover = 1 Token</span>
-            </span>
+            {hasUnlimitedGenerations ? (
+              <>
+                <Sparkles className={`w-4 h-4 ${themeMode === "light" ? "text-green-600" : "text-green-500"}`} />
+                <span className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
+                  <span className={`font-semibold ${themeMode === "light" ? "text-green-600" : "text-green-500"}`}>
+                    {subscriptionTier?.toUpperCase()} - Unlimited Generations
+                  </span>
+                </span>
+              </>
+            ) : (
+              <>
+                <Coins className={`w-4 h-4 ${themeMode === "light" ? "text-gray-800" : "text-primary"}`} />
+                <span className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
+                  <span className={`font-semibold ${themeMode === "light" ? "text-gray-900" : "text-primary"}`}>1 Cover = 1 Token</span>
+                </span>
+              </>
+            )}
           </div>
 
           {/* Cover Count Selection */}
