@@ -4,14 +4,18 @@ import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCredits } from "@/hooks/useCredits";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { user, loading, signInWithGoogle } = useAuth();
+  const { credits, refetch: refetchCredits } = useCredits();
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
 
@@ -27,11 +31,24 @@ const Index = () => {
       if (error) throw error;
 
       if (data?.error) {
+        // Handle credit-related errors
+        if (data.error.includes("No credits")) {
+          toast({
+            title: "No credits remaining",
+            description: "Purchase more credits to continue generating.",
+            variant: "destructive",
+          });
+          navigate("/purchase-credits");
+          return;
+        }
         throw new Error(data.error);
       }
 
       if (data?.imageUrl) {
         setGeneratedImage(data.imageUrl);
+
+        // Refresh credits after generation
+        refetchCredits();
 
         // Save to database
         if (user) {
