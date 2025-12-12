@@ -4,6 +4,7 @@ import { Disc3, Sparkles, ShoppingCart, Home, Coins, Menu, X, ChevronDown, LogOu
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
 import { CartSheet } from "@/components/CartSheet";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import {
 export const Header = () => {
   const { user, signInWithGoogle, signOut } = useAuth();
   const { items, setIsOpen } = useCart();
+  const { credits } = useCredits();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -97,6 +99,17 @@ export const Header = () => {
 
           {/* Auth & Cart */}
           <div className="flex items-center gap-2 md:gap-4">
+            {/* Credit Balance Badge */}
+            {user && credits !== null && (
+              <button
+                onClick={() => navigate("/purchase-credits")}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
+              >
+                <Coins className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">{credits}</span>
+              </button>
+            )}
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -112,6 +125,11 @@ export const Header = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+                  <div className="px-2 py-1.5 text-xs text-foreground/60 flex items-center gap-2">
+                    <Coins className="w-3 h-3" />
+                    {credits ?? 0} credits available
+                  </div>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                     <User className="w-4 h-4 mr-2" />
                     My Profile
