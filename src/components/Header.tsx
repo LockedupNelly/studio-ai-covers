@@ -173,9 +173,8 @@ export const Header = () => {
               </DropdownMenu>
             ) : (
               <Button 
-                variant="secondary" 
                 onClick={() => navigate("/auth")} 
-                className="hidden sm:flex"
+                className="hidden sm:flex bg-white text-zinc-900 hover:bg-white/90"
               >
                 Sign in
               </Button>
