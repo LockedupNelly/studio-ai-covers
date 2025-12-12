@@ -25,7 +25,7 @@ import {
 export const Header = () => {
   const { user, signInWithGoogle, signOut } = useAuth();
   const { items, setIsOpen } = useCart();
-  const { credits } = useCredits();
+  const { credits, hasUnlimitedGenerations, subscriptionTier } = useCredits();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -100,13 +100,26 @@ export const Header = () => {
           {/* Auth & Cart */}
           <div className="flex items-center gap-2 md:gap-4">
             {/* Credit Balance Badge */}
-            {user && credits !== null && (
+            {user && (
               <button
-                onClick={() => navigate("/purchase-credits")}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
+                onClick={() => navigate(hasUnlimitedGenerations ? "/pro-access" : "/purchase-credits")}
+                className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${
+                  hasUnlimitedGenerations 
+                    ? "bg-green-500/10 border-green-500/30 hover:bg-green-500/20" 
+                    : "bg-primary/10 border-primary/30 hover:bg-primary/20"
+                }`}
               >
-                <Coins className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">{credits}</span>
+                {hasUnlimitedGenerations ? (
+                  <>
+                    <Sparkles className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium text-green-500">Unlimited</span>
+                  </>
+                ) : (
+                  <>
+                    <Coins className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">{credits ?? 0}</span>
+                  </>
+                )}
               </button>
             )}
 
@@ -126,8 +139,17 @@ export const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card border-border">
                   <div className="px-2 py-1.5 text-xs text-foreground/60 flex items-center gap-2">
-                    <Coins className="w-3 h-3" />
-                    {credits ?? 0} credits available
+                    {hasUnlimitedGenerations ? (
+                      <>
+                        <Sparkles className="w-3 h-3 text-green-500" />
+                        <span className="text-green-500 font-medium">{subscriptionTier?.toUpperCase()} - Unlimited generations</span>
+                      </>
+                    ) : (
+                      <>
+                        <Coins className="w-3 h-3" />
+                        {credits ?? 0} credits available
+                      </>
+                    )}
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
