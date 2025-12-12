@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Disc3, Sparkles, ShoppingCart, Home, Coins, Menu, X, ChevronDown, LogOut, CreditCard, User } from "lucide-react";
+import { Sparkles, ShoppingCart, Home, Coins, Menu, X, ChevronDown, LogOut, CreditCard, User } from "lucide-react";
+import logoWhite from "@/assets/logo-white.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -38,22 +39,14 @@ export const Header = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <div 
-            className="flex items-center gap-3 cursor-pointer"
+            className="cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full border-2 border-foreground/30 flex items-center justify-center">
-                <Disc3 className="w-5 h-5 text-foreground" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-display text-lg md:text-xl tracking-wide">
-                COVER ART <span className="text-primary">MAKER</span>
-              </span>
-              <span className="text-[10px] text-foreground/60 tracking-widest uppercase">
-                AI Trained on Cover Art
-              </span>
-            </div>
+            <img 
+              src={logoWhite} 
+              alt="Cover Art Maker" 
+              className="h-8 md:h-10 w-auto"
+            />
           </div>
 
           {/* Desktop Navigation */}
@@ -213,7 +206,7 @@ export const Header = () => {
         <SheetContent side="right" className="bg-card border-border w-72">
           <SheetHeader>
             <SheetTitle className="font-display text-lg flex items-center gap-2">
-              <Disc3 className="w-5 h-5" />
+              <Menu className="w-5 h-5" />
               Menu
             </SheetTitle>
           </SheetHeader>
