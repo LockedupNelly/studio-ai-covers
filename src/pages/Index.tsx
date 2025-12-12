@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { Footer } from "@/components/Footer";
+import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useToast } from "@/hooks/use-toast";
@@ -95,7 +96,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <AnimatedDotsBackground />
       <Header />
       
       <main className="pt-16">
