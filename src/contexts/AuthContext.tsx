@@ -77,23 +77,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
+      // "Auth session missing" means user is already signed out - treat as success
+      if (error && !error.message.includes('session missing')) {
         toast({
           title: "Sign out failed",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        // Clear local state regardless
+        setUser(null);
+        setSession(null);
         toast({
           title: "Signed out",
           description: "Come back soon!",
         });
       }
     } catch (error) {
+      // Still clear local state on error
+      setUser(null);
+      setSession(null);
       toast({
-        title: "Sign out failed",
-        description: "An unexpected error occurred",
-        variant: "destructive",
+        title: "Signed out",
+        description: "Come back soon!",
       });
     }
   };
