@@ -1,8 +1,15 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, Music, Sparkles, X } from "lucide-react";
+import { Upload, Loader2, Music, Sparkles, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+interface AudioSuggestion {
+  title: string;
+  prompt: string;
+  mood: string;
+  style: string;
+}
 
 interface AudioAnalysisResult {
   suggestedPrompt: string;
@@ -10,14 +17,16 @@ interface AudioAnalysisResult {
   suggestedGenre: string;
   suggestedStyle: string;
   confidence: number;
+  suggestions?: AudioSuggestion[];
 }
 
 interface AudioAnalyzerProps {
   themeMode: "dark" | "light";
   onAnalysisComplete: (result: AudioAnalysisResult) => void;
+  onGenerateSuggestion?: (suggestion: AudioSuggestion, genre: string) => void;
 }
 
-export const AudioAnalyzer = ({ themeMode, onAnalysisComplete }: AudioAnalyzerProps) => {
+export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggestion }: AudioAnalyzerProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
@@ -81,7 +90,30 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete }: AudioAnalyzerPr
         throw new Error(data.error);
       }
 
-      setAnalysisResult(data);
+      // Generate 3 suggestions based on the analysis
+      const suggestions: AudioSuggestion[] = [
+        {
+          title: "Concept 1",
+          prompt: data.suggestedPrompt,
+          mood: data.detectedMood,
+          style: data.suggestedStyle
+        },
+        {
+          title: "Concept 2",
+          prompt: `${data.suggestedPrompt} with abstract artistic elements and dynamic composition`,
+          mood: data.detectedMood,
+          style: data.suggestedStyle
+        },
+        {
+          title: "Concept 3",
+          prompt: `${data.suggestedPrompt} with minimalist approach and bold typography focus`,
+          mood: data.detectedMood,
+          style: data.suggestedStyle
+        }
+      ];
+
+      const resultWithSuggestions = { ...data, suggestions };
+      setAnalysisResult(resultWithSuggestions);
       toast.success("Audio analyzed successfully!");
     } catch (error) {
       console.error('Analysis error:', error);
@@ -91,10 +123,9 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete }: AudioAnalyzerPr
     }
   };
 
-  const handleApplyResult = () => {
-    if (analysisResult) {
-      onAnalysisComplete(analysisResult);
-      toast.success("Analysis applied to generator!");
+  const handleGenerateSuggestion = (suggestion: AudioSuggestion) => {
+    if (analysisResult && onGenerateSuggestion) {
+      onGenerateSuggestion(suggestion, analysisResult.suggestedGenre);
     }
   };
 
@@ -176,7 +207,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete }: AudioAnalyzerPr
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Analyze & Generate Prompt
+                  Analyze & Generate Ideas
                 </>
               )}
             </Button>
@@ -184,37 +215,53 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete }: AudioAnalyzerPr
         </div>
       )}
 
-      {analysisResult && (
-        <div className={`rounded-lg p-4 space-y-3 ${themeMode === "light" ? "bg-green-50 border border-green-200" : "bg-green-500/10 border border-green-500/30"}`}>
-          <div className="flex items-center gap-2">
-            <Sparkles className={`w-4 h-4 ${themeMode === "light" ? "text-green-600" : "text-green-500"}`} />
-            <span className={`font-medium ${themeMode === "light" ? "text-green-800" : "text-green-400"}`}>
-              Analysis Complete
-            </span>
-          </div>
-          
-          <div className="space-y-2 text-sm">
-            <p className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
-              <span className="font-medium">Detected Genre:</span> {analysisResult.suggestedGenre}
-            </p>
-            <p className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
-              <span className="font-medium">Mood:</span> {analysisResult.detectedMood}
-            </p>
-            <p className={themeMode === "light" ? "text-gray-700" : "text-foreground/80"}>
-              <span className="font-medium">Style:</span> {analysisResult.suggestedStyle}
-            </p>
-            <p className={`${themeMode === "light" ? "text-gray-600" : "text-foreground/70"} italic`}>
-              "{analysisResult.suggestedPrompt}"
-            </p>
+      {analysisResult && analysisResult.suggestions && (
+        <div className="space-y-3">
+          {/* Analysis Header */}
+          <div className={`flex items-center gap-2 px-2 ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
+            <Sparkles className="w-4 h-4" />
+            <span className="font-medium text-sm">3 Cover Concepts Generated</span>
           </div>
 
-          <Button
-            onClick={handleApplyResult}
-            className="w-full"
-            variant={themeMode === "light" ? "default" : "studio"}
-          >
-            Apply to Generator
-          </Button>
+          {/* Genre & Mood Info */}
+          <div className={`flex gap-4 px-2 text-xs ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
+            <span><span className="font-medium">Genre:</span> {analysisResult.suggestedGenre}</span>
+            <span><span className="font-medium">Mood:</span> {analysisResult.detectedMood}</span>
+          </div>
+
+          {/* 3 Suggestion Cards */}
+          <div className="grid gap-3">
+            {analysisResult.suggestions.map((suggestion, index) => (
+              <div 
+                key={index}
+                className={`rounded-lg p-3 border ${
+                  themeMode === "light" 
+                    ? "bg-white border-gray-200" 
+                    : "bg-secondary/30 border-border"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium text-sm mb-1 ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                      {suggestion.title}
+                    </p>
+                    <p className={`text-xs line-clamp-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                      {suggestion.prompt}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={themeMode === "light" ? "default" : "studio"}
+                    onClick={() => handleGenerateSuggestion(suggestion)}
+                    className="flex-shrink-0"
+                  >
+                    <Wand2 className="w-3 h-3 mr-1" />
+                    Generate
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
