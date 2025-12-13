@@ -902,9 +902,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
                         </div>
 
-                        {/* Recent Covers Grid - Expands to fill remaining space */}
-                        <div className="relative flex-1 min-h-0 overflow-hidden">
-                          <div className="grid grid-cols-2 gap-2 h-full overflow-y-auto">
+                        {/* Recent Covers Grid - Fixed 2 rows aligned to bottom */}
+                        <div className="relative mt-auto overflow-hidden">
+                          <div className="grid grid-cols-2 gap-2">
                             {recentCovers.slice(0, 6).map((cover) => (
                               <button
                                 key={cover.id}
