@@ -29,8 +29,8 @@ serve(async (req) => {
   );
 
   try {
-    const { prompt, genre, style, mood } = await req.json();
-    logStep("Request received", { prompt: prompt?.slice(0, 50), genre, style, mood });
+    const { prompt, genre, style, mood, referenceImage } = await req.json();
+    logStep("Request received", { prompt: prompt?.slice(0, 50), genre, style, mood, hasReferenceImage: !!referenceImage });
 
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
@@ -138,8 +138,38 @@ serve(async (req) => {
 
     logStep("Generating cover art");
 
-    // Build an enhanced prompt for album cover generation
-    const enhancedPrompt = `Create a professional album cover art in a square 1:1 aspect ratio. 
+    let requestBody: any;
+
+    if (referenceImage) {
+      // Image editing mode - use the reference image
+      logStep("Using reference image for editing");
+      
+      const editPrompt = `Edit this image to create professional album cover art in a square 1:1 aspect ratio.
+Keep the main subject/person from the original image but transform it according to these instructions:
+${prompt}
+
+Genre: ${genre}
+Visual Style: ${style}
+Mood/Vibe: ${mood}
+
+IMPORTANT: Preserve the likeness and key features of the person/subject in the original image while applying the creative transformation. Make it visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music.`;
+
+      requestBody = {
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: editPrompt },
+              { type: "image_url", image_url: { url: referenceImage } }
+            ],
+          },
+        ],
+        modalities: ["image", "text"],
+      };
+    } else {
+      // Text-only generation mode
+      const enhancedPrompt = `Create a professional album cover art in a square 1:1 aspect ratio. 
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
@@ -148,13 +178,7 @@ Subject: ${prompt}
 Make it visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music. 
 The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood.toLowerCase()} atmosphere.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+      requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
         messages: [
           {
@@ -163,7 +187,16 @@ The image should be bold, memorable, and capture the essence of ${genre} music w
           },
         ],
         modalities: ["image", "text"],
-      }),
+      };
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
