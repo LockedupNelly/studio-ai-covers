@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { AudioAnalyzer } from "@/components/AudioAnalyzer";
 interface GeneratorStudioProps {
-  onGenerate: (prompt: string, genre: string, style: string, mood: string) => void;
+  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string) => void;
   generatedImage: string | null;
   isGenerating: boolean;
 }
@@ -167,10 +167,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
   const handleGenerate = () => {
     let basePrompt = "";
+    let refImage: string | undefined = undefined;
     
     // Handle different input modes
     if (activeInputTab === "image" && uploadedImage && imagePrompt.trim()) {
-      basePrompt = `[Reference Image Provided] ${imagePrompt}`;
+      basePrompt = imagePrompt;
+      refImage = uploadedImage;
     } else if (prompt.trim()) {
       basePrompt = prompt;
     } else {
@@ -187,7 +189,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
-    onGenerate(fullPrompt, genre, style, mood);
+    onGenerate(fullPrompt, genre, style, mood, refImage);
   };
 
   const handleDownload = () => {
@@ -519,7 +521,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             {/* Right Column - Prompt */}
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex items-center gap-2 md:gap-4 border-b border-border pb-2 overflow-x-auto">
+              <div className="flex items-center gap-2 md:gap-4 border-b border-border pb-2 overflow-hidden">
                 <button 
                   onClick={() => setActiveInputTab("text")}
                   className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${

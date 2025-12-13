@@ -88,7 +88,7 @@ Return a JSON object with the following structure:
 
 Generate creative and varied suggestions each time. Be artistic and imaginative with the cover art description.`
 
-    const response = await fetch('https://ai.lovable.dev/api/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
