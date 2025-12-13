@@ -424,10 +424,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             </div>
           </div>
 
-          {/* Main content - Two column layout */}
-          <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-            {/* Left Column - Controls & Prompt (50%) */}
-            <div className="lg:w-1/2 space-y-4">
+          {/* Main content - Two column layout - left column determines height */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left Column - Controls & Prompt (50%) - this column determines the section height */}
+            <div className="lg:w-1/2 space-y-4 lg:flex-shrink-0">
               {/* Genre Select */}
               <div className="space-y-2">
                 <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
@@ -804,9 +804,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               )}
             </div>
 
-            {/* Right Column - Generated Image or Placeholder (50%) */}
-            <div className="lg:w-1/2">
-              <div className={`rounded-2xl border p-4 flex flex-col ${cardBgClass}`}>
+            {/* Right Column - Generated Image or Placeholder (50%) - clips to left column height */}
+            <div className="lg:w-1/2 lg:max-h-full lg:overflow-hidden">
+              <div className={`rounded-2xl border p-4 flex flex-col h-full overflow-hidden ${cardBgClass}`}>
                 {generatedImage ? (
                   <>
                     <div className="flex items-center justify-between mb-3">
@@ -865,7 +865,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col h-full">
+                  <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                     {/* Locked Square Placeholder */}
                     <div className={`aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center max-w-[280px] mx-auto w-full ${
                       themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-border bg-secondary/30"
