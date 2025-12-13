@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, ChevronLeft, ChevronRight, ImagePlus, Info, Image } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -123,6 +124,7 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
@@ -430,8 +432,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   Select Genre
                 </label>
                 <Select value={genre} onValueChange={handleGenreChange}>
-                  <SelectTrigger className={`h-10 ${inputBgClass}`}>
-                    <SelectValue />
+                  <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                    <SelectValue placeholder="Select genre..." className={themeMode === "light" ? "text-gray-900" : ""} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {genres.map((g) => (
@@ -458,9 +460,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                       Visual Style
                     </label>
-                    <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
-                        <SelectValue />
+                  <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectValue placeholder="Select style..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         {currentGenreData.styles.map((s) => (
@@ -475,9 +477,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                       Mood / Vibe
                     </label>
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
-                        <SelectValue />
+                  <Select value={mood} onValueChange={setMood}>
+                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectValue placeholder="Select mood..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         {currentGenreData.moods.map((m) => (
@@ -576,7 +578,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder="Song title..."
                     value={songTitle}
                     onChange={(e) => setSongTitle(e.target.value)}
-                    className={`h-9 text-sm ${inputBgClass}`}
+                    className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -587,7 +589,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder="Artist name..."
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
-                    className={`h-9 text-sm ${inputBgClass}`}
+                    className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
               </div>
@@ -788,10 +790,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
             {/* Right Column - Generated Image or Placeholder (50%) */}
             <div className="lg:w-1/2">
-              <div className={`rounded-2xl border p-4 h-full flex flex-col ${cardBgClass}`}>
+              <div className={`rounded-2xl border p-4 flex flex-col ${cardBgClass}`} style={{ maxHeight: '500px' }}>
                 {generatedImage ? (
                   <>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
                       <div className="flex items-center gap-1.5">
                         <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
@@ -805,8 +807,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </Button>
                       </div>
                     </div>
-                    <div className="flex-1 flex flex-col gap-3">
-                      <div className={`aspect-square rounded-lg overflow-hidden border ${borderClass}`}>
+                    <div className="flex flex-col gap-2">
+                      <div className={`aspect-square rounded-lg overflow-hidden border ${borderClass} max-w-[280px] mx-auto w-full`}>
                         <img 
                           src={generatedImage} 
                           alt="Generated Cover Art" 
@@ -819,47 +821,78 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-1"
+                        className={`mt-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
                         onClick={() => setShowEditDialog(true)}
                       >
                         <Edit3 className="w-3.5 h-3.5 mr-1" />
-                        Request real designer edits (24h turnaround)
+                        Request real designer edits (24h)
                       </Button>
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col justify-between py-6">
-                    <div className="flex flex-col items-center justify-center text-center mb-6">
-                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
-                        themeMode === "light" ? "bg-gray-100" : "bg-secondary"
+                  <div className="flex flex-col h-full">
+                    {/* Locked Square Placeholder */}
+                    <div className={`aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center max-w-[280px] mx-auto w-full ${
+                      themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-border bg-secondary/30"
+                    }`}>
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${
+                        themeMode === "light" ? "bg-gray-200" : "bg-secondary"
                       }`}>
-                        <Image className={`w-10 h-10 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                        <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
                       </div>
-                      <h3 className={`font-display text-lg tracking-wide mb-2 ${textClass}`}>
+                      <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
                         Cover(s) will appear here
                       </h3>
-                      <p className={`text-sm ${mutedTextClass}`}>
-                        Generate a new cover or revisit one of your recent designs.
+                      <p className={`text-xs px-4 ${mutedTextClass}`}>
+                        Generate to see your cover
                       </p>
                     </div>
 
+                    {/* Divider with View Previous Link */}
                     {recentCovers.length > 0 && (
-                      <div className="grid grid-cols-2 gap-3 mt-auto">
-                        {recentCovers.map((cover) => (
+                      <>
+                        <div className={`flex items-center gap-3 my-3 ${borderClass}`}>
+                          <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
                           <button
-                            key={cover.id}
-                            type="button"
-                            onClick={() => setExpandedCover(cover.image_url)}
-                            className="relative aspect-square rounded-lg overflow-hidden border border-border/60 opacity-60 hover:opacity-100 transition-opacity"
+                            onClick={() => navigate("/profile")}
+                            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                              themeMode === "light" 
+                                ? "text-gray-600 hover:text-gray-900" 
+                                : "text-foreground/60 hover:text-foreground"
+                            }`}
                           >
-                            <img
-                              src={cover.image_url}
-                              alt="Previous cover"
-                              className="w-full h-full object-cover"
-                            />
+                            View previous generations
+                            <ExternalLink className="w-3 h-3" />
                           </button>
-                        ))}
-                      </div>
+                          <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
+                        </div>
+
+                        {/* Recent Covers Grid - Constrained with Fade */}
+                        <div className="relative flex-1 min-h-0 overflow-hidden">
+                          <div className="grid grid-cols-2 gap-2 overflow-hidden" style={{ maxHeight: '120px' }}>
+                            {recentCovers.slice(0, 4).map((cover) => (
+                              <button
+                                key={cover.id}
+                                type="button"
+                                onClick={() => setExpandedCover(cover.image_url)}
+                                className="relative aspect-square rounded-lg overflow-hidden border border-border/40 opacity-50 hover:opacity-100 transition-opacity"
+                              >
+                                <img
+                                  src={cover.image_url}
+                                  alt="Previous cover"
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          {/* Fade overlay at bottom */}
+                          <div className={`absolute bottom-0 left-0 right-0 h-8 pointer-events-none ${
+                            themeMode === "light" 
+                              ? "bg-gradient-to-t from-gray-50 to-transparent" 
+                              : "bg-gradient-to-t from-secondary/50 to-transparent"
+                          }`} />
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
