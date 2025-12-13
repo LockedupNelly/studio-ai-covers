@@ -9,6 +9,38 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation constants
+const MAX_FEEDBACK_LENGTH = 2000;
+const MAX_NAME_LENGTH = 100;
+const MAX_TITLE_LENGTH = 200;
+const MAX_URL_LENGTH = 2048;
+
+// Sanitize HTML to prevent injection
+function sanitizeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Validate URL format
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+// Validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 255;
+}
+
 interface DesignerEditRequest {
   imageUrl: string;
   feedback: string;
@@ -25,10 +57,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { imageUrl, feedback, userEmail, userName, songTitle, artistName }: DesignerEditRequest = await req.json();
+    const body = await req.json();
+    const { imageUrl, feedback, userEmail, userName, songTitle, artistName } = body as DesignerEditRequest;
 
     console.log("Processing designer edit request for:", userEmail);
 
+    // Validate required fields
     if (!imageUrl || !feedback || !userEmail) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: imageUrl, feedback, or userEmail" }),
@@ -39,23 +73,93 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Validate email format
+    if (!isValidEmail(userEmail)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Validate URL format
+    if (!isValidUrl(imageUrl) || imageUrl.length > MAX_URL_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: "Invalid image URL" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Validate input lengths
+    if (feedback.length > MAX_FEEDBACK_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Feedback must be under ${MAX_FEEDBACK_LENGTH} characters` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (userName && userName.length > MAX_NAME_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Name must be under ${MAX_NAME_LENGTH} characters` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (songTitle && songTitle.length > MAX_TITLE_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Song title must be under ${MAX_TITLE_LENGTH} characters` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (artistName && artistName.length > MAX_NAME_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Artist name must be under ${MAX_NAME_LENGTH} characters` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Sanitize all user inputs for HTML embedding
+    const safeFeedback = sanitizeHtml(feedback);
+    const safeUserName = userName ? sanitizeHtml(userName) : undefined;
+    const safeSongTitle = songTitle ? sanitizeHtml(songTitle) : undefined;
+    const safeArtistName = artistName ? sanitizeHtml(artistName) : undefined;
+    const safeUserEmail = sanitizeHtml(userEmail);
+
     // Send notification email to admin/design team
     const adminEmailResponse = await resend.emails.send({
       from: "Cover Art Maker <onboarding@resend.dev>",
-      to: ["support@coverartmaker.com"], // Replace with actual design team email
-      subject: `New Designer Edit Request from ${userName || userEmail}`,
+      to: ["support@coverartmaker.com"],
+      subject: `New Designer Edit Request from ${safeUserName || safeUserEmail}`,
       html: `
         <h1>New Designer Edit Request</h1>
-        <p><strong>From:</strong> ${userName || 'User'} (${userEmail})</p>
-        ${songTitle ? `<p><strong>Song Title:</strong> ${songTitle}</p>` : ''}
-        ${artistName ? `<p><strong>Artist Name:</strong> ${artistName}</p>` : ''}
+        <p><strong>From:</strong> ${safeUserName || 'User'} (${safeUserEmail})</p>
+        ${safeSongTitle ? `<p><strong>Song Title:</strong> ${safeSongTitle}</p>` : ''}
+        ${safeArtistName ? `<p><strong>Artist Name:</strong> ${safeArtistName}</p>` : ''}
         <p><strong>Edit Instructions:</strong></p>
-        <p style="background: #f5f5f5; padding: 15px; border-radius: 8px;">${feedback}</p>
+        <p style="background: #f5f5f5; padding: 15px; border-radius: 8px;">${safeFeedback}</p>
         <p><strong>Cover Image URL:</strong></p>
-        <p><a href="${imageUrl}">${imageUrl}</a></p>
+        <p><a href="${imageUrl}">${sanitizeHtml(imageUrl)}</a></p>
         <img src="${imageUrl}" alt="Cover to edit" style="max-width: 400px; border-radius: 8px;" />
         <hr />
-        <p style="color: #666; font-size: 12px;">Deliver edited cover within 24 hours to: ${userEmail}</p>
+        <p style="color: #666; font-size: 12px;">Deliver edited cover within 24 hours to: ${safeUserEmail}</p>
       `,
     });
 
@@ -68,11 +172,11 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "We received your designer edit request!",
       html: `
         <h1>Your Designer Edit Request Has Been Received!</h1>
-        <p>Hi ${userName || 'there'}!</p>
+        <p>Hi ${safeUserName || 'there'}!</p>
         <p>We've received your request for professional edits on your cover art. Our design team is on it!</p>
         
         <h3>What you requested:</h3>
-        <p style="background: #f5f5f5; padding: 15px; border-radius: 8px;">${feedback}</p>
+        <p style="background: #f5f5f5; padding: 15px; border-radius: 8px;">${safeFeedback}</p>
         
         <h3>Your original cover:</h3>
         <img src="${imageUrl}" alt="Your cover" style="max-width: 300px; border-radius: 8px;" />
