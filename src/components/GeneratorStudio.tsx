@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,25 @@ const genres = [
   "Country",
   "Jazz",
   "Classical"
+];
+
+// Text/Typography style presets for AI generation
+const textStyles = [
+  { id: "none", name: "No Text Style", description: "Let AI decide the typography", prompt: "" },
+  { id: "3d-chrome", name: "3D Chrome", description: "Metallic chrome with depth", prompt: "3D chrome metallic text with reflections and depth" },
+  { id: "neon-glow", name: "Neon Glow", description: "Vibrant neon with glow effects", prompt: "neon glowing text with bright electric colors and light bloom" },
+  { id: "gothic-script", name: "Gothic Script", description: "Ornate blackletter style", prompt: "ornate gothic blackletter calligraphy typography" },
+  { id: "grunge-distressed", name: "Grunge Distressed", description: "Worn, textured, raw", prompt: "grunge distressed worn textured typography with scratches" },
+  { id: "retro-vintage", name: "Retro Vintage", description: "Classic 70s-80s style", prompt: "retro vintage 70s 80s style typography with warm tones" },
+  { id: "minimalist-sans", name: "Minimalist Sans", description: "Clean modern typography", prompt: "clean minimalist sans-serif modern typography" },
+  { id: "hand-drawn", name: "Hand Drawn", description: "Organic sketch style", prompt: "hand-drawn organic sketch style lettering" },
+  { id: "graffiti", name: "Graffiti", description: "Street art spray paint", prompt: "graffiti street art spray paint style bold lettering" },
+  { id: "fire-flames", name: "Fire & Flames", description: "Burning fiery text", prompt: "text engulfed in flames and fire with embers" },
+  { id: "ice-crystal", name: "Ice Crystal", description: "Frozen crystalline style", prompt: "frozen ice crystal typography with frost and snow effects" },
+  { id: "gold-luxury", name: "Gold Luxury", description: "Premium gold embossed", prompt: "luxury gold embossed premium metallic text" },
+  { id: "glitch-digital", name: "Glitch Digital", description: "Cyberpunk glitch effect", prompt: "digital glitch cyberpunk distorted text with RGB split" },
+  { id: "blood-horror", name: "Blood Horror", description: "Dripping horror style", prompt: "dripping blood horror style dark text" },
+  { id: "bubble-3d", name: "Bubble 3D", description: "Playful inflated style", prompt: "3D bubble inflated playful rounded typography" },
 ];
 
 // Genre-based visual style presets
@@ -103,10 +122,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [coverCount, setCoverCount] = useState<"1" | "2">("1");
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
+  const [textStyle, setTextStyle] = useState("none");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCanvasPopup, setShowCanvasPopup] = useState(false);
+  const textStylesRef = useRef<HTMLDivElement>(null);
 
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
+  const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
+
+  const scrollTextStyles = (direction: 'left' | 'right') => {
+    if (textStylesRef.current) {
+      const scrollAmount = 200;
+      textStylesRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // Show free Spotify Canvas popup on mount
   useEffect(() => {
@@ -132,10 +164,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
   const handleGenerate = () => {
     if (prompt.trim()) {
-      // Include song title, artist name, and parental advisory in the prompt
+      // Include song title, artist name, text style, and parental advisory in the prompt
       let fullPrompt = prompt;
       if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
       if (artistName) fullPrompt += ` | Artist: ${artistName}`;
+      if (selectedTextStyle && selectedTextStyle.prompt) {
+        fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
+      }
       if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
       if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
       
@@ -379,6 +414,59 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              {/* Text Style Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold tracking-widest text-primary uppercase">
+                  Text Style
+                </label>
+                <div className="relative">
+                  <button
+                    onClick={() => scrollTextStyles('left')}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
+                      themeMode === "light" ? "bg-white/90 shadow-md text-gray-700" : "bg-card/90 shadow-md text-foreground"
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div
+                    ref={textStylesRef}
+                    className="flex gap-2 overflow-x-auto scrollbar-hide px-6 py-2"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {textStyles.map((ts) => (
+                      <button
+                        key={ts.id}
+                        onClick={() => setTextStyle(ts.id)}
+                        className={`flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
+                          textStyle === ts.id
+                            ? themeMode === "light"
+                              ? "bg-gray-800 text-white border-gray-800"
+                              : "bg-primary text-primary-foreground border-primary"
+                            : themeMode === "light"
+                              ? "bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-400"
+                              : "bg-secondary text-foreground border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => scrollTextStyles('right')}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
+                      themeMode === "light" ? "bg-white/90 shadow-md text-gray-700" : "bg-card/90 shadow-md text-foreground"
+                    }`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                {selectedTextStyle && (
+                  <p className={`text-xs ${themeMode === "light" ? "text-gray-400" : "text-foreground/50"}`}>
+                    {selectedTextStyle.description}
+                  </p>
+                )}
               </div>
 
               {/* Basic Mode Info */}
