@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity, ChevronLeft, ChevronRight, ImagePlus, Info } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, ChevronLeft, ChevronRight, ImagePlus, Info, Image } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -120,7 +120,7 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
 };
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
-  const { hasUnlimitedGenerations, subscriptionTier } = useCredits();
+  const { hasUnlimitedGenerations } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
@@ -259,12 +259,21 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
   const estimatedTime = coverCount === "2" ? "< 20 Seconds" : "< 15 Seconds";
 
+  // Light mode specific text classes
+  const labelClass = themeMode === "light" ? "text-gray-700" : "text-primary";
+  const mutedLabelClass = themeMode === "light" ? "text-gray-600" : "text-foreground/60";
+  const textClass = themeMode === "light" ? "text-gray-900" : "text-foreground";
+  const mutedTextClass = themeMode === "light" ? "text-gray-600" : "text-foreground/60";
+  const borderClass = themeMode === "light" ? "border-gray-300" : "border-border";
+  const inputBgClass = themeMode === "light" ? "bg-white border-gray-300" : "bg-secondary border-border";
+  const cardBgClass = themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/50 border-border";
+
   return (
     <section className="py-12 relative z-10 bg-background">
       <div className="container mx-auto px-4">
         <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 ${
           themeMode === "light" 
-            ? "bg-white/95 border-gray-200" 
+            ? "bg-white border-gray-200" 
             : "bg-card border-border"
         }`}>
           {/* Header */}
@@ -275,32 +284,34 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 <div className={`w-1 h-8 rounded-full ${themeMode === "light" ? "bg-gray-800" : "bg-primary"}`} />
                 <div className="flex items-center gap-4">
                   <div>
-                    <h2 className={`font-display text-xl md:text-2xl tracking-wide ${themeMode === "light" ? "text-gray-900" : ""}`}>
-                      DESIGN STUDIO
-                    </h2>
-                    <p className={`text-xs md:text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                    <div className="flex items-center gap-3">
+                      <h2 className={`font-display text-xl md:text-2xl tracking-wide ${textClass}`}>
+                        DESIGN STUDIO
+                      </h2>
+                      {/* Token Info - directly beside header */}
+                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                        themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"
+                      }`}>
+                        {hasUnlimitedGenerations ? (
+                          <>
+                            <Sparkles className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-green-600" : "text-green-500"}`} />
+                            <span className={`text-xs font-medium ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
+                              Unlimited
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Coins className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-gray-700" : "text-primary"}`} />
+                            <span className={`text-xs font-medium ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
+                              1 Token = 1 Cover
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <p className={`text-xs md:text-sm ${mutedTextClass}`}>
                       AI trained on top-selling marketplace covers.
                     </p>
-                  </div>
-                  {/* Token Info - beside header */}
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                    themeMode === "light" ? "bg-gray-100" : "bg-secondary"
-                  }`}>
-                    {hasUnlimitedGenerations ? (
-                      <>
-                        <Sparkles className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-green-600" : "text-green-500"}`} />
-                        <span className={`text-xs font-medium ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
-                          Unlimited
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Coins className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-gray-700" : "text-primary"}`} />
-                        <span className={`text-xs font-medium ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-                          1 Token = 1 Cover
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -308,13 +319,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               {/* Controls Row */}
               <div className="flex flex-wrap items-center gap-2 md:gap-3">
                 {/* Theme Toggle */}
-                <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary"}`}>
+                <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
                   <button
                     onClick={() => setThemeMode("dark")}
                     className={`p-1.5 md:p-2 rounded transition-colors ${
                       themeMode === "dark" 
                         ? "bg-primary text-primary-foreground"
-                        : themeMode === "light" ? "text-gray-500 hover:text-gray-800" : "text-foreground/60 hover:text-foreground"
+                        : themeMode === "light" ? "text-gray-600 hover:text-gray-900" : "text-foreground/60 hover:text-foreground"
                     }`}
                   >
                     <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -333,7 +344,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
                 {/* Studio Mode Toggle */}
                 <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")}>
-                  <TabsList className={themeMode === "light" ? "bg-gray-100" : "bg-secondary"}>
+                  <TabsList className={themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}>
                     <TabsTrigger value="basic" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
                       themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
                     }`}>
@@ -352,97 +363,17 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             </div>
           </div>
 
-          {/* Compact Controls Row - Song Title, Artist, Cover Count, Parental Advisory */}
-          <div className={`mb-6 p-3 md:p-4 rounded-lg ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {/* Song Title */}
-              <div className="space-y-1">
-                <label className={`text-xs font-semibold tracking-wider uppercase ${themeMode === "light" ? "text-gray-600" : "text-primary"}`}>
-                  Song Title
-                </label>
-                <Input
-                  placeholder="Song title..."
-                  value={songTitle}
-                  onChange={(e) => setSongTitle(e.target.value)}
-                  className={`h-10 text-sm ${themeMode === "light" ? "bg-white border-gray-200" : "bg-secondary border-border"}`}
-                />
-              </div>
-              
-              {/* Artist Name */}
-              <div className="space-y-1">
-                <label className={`text-xs font-semibold tracking-wider uppercase ${themeMode === "light" ? "text-gray-600" : "text-primary"}`}>
-                  Artist Name
-                </label>
-                <Input
-                  placeholder="Artist name..."
-                  value={artistName}
-                  onChange={(e) => setArtistName(e.target.value)}
-                  className={`h-10 text-sm ${themeMode === "light" ? "bg-white border-gray-200" : "bg-secondary border-border"}`}
-                />
-              </div>
-
-              {/* Cover Count */}
-              <div className="space-y-1">
-                <label className={`text-xs font-semibold tracking-wider uppercase ${themeMode === "light" ? "text-gray-600" : "text-primary"}`}>
-                  Covers to Generate
-                </label>
-                <RadioGroup
-                  value={coverCount}
-                  onValueChange={(v) => setCoverCount(v as "1" | "2")}
-                  className="flex gap-3 h-10 items-center"
-                >
-                  <div className="flex items-center space-x-1.5">
-                    <RadioGroupItem value="1" id="cover-1" className="w-4 h-4" />
-                    <Label htmlFor="cover-1" className={`cursor-pointer text-sm ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-                      1 Cover
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1.5">
-                    <RadioGroupItem value="2" id="cover-2" className="w-4 h-4" />
-                    <Label htmlFor="cover-2" className={`cursor-pointer text-sm ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-                      2 Covers
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Parental Advisory */}
-              <div className="space-y-1">
-                <label className={`text-xs font-semibold tracking-wider uppercase ${themeMode === "light" ? "text-gray-600" : "text-primary"}`}>
-                  Parental Advisory
-                </label>
-                <RadioGroup
-                  value={parentalAdvisory}
-                  onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
-                  className="flex gap-3 h-10 items-center"
-                >
-                  <div className="flex items-center space-x-1.5">
-                    <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
-                    <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-                      Yes
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1.5">
-                    <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
-                    <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-                      No
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-          </div>
-
+          {/* Main content - Two column layout */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left Column - Controls & Prompt */}
-            <div className="flex-1 space-y-6">
+            {/* Left Column - Controls & Prompt (50%) */}
+            <div className="lg:w-1/2 space-y-4">
               {/* Genre Select */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold tracking-widest text-primary uppercase">
-                  1. Select Genre
+                <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                  Select Genre
                 </label>
                 <Select value={genre} onValueChange={handleGenreChange}>
-                  <SelectTrigger className={`h-12 ${themeMode === "light" ? "bg-gray-100 border-gray-200" : "bg-secondary border-border"}`}>
+                  <SelectTrigger className={`h-10 ${inputBgClass}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
@@ -453,144 +384,208 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 </Select>
               </div>
 
-              {/* Visual Style - Only show in Advanced mode */}
-              {studioMode === "advanced" && (
-                <div className="space-y-2">
-                  <label className={`text-xs font-semibold tracking-widest uppercase ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                    2. Visual Style
-                  </label>
-                  <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className={`h-12 ${themeMode === "light" ? "bg-gray-100 border-gray-200" : "bg-secondary border-border"}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {currentGenreData.styles.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className={`text-xs ${themeMode === "light" ? "text-gray-400" : "text-foreground/50"}`}>
-                    {currentGenreData.description}
+              {/* Basic Mode Info OR Advanced Controls */}
+              {studioMode === "basic" ? (
+                <div className={`p-4 rounded-lg border ${cardBgClass}`}>
+                  <p className={`text-sm ${mutedTextClass}`}>
+                    <span className={`font-medium ${themeMode === "light" ? "text-gray-800" : "text-primary"}`}>Basic Mode:</span> Visual style and mood are automatically optimized.
                   </p>
-                </div>
-              )}
-
-              {/* Mood / Vibe - Only show in Advanced mode */}
-              {studioMode === "advanced" && (
-                <div className="space-y-2">
-                  <label className={`text-xs font-semibold tracking-widest uppercase ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                    3. Mood / Vibe
-                  </label>
-                  <Select value={mood} onValueChange={setMood}>
-                    <SelectTrigger className={`h-12 ${themeMode === "light" ? "bg-gray-100 border-gray-200" : "bg-secondary border-border"}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {currentGenreData.moods.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Text Style Selector - Only show in Advanced mode */}
-              {studioMode === "advanced" && (
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold tracking-widest text-primary uppercase">
-                    Text Style
-                  </label>
-                  <div className="relative">
-                    <button
-                      onClick={() => scrollTextStyles('left')}
-                      className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
-                        themeMode === "light" ? "bg-white/90 shadow-md text-gray-700" : "bg-card/90 shadow-md text-foreground"
-                      }`}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <TooltipProvider>
-                      <div
-                        ref={textStylesRef}
-                        className="flex gap-2 overflow-x-auto scrollbar-hide px-6 py-2"
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                      >
-                        {textStyles.map((ts) => (
-                          <Tooltip key={ts.id}>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => setTextStyle(ts.id)}
-                                className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
-                                  textStyle === ts.id
-                                    ? themeMode === "light"
-                                      ? "bg-gray-800 text-white border-gray-800"
-                                      : "bg-primary text-primary-foreground border-primary"
-                                    : themeMode === "light"
-                                      ? "bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-400"
-                                      : "bg-secondary text-foreground border-border hover:border-primary/50"
-                                }`}
-                              >
-                                <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
-                                {ts.example && (
-                                  <Info className={`absolute top-1 right-1 w-3 h-3 ${
-                                    textStyle === ts.id 
-                                      ? "text-white/70" 
-                                      : themeMode === "light" ? "text-gray-400" : "text-foreground/40"
-                                  }`} />
-                                )}
-                              </button>
-                            </TooltipTrigger>
-                            {ts.example && (
-                              <TooltipContent side="top" className="p-0 overflow-hidden">
-                                <div className="w-32 h-32">
-                                  <img src={ts.example} alt={ts.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="p-2 text-center text-xs">{ts.description}</div>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </TooltipProvider>
-                    <button
-                      onClick={() => scrollTextStyles('right')}
-                      className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
-                        themeMode === "light" ? "bg-white/90 shadow-md text-gray-700" : "bg-card/90 shadow-md text-foreground"
-                      }`}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {selectedTextStyle && (
-                    <p className={`text-xs ${themeMode === "light" ? "text-gray-400" : "text-foreground/50"}`}>
-                      {selectedTextStyle.description}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Basic Mode Info */}
-              {studioMode === "basic" && (
-                <div className={`p-4 rounded-lg border ${themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/30 border-border"}`}>
-                  <p className={`text-sm ${themeMode === "light" ? "text-gray-600" : "text-foreground/70"}`}>
-                    <span className="text-primary font-medium">Basic Mode:</span> Visual style and mood are automatically optimized for your selected genre.
-                  </p>
-                  <p className={`text-xs mt-2 ${themeMode === "light" ? "text-gray-400" : "text-foreground/50"}`}>
+                  <p className={`text-xs mt-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/50"}`}>
                     Switch to Advanced for full control including text styles.
                   </p>
                 </div>
+              ) : (
+                <>
+                  {/* Visual Style */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                      Visual Style
+                    </label>
+                    <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {currentGenreData.styles.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mood / Vibe */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                      Mood / Vibe
+                    </label>
+                    <Select value={mood} onValueChange={setMood}>
+                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {currentGenreData.moods.map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Text Style Selector */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                      Text Style
+                    </label>
+                    <div className="relative">
+                      <button
+                        onClick={() => scrollTextStyles('left')}
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
+                          themeMode === "light" ? "bg-white shadow-md text-gray-700 border border-gray-200" : "bg-card/90 shadow-md text-foreground"
+                        }`}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <TooltipProvider>
+                        <div
+                          ref={textStylesRef}
+                          className="flex gap-2 overflow-x-auto scrollbar-hide px-6 py-2"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          {textStyles.map((ts) => (
+                            <Tooltip key={ts.id}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => setTextStyle(ts.id)}
+                                  className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
+                                    textStyle === ts.id
+                                      ? themeMode === "light"
+                                        ? "bg-gray-800 text-white border-gray-800"
+                                        : "bg-primary text-primary-foreground border-primary"
+                                      : themeMode === "light"
+                                        ? "bg-white text-gray-700 border-gray-300 hover:border-gray-500"
+                                        : "bg-secondary text-foreground border-border hover:border-primary/50"
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
+                                  {ts.example && (
+                                    <Info className={`absolute top-1 right-1 w-3 h-3 ${
+                                      textStyle === ts.id 
+                                        ? "text-white/70" 
+                                        : themeMode === "light" ? "text-gray-400" : "text-foreground/40"
+                                    }`} />
+                                  )}
+                                </button>
+                              </TooltipTrigger>
+                              {ts.example && (
+                                <TooltipContent side="top" className="p-0 overflow-hidden">
+                                  <div className="w-32 h-32">
+                                    <img src={ts.example} alt={ts.name} className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="p-2 text-center text-xs">{ts.description}</div>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          ))}
+                        </div>
+                      </TooltipProvider>
+                      <button
+                        onClick={() => scrollTextStyles('right')}
+                        className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
+                          themeMode === "light" ? "bg-white shadow-md text-gray-700 border border-gray-200" : "bg-card/90 shadow-md text-foreground"
+                        }`}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
 
+              {/* Song Title + Artist Name Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                    Song Title
+                  </label>
+                  <Input
+                    placeholder="Song title..."
+                    value={songTitle}
+                    onChange={(e) => setSongTitle(e.target.value)}
+                    className={`h-9 text-sm ${inputBgClass}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                    Artist Name
+                  </label>
+                  <Input
+                    placeholder="Artist name..."
+                    value={artistName}
+                    onChange={(e) => setArtistName(e.target.value)}
+                    className={`h-9 text-sm ${inputBgClass}`}
+                  />
+                </div>
+              </div>
+
+              {/* Covers to Generate + Parental Advisory Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                    Covers to Generate
+                  </label>
+                  <RadioGroup
+                    value={coverCount}
+                    onValueChange={(v) => setCoverCount(v as "1" | "2")}
+                    className="flex gap-3 h-9 items-center"
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="1" id="cover-1" className="w-4 h-4" />
+                      <Label htmlFor="cover-1" className={`cursor-pointer text-sm ${textClass}`}>
+                        1 Cover
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="2" id="cover-2" className="w-4 h-4" />
+                      <Label htmlFor="cover-2" className={`cursor-pointer text-sm ${textClass}`}>
+                        2 Covers
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                    Parental Advisory
+                  </label>
+                  <RadioGroup
+                    value={parentalAdvisory}
+                    onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
+                    className="flex gap-3 h-9 items-center"
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
+                      <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
+                        Yes
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
+                      <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
+                        No
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
               {/* Prompt Input Section */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Tabs */}
-                <div className="flex items-center gap-2 md:gap-4 border-b border-border pb-2 overflow-hidden">
+                <div className={`flex items-center gap-2 md:gap-4 border-b pb-2 overflow-hidden ${borderClass}`}>
                   <button 
                     onClick={() => setActiveInputTab("text")}
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "text"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
-                        : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
                     <Type className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -601,7 +596,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "audio"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
-                        : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
                     <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -612,7 +607,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "image"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
-                        : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
                     <ImagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -626,17 +621,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className={`min-h-[180px] resize-none text-base ${
-                      themeMode === "light" 
-                        ? "bg-gray-100 border-gray-200 placeholder:text-gray-400" 
-                        : "bg-secondary border-border placeholder:text-foreground/40"
-                    }`}
+                    className={`min-h-[140px] resize-none text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"}`}
                   />
                 )}
 
                 {/* Audio Analyzer */}
                 {activeInputTab === "audio" && (
-                  <div className="min-h-[180px]">
+                  <div className="min-h-[140px]">
                     <AudioAnalyzer 
                       themeMode={themeMode} 
                       onAnalysisComplete={handleAudioAnalysisComplete}
@@ -647,19 +638,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
                 {/* Upload Image */}
                 {activeInputTab === "image" && (
-                  <div className="min-h-[180px] space-y-4">
+                  <div className="min-h-[140px] space-y-3">
                     {!uploadedImage ? (
-                      <label className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                         themeMode === "light"
                           ? "border-gray-300 bg-gray-50 hover:bg-gray-100"
                           : "border-border bg-secondary/30 hover:bg-secondary/50"
                       }`}>
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <ImagePlus className={`w-10 h-10 mb-3 ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`} />
-                          <p className={`mb-2 text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                        <div className="flex flex-col items-center justify-center py-4">
+                          <ImagePlus className={`w-8 h-8 mb-2 ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`} />
+                          <p className={`text-sm ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
                             <span className="font-semibold">Click to upload</span> or drag and drop
                           </p>
-                          <p className={`text-xs ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`}>
+                          <p className={`text-xs ${themeMode === "light" ? "text-gray-500" : "text-foreground/40"}`}>
                             PNG, JPG, WEBP (Max 10MB)
                           </p>
                         </div>
@@ -684,12 +675,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         />
                       </label>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <div className="relative">
                           <img
                             src={uploadedImage}
                             alt="Uploaded"
-                            className="w-full h-40 object-contain rounded-lg border border-border"
+                            className={`w-full h-28 object-contain rounded-lg border ${borderClass}`}
                           />
                           <button
                             onClick={() => {
@@ -697,7 +688,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               setImagePrompt("");
                             }}
                             className={`absolute top-2 right-2 p-1.5 rounded-full ${
-                              themeMode === "light" ? "bg-white/90 text-gray-700" : "bg-card/90 text-foreground"
+                              themeMode === "light" ? "bg-white/90 text-gray-700 border border-gray-200" : "bg-card/90 text-foreground"
                             }`}
                           >
                             <RefreshCw className="w-4 h-4" />
@@ -707,11 +698,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           placeholder="Describe what you want to change or add to this image..."
                           value={imagePrompt}
                           onChange={(e) => setImagePrompt(e.target.value)}
-                          className={`min-h-[80px] resize-none text-base ${
-                            themeMode === "light" 
-                              ? "bg-gray-100 border-gray-200 placeholder:text-gray-400" 
-                              : "bg-secondary border-border placeholder:text-foreground/40"
-                          }`}
+                          className={`min-h-[60px] resize-none text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"}`}
                         />
                       </div>
                     )}
@@ -720,15 +707,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               </div>
 
               {/* Generate Button */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
-                <div className={`flex items-center gap-2 text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+              <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t ${borderClass}`}>
+                <div className={`flex items-center gap-2 text-sm ${mutedTextClass}`}>
                   <Clock className="w-4 h-4" />
-                  <span className={`font-semibold ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>ESTIMATED</span>
+                  <span className={`font-semibold ${textClass}`}>ESTIMATED</span>
                   <span>{estimatedTime}</span>
                 </div>
                 <Button 
-                  variant="studio" 
-                  size="xl" 
+                  variant={themeMode === "light" ? "default" : "studio"}
+                  size="lg" 
                   onClick={handleGenerate}
                   disabled={
                     isGenerating || 
@@ -752,37 +739,53 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               </div>
             </div>
 
-            {/* Right Column - Generated Image */}
-            {generatedImage && (
-              <div className="lg:w-[400px] flex-shrink-0">
-                <div className={`rounded-2xl border p-4 ${themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/30 border-border"}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={`font-display text-lg tracking-wide ${themeMode === "light" ? "text-gray-900" : ""}`}>YOUR COVER</h3>
-                    <div className="flex items-center gap-1.5">
-                      <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="h-8 px-2">
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className="h-8 px-2">
-                        <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                      </Button>
-                      <Button variant="default" size="sm" onClick={handleDownload} className="h-8 px-2">
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
+            {/* Right Column - Generated Image or Placeholder (50%) */}
+            <div className="lg:w-1/2">
+              <div className={`rounded-2xl border p-4 h-full flex flex-col ${cardBgClass}`}>
+                {generatedImage ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
+                      <div className="flex items-center gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                          <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <Button variant="default" size="sm" onClick={handleDownload} className="h-8 px-2">
+                          <Download className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
+                    <div className={`flex-1 aspect-square rounded-lg overflow-hidden border ${borderClass}`}>
+                      <img 
+                        src={generatedImage} 
+                        alt="Generated Cover Art" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className={`text-center text-xs mt-3 ${mutedTextClass}`}>
+                      3000 × 3000px · Ready for streaming
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
+                      themeMode === "light" ? "bg-gray-100" : "bg-secondary"
+                    }`}>
+                      <Image className={`w-10 h-10 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                    </div>
+                    <h3 className={`font-display text-lg tracking-wide mb-2 ${textClass}`}>
+                      Cover(s) will appear here
+                    </h3>
+                    <p className={`text-sm ${mutedTextClass}`}>
+                      Enter a prompt and generate your cover art
+                    </p>
                   </div>
-                  <div className="aspect-square rounded-lg overflow-hidden bg-secondary border border-border">
-                    <img 
-                      src={generatedImage} 
-                      alt="Generated Cover Art" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <p className={`text-center text-xs mt-3 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                    3000 × 3000px · Ready for streaming
-                  </p>
-                </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
