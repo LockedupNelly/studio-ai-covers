@@ -865,27 +865,29 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                    {/* Locked Square Placeholder */}
-                    <div className={`aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center max-w-[280px] mx-auto w-full ${
-                      themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-border bg-secondary/30"
-                    }`}>
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${
-                        themeMode === "light" ? "bg-gray-200" : "bg-secondary"
+                  <div className="flex flex-col h-full">
+                    {/* Locked Square Placeholder fills most of card */}
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className={`aspect-square w-full max-w-[360px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center mx-auto ${
+                        themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-border bg-secondary/30"
                       }`}>
-                        <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${
+                          themeMode === "light" ? "bg-gray-200" : "bg-secondary"
+                        }`}>
+                          <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                        </div>
+                        <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
+                          Cover(s) will appear here
+                        </h3>
+                        <p className={`text-xs px-4 ${mutedTextClass}`}>
+                          Generate to see your cover
+                        </p>
                       </div>
-                      <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
-                        Cover(s) will appear here
-                      </h3>
-                      <p className={`text-xs px-4 ${mutedTextClass}`}>
-                        Generate to see your cover
-                      </p>
                     </div>
 
-                    {/* Divider with View Previous Link (no gallery to avoid height expansion) */}
+                    {/* Divider with View Previous Link */}
                     {recentCovers.length > 0 && (
-                      <div className={`flex items-center gap-3 mt-4 ${borderClass}`}>
+                      <div className={`flex items-center gap-3 pt-4 ${borderClass}`}>
                         <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
                         <button
                           onClick={() => navigate("/profile")}
