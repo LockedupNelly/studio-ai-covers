@@ -425,7 +425,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           </div>
 
           {/* Main content - Two column layout */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-6">
             {/* Left Column - Controls & Prompt (50%) */}
             <div className="lg:w-1/2 space-y-4">
               {/* Genre Select */}
@@ -902,10 +902,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
                         </div>
 
-                        {/* Recent Covers Grid - Fixed 2 rows aligned to bottom */}
-                        <div className="relative mt-auto overflow-hidden">
+                        {/* Recent Covers Grid - Limited to 4 covers (2 rows) */}
+                        <div className="relative overflow-hidden">
                           <div className="grid grid-cols-2 gap-2">
-                            {recentCovers.slice(0, 6).map((cover) => (
+                            {recentCovers.slice(0, 4).map((cover) => (
                               <button
                                 key={cover.id}
                                 type="button"
