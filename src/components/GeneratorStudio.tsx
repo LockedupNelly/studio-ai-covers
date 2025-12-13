@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -17,12 +17,7 @@ import { AudioAnalyzer } from "@/components/AudioAnalyzer";
 import { DesignerEditDialog } from "@/components/DesignerEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-interface AudioSuggestion {
-  title: string;
-  prompt: string;
-  mood: string;
-  style: string;
-}
+
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string) => void;
@@ -137,7 +132,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
   const [textStyle, setTextStyle] = useState("none");
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  
   const [showCanvasPopup, setShowCanvasPopup] = useState(false);
   const [activeInputTab, setActiveInputTab] = useState<"text" | "audio" | "image">("text");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -812,9 +807,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
                       <div className="flex items-center gap-1.5">
-                        <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </Button>
                         <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
                           <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                         </Button>
