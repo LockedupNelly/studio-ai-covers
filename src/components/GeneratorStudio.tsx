@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { AudioAnalyzer } from "@/components/AudioAnalyzer";
+import { DesignerEditDialog } from "@/components/DesignerEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 interface AudioSuggestion {
@@ -145,6 +146,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [previewStyle, setPreviewStyle] = useState<{ id: string; name: string; description: string; example: string } | null>(null);
   const [recentCovers, setRecentCovers] = useState<{ id: string; image_url: string }[]>([]);
   const [expandedCover, setExpandedCover] = useState<string | null>(null);
+  const [showDesignerEditDialog, setShowDesignerEditDialog] = useState(false);
 
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
@@ -822,7 +824,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         variant="outline"
                         size="sm"
                         className={`mt-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                        onClick={() => setShowEditDialog(true)}
+                        onClick={() => setShowDesignerEditDialog(true)}
                       >
                         <Edit3 className="w-3.5 h-3.5 mr-1" />
                         Request real designer edits (24h)
@@ -1003,6 +1005,17 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Designer Edit Dialog */}
+      {generatedImage && (
+        <DesignerEditDialog
+          open={showDesignerEditDialog}
+          onOpenChange={setShowDesignerEditDialog}
+          imageUrl={generatedImage}
+          songTitle={songTitle}
+          artistName={artistName}
+        />
+      )}
     </section>
   );
 };
