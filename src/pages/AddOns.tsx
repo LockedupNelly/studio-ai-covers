@@ -27,7 +27,7 @@ const row1: AddOn[] = [
     title: "Spotify Canvas",
     price: 25.00,
     description: "8-second loop video for Spotify backgrounds.",
-    image: "/addons/song-promo-video.gif",
+    image: "/addons/spotify-canvas.gif",
   },
   {
     id: "apple-music-motion",

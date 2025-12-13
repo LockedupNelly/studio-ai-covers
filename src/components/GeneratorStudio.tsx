@@ -13,7 +13,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { AudioAnalyzer } from "@/components/AudioAnalyzer";
-
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 interface AudioSuggestion {
   title: string;
   prompt: string;
@@ -121,6 +122,7 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
@@ -138,6 +140,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState("");
   const textStylesRef = useRef<HTMLDivElement>(null);
+  const [previewStyle, setPreviewStyle] = useState<{ id: string; name: string; description: string; example: string } | null>(null);
+  const [recentCovers, setRecentCovers] = useState<{ id: string; image_url: string }[]>([]);
+  const [expandedCover, setExpandedCover] = useState<string | null>(null);
 
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
@@ -164,6 +169,27 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
   }, []);
 
+  // Load recent covers for placeholder grid
+  useEffect(() => {
+    const loadRecent = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from("generations")
+          .select("id, image_url")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(6);
+        if (!error && data) {
+          setRecentCovers(data as { id: string; image_url: string }[]);
+        }
+      } catch (e) {
+        console.error("Failed to load recent covers", e);
+      }
+    };
+    loadRecent();
+  }, [user]);
+
   // Update style and mood when genre changes
   const handleGenreChange = (newGenre: string) => {
     setGenre(newGenre);
@@ -175,14 +201,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleGenerate = () => {
+    // Require core metadata first
+    if (!songTitle.trim() || !artistName.trim()) {
+      toast.error("Please enter a song title and artist name.");
+      return;
+    }
+
     let basePrompt = "";
     let refImage: string | undefined = undefined;
     
     // Handle different input modes
-    if (activeInputTab === "image" && uploadedImage && imagePrompt.trim()) {
-      basePrompt = imagePrompt;
+    if (activeInputTab === "image" && uploadedImage) {
+      basePrompt = imagePrompt.trim() || "Use this photo as the main subject for the cover art.";
       refImage = uploadedImage;
-    } else if (prompt.trim()) {
+    } else if (activeInputTab === "text" && prompt.trim()) {
       basePrompt = prompt;
     } else {
       return;
@@ -317,7 +349,32 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               </div>
 
               {/* Controls Row */}
-              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                {/* Covers to Generate - moved to header */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                    Covers
+                  </span>
+                  <RadioGroup
+                    value={coverCount}
+                    onValueChange={(v) => setCoverCount(v as "1" | "2")}
+                    className="flex gap-3 items-center"
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="1" id="cover-1" className="w-4 h-4" />
+                      <Label htmlFor="cover-1" className={`cursor-pointer text-xs ${textClass}`}>
+                        1
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <RadioGroupItem value="2" id="cover-2" className="w-4 h-4" />
+                      <Label htmlFor="cover-2" className={`cursor-pointer text-xs ${textClass}`}>
+                        2
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 {/* Theme Toggle */}
                 <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
                   <button
@@ -467,21 +524,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
                                   {ts.example && (
-                                    <Info className={`absolute top-1 right-1 w-3 h-3 ${
-                                      textStyle === ts.id 
-                                        ? "text-white/70" 
-                                        : themeMode === "light" ? "text-gray-400" : "text-foreground/40"
-                                    }`} />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewStyle({
+                                          id: ts.id,
+                                          name: ts.name,
+                                          description: ts.description,
+                                          example: ts.example,
+                                        });
+                                      }}
+                                      className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+                                        textStyle === ts.id 
+                                          ? "bg-white/10 text-white/80" 
+                                          : themeMode === "light" ? "bg-gray-100 text-gray-500" : "bg-card/80 text-foreground/60"
+                                      }`}
+                                    >
+                                      <Info className="w-3 h-3" />
+                                    </button>
                                   )}
                                 </button>
                               </TooltipTrigger>
                               {ts.example && (
-                                <TooltipContent side="top" className="p-0 overflow-hidden">
-                                  <div className="w-32 h-32">
-                                    <img src={ts.example} alt={ts.name} className="w-full h-full object-cover" />
-                                  </div>
-                                  <div className="p-2 text-center text-xs">{ts.description}</div>
-                                </TooltipContent>
+                                <TooltipContent side="top" className="hidden" />
                               )}
                             </Tooltip>
                           ))}
@@ -528,29 +594,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Covers to Generate + Parental Advisory Row */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                    Covers to Generate
-                  </label>
-                  <RadioGroup
-                    value={coverCount}
-                    onValueChange={(v) => setCoverCount(v as "1" | "2")}
-                    className="flex gap-3 h-9 items-center"
-                  >
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="1" id="cover-1" className="w-4 h-4" />
-                      <Label htmlFor="cover-1" className={`cursor-pointer text-sm ${textClass}`}>
-                        1 Cover
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="2" id="cover-2" className="w-4 h-4" />
-                      <Label htmlFor="cover-2" className={`cursor-pointer text-sm ${textClass}`}>
-                        2 Covers
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
                 <div className="space-y-1">
                   <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
                     Parental Advisory
@@ -706,37 +749,41 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 )}
               </div>
 
-              {/* Generate Button */}
-              <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t ${borderClass}`}>
-                <div className={`flex items-center gap-2 text-sm ${mutedTextClass}`}>
-                  <Clock className="w-4 h-4" />
-                  <span className={`font-semibold ${textClass}`}>ESTIMATED</span>
-                  <span>{estimatedTime}</span>
+              {/* Generate Button - hidden for audio mode */}
+              {activeInputTab !== "audio" && (
+                <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t ${borderClass}`}>
+                  <div className={`flex items-center gap-2 text-sm ${mutedTextClass}`}>
+                    <Clock className="w-4 h-4" />
+                    <span className={`font-semibold ${textClass}`}>ESTIMATED</span>
+                    <span>{estimatedTime}</span>
+                  </div>
+                  <Button 
+                    variant={themeMode === "light" ? "default" : "studio"}
+                    size="lg" 
+                    onClick={handleGenerate}
+                    disabled={
+                      isGenerating ||
+                      !songTitle.trim() ||
+                      !artistName.trim() ||
+                      (activeInputTab === "text" && !prompt.trim()) ||
+                      (activeInputTab === "image" && !uploadedImage)
+                    }
+                    className="w-full sm:w-auto"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-5 h-5" />
+                        Generate {coverCount === "2" ? "2 Covers" : "Cover Art"}
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <Button 
-                  variant={themeMode === "light" ? "default" : "studio"}
-                  size="lg" 
-                  onClick={handleGenerate}
-                  disabled={
-                    isGenerating || 
-                    (activeInputTab === "text" && !prompt.trim()) ||
-                    (activeInputTab === "image" && (!uploadedImage || !imagePrompt.trim()))
-                  }
-                  className="w-full sm:w-auto"
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-5 h-5" />
-                      Generate {coverCount === "2" ? "2 Covers" : "Cover Art"}
-                    </>
-                  )}
-                </Button>
-              </div>
+              )}
             </div>
 
             {/* Right Column - Generated Image or Placeholder (50%) */}
@@ -758,30 +805,62 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </Button>
                       </div>
                     </div>
-                    <div className={`flex-1 aspect-square rounded-lg overflow-hidden border ${borderClass}`}>
-                      <img 
-                        src={generatedImage} 
-                        alt="Generated Cover Art" 
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="flex-1 flex flex-col gap-3">
+                      <div className={`aspect-square rounded-lg overflow-hidden border ${borderClass}`}>
+                        <img 
+                          src={generatedImage} 
+                          alt="Generated Cover Art" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className={`text-center text-xs ${mutedTextClass}`}>
+                        3000 × 3000px · Ready for streaming
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-1"
+                        onClick={() => setShowEditDialog(true)}
+                      >
+                        <Edit3 className="w-3.5 h-3.5 mr-1" />
+                        Request real designer edits (24h turnaround)
+                      </Button>
                     </div>
-                    <p className={`text-center text-xs mt-3 ${mutedTextClass}`}>
-                      3000 × 3000px · Ready for streaming
-                    </p>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
-                      themeMode === "light" ? "bg-gray-100" : "bg-secondary"
-                    }`}>
-                      <Image className={`w-10 h-10 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                  <div className="flex-1 flex flex-col justify-between py-6">
+                    <div className="flex flex-col items-center justify-center text-center mb-6">
+                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
+                        themeMode === "light" ? "bg-gray-100" : "bg-secondary"
+                      }`}>
+                        <Image className={`w-10 h-10 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                      </div>
+                      <h3 className={`font-display text-lg tracking-wide mb-2 ${textClass}`}>
+                        Cover(s) will appear here
+                      </h3>
+                      <p className={`text-sm ${mutedTextClass}`}>
+                        Generate a new cover or revisit one of your recent designs.
+                      </p>
                     </div>
-                    <h3 className={`font-display text-lg tracking-wide mb-2 ${textClass}`}>
-                      Cover(s) will appear here
-                    </h3>
-                    <p className={`text-sm ${mutedTextClass}`}>
-                      Enter a prompt and generate your cover art
-                    </p>
+
+                    {recentCovers.length > 0 && (
+                      <div className="grid grid-cols-2 gap-3 mt-auto">
+                        {recentCovers.map((cover) => (
+                          <button
+                            key={cover.id}
+                            type="button"
+                            onClick={() => setExpandedCover(cover.image_url)}
+                            className="relative aspect-square rounded-lg overflow-hidden border border-border/60 opacity-60 hover:opacity-100 transition-opacity"
+                          >
+                            <img
+                              src={cover.image_url}
+                              alt="Previous cover"
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -824,6 +903,42 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               </div>
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Text Style Preview Popup */}
+      <Dialog open={!!previewStyle} onOpenChange={() => setPreviewStyle(null)}>
+        <DialogContent className="max-w-sm bg-card border-border p-0 overflow-hidden">
+          {previewStyle && (
+            <>
+              <div className="aspect-square w-full bg-secondary/40">
+                <img
+                  src={previewStyle.example}
+                  alt={previewStyle.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <DialogHeader className="mb-2">
+                  <DialogTitle className="font-display text-base tracking-wide">
+                    {previewStyle.name}
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-foreground/70">{previewStyle.description}</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Expanded Previous Cover */}
+      <Dialog open={!!expandedCover} onOpenChange={() => setExpandedCover(null)}>
+        <DialogContent className="max-w-md bg-card border-border p-4">
+          {expandedCover && (
+            <div className="aspect-square rounded-xl overflow-hidden border border-border">
+              <img src={expandedCover} alt="Previous cover enlarged" className="w-full h-full object-cover" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
