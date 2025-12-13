@@ -883,51 +883,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </p>
                     </div>
 
-                    {/* Divider with View Previous Link */}
+                    {/* Divider with View Previous Link (no gallery to avoid height expansion) */}
                     {recentCovers.length > 0 && (
-                      <>
-                        <div className={`flex items-center gap-3 my-3 ${borderClass}`}>
-                          <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
-                          <button
-                            onClick={() => navigate("/profile")}
-                            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                              themeMode === "light" 
-                                ? "text-gray-600 hover:text-gray-900" 
-                                : "text-foreground/60 hover:text-foreground"
-                            }`}
-                          >
-                            View previous generations
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                          <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
-                        </div>
-
-                        {/* Recent Covers Grid - Limited to 4 covers (2 rows) */}
-                        <div className="relative overflow-hidden">
-                          <div className="grid grid-cols-2 gap-2">
-                            {recentCovers.slice(0, 4).map((cover) => (
-                              <button
-                                key={cover.id}
-                                type="button"
-                                onClick={() => setExpandedCover(cover.image_url)}
-                                className="relative aspect-square rounded-lg overflow-hidden border border-border/40 opacity-50 hover:opacity-100 transition-opacity"
-                              >
-                                <img
-                                  src={cover.image_url}
-                                  alt="Previous cover"
-                                  className="w-full h-full object-cover"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                          {/* Fade overlay at bottom */}
-                          <div className={`absolute bottom-0 left-0 right-0 h-8 pointer-events-none ${
+                      <div className={`flex items-center gap-3 mt-4 ${borderClass}`}>
+                        <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
+                        <button
+                          onClick={() => navigate("/profile")}
+                          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
                             themeMode === "light" 
-                              ? "bg-gradient-to-t from-gray-50 to-transparent" 
-                              : "bg-gradient-to-t from-secondary/50 to-transparent"
-                          }`} />
-                        </div>
-                      </>
+                              ? "text-gray-600 hover:text-gray-900" 
+                              : "text-foreground/60 hover:text-foreground"
+                          }`}
+                        >
+                          View previous generations
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                        <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
+                      </div>
                     )}
                   </div>
                 )}
@@ -942,113 +914,79 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-display tracking-wide">EDIT OPTIONS</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Button variant="outline" className="w-full justify-start gap-3 h-14">
-              <ZoomIn className="w-5 h-5 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">Upscale</p>
-                <p className="text-xs text-foreground/60">Enhance resolution to 4K</p>
-              </div>
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-14">
-              <RefreshCw className="w-5 h-5 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">Remix</p>
-                <p className="text-xs text-foreground/60">Generate variations</p>
-              </div>
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-14">
-              <Edit3 className="w-5 h-5 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">Fine-tune</p>
-                <p className="text-xs text-foreground/60">Adjust colors & details</p>
-              </div>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Text Style Preview Popup */}
+      {/* Text Style Preview Dialog */}
       <Dialog open={!!previewStyle} onOpenChange={() => setPreviewStyle(null)}>
-        <DialogContent className="max-w-sm bg-card border-border p-0 overflow-hidden">
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{previewStyle?.name}</DialogTitle>
+          </DialogHeader>
           {previewStyle && (
-            <>
-              <div className="aspect-square w-full bg-secondary/40">
+            <div className="space-y-3">
+              <div className="aspect-square w-full rounded-lg overflow-hidden">
                 <img
                   src={previewStyle.example}
                   alt={previewStyle.name}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="p-4">
-                <DialogHeader className="mb-2">
-                  <DialogTitle className="font-display text-base tracking-wide">
-                    {previewStyle.name}
-                  </DialogTitle>
-                </DialogHeader>
-                <p className="text-sm text-foreground/70">{previewStyle.description}</p>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Expanded Previous Cover */}
-      <Dialog open={!!expandedCover} onOpenChange={() => setExpandedCover(null)}>
-        <DialogContent className="max-w-md bg-card border-border p-4">
-          {expandedCover && (
-            <div className="aspect-square rounded-xl overflow-hidden border border-border">
-              <img src={expandedCover} alt="Previous cover enlarged" className="w-full h-full object-cover" />
+              <p className="text-sm text-muted-foreground">{previewStyle.description}</p>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Spotify Canvas Popup */}
-      <Dialog open={showCanvasPopup} onOpenChange={setShowCanvasPopup}>
-        <DialogContent className="max-w-md bg-gradient-to-b from-green-500/20 to-card border-green-500/30">
-          <DialogHeader>
-            <DialogTitle className="font-display tracking-wide text-center text-green-400">
-              FREE SPOTIFY CANVAS
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Sparkles className="w-10 h-10 text-green-400" />
-            </div>
-            <p className="text-foreground/80 mb-2">
-              Get a FREE Spotify Canvas with your first cover art purchase!
-            </p>
-            <p className="text-sm text-foreground/60">
-              Animated 8-second vertical loop for Spotify.
-            </p>
-          </div>
-          <Button 
-            variant="default" 
-            className="w-full bg-green-500 hover:bg-green-600 text-white"
-            onClick={() => setShowCanvasPopup(false)}
-          >
-            Awesome, Let's Go!
-          </Button>
         </DialogContent>
       </Dialog>
 
       {/* Designer Edit Dialog */}
-      {generatedImage && (
-        <DesignerEditDialog
-          open={showDesignerEditDialog}
-          onOpenChange={setShowDesignerEditDialog}
-          imageUrl={generatedImage}
-          songTitle={songTitle}
-          artistName={artistName}
-        />
-      )}
+      <DesignerEditDialog
+        open={showDesignerEditDialog}
+        onOpenChange={setShowDesignerEditDialog}
+        imageUrl={generatedImage}
+        songTitle={songTitle}
+        artistName={artistName}
+      />
+
+      {/* Expanded Previous Cover Dialog */}
+      <Dialog open={!!expandedCover} onOpenChange={() => setExpandedCover(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Previous Cover</DialogTitle>
+          </DialogHeader>
+          {expandedCover && (
+            <div className="aspect-square w-full rounded-lg overflow-hidden">
+              <img
+                src={expandedCover}
+                alt="Previous cover"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Free Spotify Canvas Popup */}
+      <Dialog open={showCanvasPopup} onOpenChange={setShowCanvasPopup}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImagePlus className="w-5 h-5 text-primary" />
+              Free Spotify Canvas Offer
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              For a limited time, get a <span className="font-semibold text-primary">free Spotify Canvas</span> when you
+              purchase any motion upgrade add-on.
+            </p>
+            <p>
+              Perfect for bringing your new cover art to life on Spotify with looping motion visuals.
+            </p>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowCanvasPopup(false)} size="sm" variant="outline">
+                Got it
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
