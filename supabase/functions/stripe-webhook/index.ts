@@ -14,10 +14,75 @@ const CREDIT_AMOUNTS: Record<string, number> = {
   "150": 150,
 };
 
+const REFERRAL_CREDITS = 5;
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
+
+// Function to award referral credits when referred user makes first purchase
+async function awardReferralCredits(supabaseClient: any, userId: string) {
+  try {
+    // Check if this user was referred and credits haven't been awarded yet
+    const { data: referral, error: findError } = await supabaseClient
+      .from("referrals")
+      .select("*")
+      .eq("referred_user_id", userId)
+      .eq("credits_awarded", false)
+      .eq("status", "registered")
+      .maybeSingle();
+
+    if (findError || !referral) {
+      logStep("No pending referral found for user", { userId });
+      return;
+    }
+
+    logStep("Found pending referral", { referralId: referral.id, referrerId: referral.referrer_id });
+
+    // Award credits to the referrer
+    const { data: existingCredits } = await supabaseClient
+      .from("user_credits")
+      .select("credits")
+      .eq("user_id", referral.referrer_id)
+      .maybeSingle();
+
+    if (existingCredits) {
+      await supabaseClient
+        .from("user_credits")
+        .update({ credits: existingCredits.credits + REFERRAL_CREDITS })
+        .eq("user_id", referral.referrer_id);
+    } else {
+      await supabaseClient
+        .from("user_credits")
+        .insert({ user_id: referral.referrer_id, credits: REFERRAL_CREDITS });
+    }
+
+    // Log the referral credit transaction
+    await supabaseClient
+      .from("credit_transactions")
+      .insert({
+        user_id: referral.referrer_id,
+        amount: REFERRAL_CREDITS,
+        type: "referral",
+        description: `Referral bonus - friend made first purchase`,
+      });
+
+    // Mark referral as converted
+    await supabaseClient
+      .from("referrals")
+      .update({
+        credits_awarded: true,
+        status: "converted",
+        converted_at: new Date().toISOString(),
+      })
+      .eq("id", referral.id);
+
+    logStep("Referral credits awarded", { referrerId: referral.referrer_id, credits: REFERRAL_CREDITS });
+  } catch (error) {
+    logStep("Error awarding referral credits", { error: error instanceof Error ? error.message : String(error) });
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -144,6 +209,9 @@ serve(async (req) => {
         } else {
           logStep("Transaction logged");
         }
+
+        // Award referral credits if this is user's first purchase
+        await awardReferralCredits(supabaseClient, userId);
       } else if (type === "subscription") {
         // Handle subscription - give monthly credits for starter tier
         const tier = session.metadata?.tier;
