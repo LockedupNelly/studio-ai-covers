@@ -26,6 +26,13 @@ interface AudioAnalyzerProps {
   onGenerateSuggestion?: (suggestion: AudioSuggestion, genre: string) => void;
 }
 
+// Truncate text to max words
+const truncateWords = (text: string, maxWords: number): string => {
+  const words = text.split(' ');
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
 export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggestion }: AudioAnalyzerProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -90,23 +97,17 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
         throw new Error(data.error);
       }
 
-      // Generate 3 suggestions based on the analysis
+      // Generate 2 suggestions based on the analysis (capped at 25 words each)
       const suggestions: AudioSuggestion[] = [
         {
           title: "Concept 1",
-          prompt: data.suggestedPrompt,
+          prompt: truncateWords(data.suggestedPrompt, 25),
           mood: data.detectedMood,
           style: data.suggestedStyle
         },
         {
           title: "Concept 2",
-          prompt: `${data.suggestedPrompt} with abstract artistic elements and dynamic composition`,
-          mood: data.detectedMood,
-          style: data.suggestedStyle
-        },
-        {
-          title: "Concept 3",
-          prompt: `${data.suggestedPrompt} with minimalist approach and bold typography focus`,
+          prompt: truncateWords(`${data.suggestedPrompt} with abstract artistic elements`, 25),
           mood: data.detectedMood,
           style: data.suggestedStyle
         }
@@ -164,7 +165,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
             MP3, WAV, or M4A (max 20MB)
           </p>
         </div>
-      ) : (
+      ) : !analysisResult ? (
         <div className={`rounded-lg p-4 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -192,46 +193,73 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
             </Button>
           </div>
 
-          {!analysisResult && (
-            <Button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="w-full mt-4"
-              variant={themeMode === "light" ? "default" : "studio"}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Analyzing Audio...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Analyze & Generate Ideas
-                </>
-              )}
-            </Button>
-          )}
+          <Button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className="w-full mt-4"
+            variant={themeMode === "light" ? "default" : "studio"}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Analyzing Audio...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Analyze & Generate Ideas
+              </>
+            )}
+          </Button>
         </div>
-      )}
-
-      {analysisResult && analysisResult.suggestions && (
+      ) : (
+        /* Analysis Results - 2 column layout */
         <div className="space-y-3">
-          {/* Analysis Header */}
-          <div className={`flex items-center gap-2 px-2 ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
-            <Sparkles className="w-4 h-4" />
-            <span className="font-medium text-sm">3 Cover Concepts Generated</span>
+          {/* File info + metadata row */}
+          <div className="flex items-start gap-4">
+            {/* File info */}
+            <div className={`flex-shrink-0 rounded-lg p-3 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  themeMode === "light" ? "bg-gray-200" : "bg-secondary"
+                }`}>
+                  <Music className={`w-5 h-5 ${themeMode === "light" ? "text-gray-600" : "text-primary"}`} />
+                </div>
+                <div>
+                  <p className={`font-medium truncate max-w-[140px] text-sm ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                    {selectedFile.name}
+                  </p>
+                  <p className={`text-xs ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearSelection}
+                  className={`ml-2 h-8 w-8 ${themeMode === "light" ? "text-gray-500 hover:text-gray-700" : ""}`}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Metadata */}
+            <div className={`flex-1 rounded-lg p-3 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
+              <div className={`flex items-center gap-2 mb-2 ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
+                <Sparkles className="w-4 h-4" />
+                <span className="font-medium text-sm">2 Cover Concepts</span>
+              </div>
+              <div className={`flex gap-4 text-xs ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
+                <span><span className="font-medium">Genre:</span> {analysisResult.suggestedGenre}</span>
+                <span><span className="font-medium">Mood:</span> {analysisResult.detectedMood}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Genre & Mood Info */}
-          <div className={`flex gap-4 px-2 text-xs ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
-            <span><span className="font-medium">Genre:</span> {analysisResult.suggestedGenre}</span>
-            <span><span className="font-medium">Mood:</span> {analysisResult.detectedMood}</span>
-          </div>
-
-          {/* 3 Suggestion Cards */}
-          <div className="grid gap-3">
-            {analysisResult.suggestions.map((suggestion, index) => (
+          {/* 2 Suggestion Cards - side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            {analysisResult.suggestions?.map((suggestion, index) => (
               <div 
                 key={index}
                 className={`rounded-lg p-3 border ${
@@ -240,25 +268,21 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
                     : "bg-secondary/30 border-border"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm mb-1 ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
-                      {suggestion.title}
-                    </p>
-                    <p className={`text-xs line-clamp-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                      {suggestion.prompt}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={themeMode === "light" ? "default" : "studio"}
-                    onClick={() => handleGenerateSuggestion(suggestion)}
-                    className="flex-shrink-0"
-                  >
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    Generate
-                  </Button>
-                </div>
+                <p className={`font-medium text-sm mb-1 ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                  {suggestion.title}
+                </p>
+                <p className={`text-xs mb-3 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                  {suggestion.prompt}
+                </p>
+                <Button
+                  size="sm"
+                  variant={themeMode === "light" ? "default" : "studio"}
+                  onClick={() => handleGenerateSuggestion(suggestion)}
+                  className="w-full"
+                >
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  Generate
+                </Button>
               </div>
             ))}
           </div>
