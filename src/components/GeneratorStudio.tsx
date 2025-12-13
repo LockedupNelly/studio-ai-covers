@@ -11,7 +11,7 @@ import { GenreBanner } from "@/components/GenreBanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
-
+import { AudioAnalyzer } from "@/components/AudioAnalyzer";
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string) => void;
   generatedImage: string | null;
@@ -125,6 +125,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [textStyle, setTextStyle] = useState("none");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCanvasPopup, setShowCanvasPopup] = useState(false);
+  const [activeInputTab, setActiveInputTab] = useState<"text" | "audio">("text");
   const textStylesRef = useRef<HTMLDivElement>(null);
 
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
@@ -185,6 +186,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       link.download = "cover-art.png";
       link.click();
     }
+  };
+
+  const handleAudioAnalysisComplete = (result: { suggestedPrompt: string; detectedMood: string; suggestedGenre: string; suggestedStyle: string }) => {
+    setPrompt(result.suggestedPrompt);
+    setMood(result.detectedMood);
+    
+    // Update genre if it's valid
+    if (genres.includes(result.suggestedGenre)) {
+      setGenre(result.suggestedGenre);
+      const genreData = genreStyles[result.suggestedGenre];
+      if (genreData) {
+        // Try to match the suggested style, otherwise use the first one
+        if (genreData.styles.includes(result.suggestedStyle)) {
+          setStyle(result.suggestedStyle);
+        } else {
+          setStyle(genreData.styles[0]);
+        }
+      }
+    }
+    
+    // Switch back to text tab to show the populated prompt
+    setActiveInputTab("text");
   };
 
   const estimatedTime = coverCount === "2" ? "< 20 Seconds" : "< 15 Seconds";
@@ -486,31 +509,53 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             <div className="space-y-4">
               {/* Tabs */}
               <div className="flex items-center gap-4 border-b border-border pb-2">
-                <button className={`flex items-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] ${
-                  themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
-                }`}>
+                <button 
+                  onClick={() => setActiveInputTab("text")}
+                  className={`flex items-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
+                    activeInputTab === "text"
+                      ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                      : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                  }`}
+                >
                   <Type className="w-4 h-4" />
                   TEXT PROMPT
                 </button>
-                <button className={`flex items-center gap-2 text-sm font-medium pb-2 -mb-[10px] hover:opacity-100 transition-colors ${
-                  themeMode === "light" ? "text-gray-400" : "text-foreground/60"
-                }`}>
+                <button 
+                  onClick={() => setActiveInputTab("audio")}
+                  className={`flex items-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
+                    activeInputTab === "audio"
+                      ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                      : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                  }`}
+                >
                   <Mic className="w-4 h-4" />
                   AUDIO ANALYZER
                 </button>
               </div>
 
-              {/* Prompt Input */}
-              <Textarea
-                placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className={`min-h-[200px] resize-none text-base ${
-                  themeMode === "light" 
-                    ? "bg-gray-100 border-gray-200 placeholder:text-gray-400" 
-                    : "bg-secondary border-border placeholder:text-foreground/40"
-                }`}
-              />
+              {/* Text Prompt Input */}
+              {activeInputTab === "text" && (
+                <Textarea
+                  placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className={`min-h-[200px] resize-none text-base ${
+                    themeMode === "light" 
+                      ? "bg-gray-100 border-gray-200 placeholder:text-gray-400" 
+                      : "bg-secondary border-border placeholder:text-foreground/40"
+                  }`}
+                />
+              )}
+
+              {/* Audio Analyzer */}
+              {activeInputTab === "audio" && (
+                <div className="min-h-[200px]">
+                  <AudioAnalyzer 
+                    themeMode={themeMode} 
+                    onAnalysisComplete={handleAudioAnalysisComplete}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
