@@ -98,12 +98,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <AnimatedDotsBackground />
       <Header />
       
       <main className="pt-16">
-        <HeroSection />
+        {/* Hero section with animated dots */}
+        <div className="relative">
+          <AnimatedDotsBackground />
+          <HeroSection />
+        </div>
         
+        {/* Generator section without animated dots */}
         {user ? (
           <GeneratorStudio 
             onGenerate={handleGenerate}
