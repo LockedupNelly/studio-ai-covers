@@ -807,6 +807,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
                       <div className="flex items-center gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => setShowDesignerEditDialog(true)} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
                           <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                         </Button>
@@ -815,8 +818,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </Button>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <div className={`relative aspect-square rounded-lg overflow-hidden border ${borderClass} max-w-[320px] ml-auto w-full`}>
+                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                      <div className={`relative aspect-square rounded-lg overflow-hidden border ${borderClass} w-full`}>
                         <img 
                           src={generatedImage} 
                           alt="Generated Cover Art" 
@@ -828,20 +831,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           </div>
                         )}
                       </div>
-                      <p className={`text-right text-xs ${mutedTextClass}`}>
+                      <p className={`text-center text-xs ${mutedTextClass}`}>
                         3000 × 3000px · Ready for streaming
                       </p>
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`mt-1 ml-auto ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                        className={`mt-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
                         onClick={() => setShowDesignerEditDialog(true)}
                         disabled={isGenerating}
                       >
                         <Edit3 className="w-3.5 h-3.5 mr-1" />
-                        Request real designer edits (24h)
+                        REQUEST REAL DESIGNER EDITS (24H)
                       </Button>
-                      <div className={`mt-4 rounded-lg border px-4 py-3 text-xs text-left ${
+                      <div className={`mt-3 rounded-lg border px-4 py-3 text-xs text-center w-full ${
                         themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/40 border-border"
                       }`}>
                         <p className="font-semibold mb-1">Want professional exclusive pre-made designs made by real designers?</p>
@@ -850,7 +853,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </p>
                         <Button asChild variant="outline" size="sm" className="h-8">
                           <a href="https://coverartmarket.com" target="_blank" rel="noreferrer">
-                            Visit CoverArtMarket.com
+                            VISIT COVERARTMARKET.COM
                           </a>
                         </Button>
                       </div>

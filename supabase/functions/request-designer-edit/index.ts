@@ -26,8 +26,12 @@ function sanitizeHtml(input: string): string {
     .replace(/'/g, "&#039;");
 }
 
-// Validate URL format
+// Validate URL format (including data URLs for base64 images)
 function isValidUrl(url: string): boolean {
+  // Allow base64 data URLs
+  if (url.startsWith("data:image/")) {
+    return true;
+  }
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" || parsed.protocol === "http:";
@@ -111,8 +115,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate URL format
-    if (!isValidUrl(imageUrl) || imageUrl.length > MAX_URL_LENGTH) {
+    // Validate URL format (allow larger size for base64 data URLs)
+    const maxUrlLen = imageUrl.startsWith("data:image/") ? 10000000 : MAX_URL_LENGTH;
+    if (!isValidUrl(imageUrl) || imageUrl.length > maxUrlLen) {
       return new Response(
         JSON.stringify({ error: "Invalid image URL" }),
         {
