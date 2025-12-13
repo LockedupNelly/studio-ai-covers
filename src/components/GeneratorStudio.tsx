@@ -580,6 +580,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder="Song title..."
                     value={songTitle}
                     onChange={(e) => setSongTitle(e.target.value)}
+                    disabled={isGenerating}
                     className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
@@ -591,6 +592,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder="Artist name..."
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
+                    disabled={isGenerating}
                     className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
@@ -606,6 +608,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     value={parentalAdvisory}
                     onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
                     className="flex gap-3 h-9 items-center"
+                    disabled={isGenerating}
                   >
                     <div className="flex items-center space-x-1.5">
                       <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
@@ -628,7 +631,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 {/* Tabs */}
                 <div className={`flex items-center gap-2 md:gap-4 border-b pb-2 overflow-hidden ${borderClass}`}>
                   <button 
-                    onClick={() => setActiveInputTab("text")}
+                    onClick={() => !isGenerating && setActiveInputTab("text")}
+                    disabled={isGenerating}
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "text"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
@@ -639,7 +643,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     TEXT PROMPT
                   </button>
                   <button 
-                    onClick={() => setActiveInputTab("audio")}
+                    onClick={() => !isGenerating && setActiveInputTab("audio")}
+                    disabled={isGenerating}
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "audio"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
@@ -650,7 +655,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     AUDIO ANALYZER
                   </button>
                   <button 
-                    onClick={() => setActiveInputTab("image")}
+                    onClick={() => !isGenerating && setActiveInputTab("image")}
+                    disabled={isGenerating}
                     className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "image"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
@@ -668,13 +674,21 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className={`min-h-[140px] resize-none text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"}`}
+                    disabled={isGenerating}
+                    className={`min-h-[140px] resize-none text-base ${inputBgClass} ${
+                      themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"
+                    }`}
                   />
                 )}
 
                 {/* Audio Analyzer */}
                 {activeInputTab === "audio" && (
-                  <div className="min-h-[140px]">
+                  <div className="min-h-[140px] relative">
+                    {isGenerating && (
+                      <div className="absolute inset-0 z-10 rounded-lg bg-black/40 flex items-center justify-center">
+                        <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                      </div>
+                    )}
                     <AudioAnalyzer 
                       themeMode={themeMode} 
                       onAnalysisComplete={handleAudioAnalysisComplete}
@@ -792,7 +806,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
             {/* Right Column - Generated Image or Placeholder (50%) */}
             <div className="lg:w-1/2">
-              <div className={`rounded-2xl border p-4 flex flex-col ${cardBgClass}`} style={{ maxHeight: '500px' }}>
+              <div className={`rounded-2xl border p-4 flex flex-col ${cardBgClass}`}>
                 {generatedImage ? (
                   <>
                     <div className="flex items-center justify-between mb-3">
@@ -810,25 +824,44 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <div className={`aspect-square rounded-lg overflow-hidden border ${borderClass} max-w-[280px] mx-auto w-full`}>
+                      <div className={`relative aspect-square rounded-lg overflow-hidden border ${borderClass} max-w-[320px] ml-auto w-full`}>
                         <img 
                           src={generatedImage} 
                           alt="Generated Cover Art" 
                           className="w-full h-full object-cover"
                         />
+                        {isGenerating && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <RefreshCw className="w-8 h-8 text-white animate-spin" />
+                          </div>
+                        )}
                       </div>
-                      <p className={`text-center text-xs ${mutedTextClass}`}>
+                      <p className={`text-right text-xs ${mutedTextClass}`}>
                         3000 × 3000px · Ready for streaming
                       </p>
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`mt-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                        className={`mt-1 ml-auto ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
                         onClick={() => setShowDesignerEditDialog(true)}
+                        disabled={isGenerating}
                       >
                         <Edit3 className="w-3.5 h-3.5 mr-1" />
                         Request real designer edits (24h)
                       </Button>
+                      <div className={`mt-4 rounded-lg border px-4 py-3 text-xs text-left ${
+                        themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/40 border-border"
+                      }`}>
+                        <p className="font-semibold mb-1">Want professional exclusive pre-made designs made by real designers?</p>
+                        <p className="mb-2 text-foreground/70">
+                          Browse hundreds of ready-to-use covers crafted by our design team.
+                        </p>
+                        <Button asChild variant="outline" size="sm" className="h-8">
+                          <a href="https://coverartmarket.com" target="_blank" rel="noreferrer">
+                            Visit CoverArtMarket.com
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </>
                 ) : (
