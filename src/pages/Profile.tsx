@@ -7,8 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Trash2, ArrowLeft, Image as ImageIcon, Search, Filter } from "lucide-react";
+import { Download, Trash2, ArrowLeft, Image as ImageIcon, Search, Filter, UserPlus, Copy, Check, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Generation {
   id: string;
@@ -28,6 +29,10 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGenre, setFilterGenre] = useState<string>("all");
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
 
   const genres = [
     "all",
@@ -53,8 +58,58 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       fetchGenerations();
+      fetchOrCreateReferralCode();
     }
   }, [user]);
+
+  const fetchOrCreateReferralCode = async () => {
+    if (!user) return;
+    
+    try {
+      // Check if user already has a referral code
+      const { data: existing, error: fetchError } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", user.id)
+        .is("referred_user_id", null)
+        .limit(1);
+
+      if (fetchError) {
+        console.error("Error fetching referral:", fetchError);
+        return;
+      }
+
+      if (existing && existing.length > 0) {
+        setReferralCode(existing[0].referral_code);
+      } else {
+        // Generate new referral code
+        const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const { data: newReferral, error: insertError } = await supabase
+          .from("referrals")
+          .insert({ referrer_id: user.id, referral_code: code })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Error creating referral:", insertError);
+        } else {
+          setReferralCode(newReferral.referral_code);
+        }
+      }
+
+      // Fetch all referrals for stats
+      const { data: allReferrals } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", user.id);
+
+      if (allReferrals) {
+        setReferrals(allReferrals);
+      }
+    } catch (error) {
+      console.error("Error with referral code:", error);
+    }
+  };
 
   const fetchGenerations = async () => {
     try {
@@ -120,6 +175,22 @@ const Profile = () => {
     return matchesSearch && matchesGenre;
   });
 
+  const copyReferralLink = () => {
+    if (referralCode) {
+      const link = `${window.location.origin}/?ref=${referralCode}`;
+      navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Share this link with your friends",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const convertedReferrals = referrals.filter(r => r.status === "converted").length;
+  const pendingReferrals = referrals.filter(r => r.status === "registered" && !r.credits_awarded).length;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -156,6 +227,66 @@ const Profile = () => {
                   {filteredGenerations.length} of {generations.length} cover{generations.length !== 1 ? "s" : ""}
                 </p>
               </div>
+              
+              {/* Invite Friend Button */}
+              <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Invite a Friend
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-primary" />
+                      Invite Friends, Earn Credits
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Share your unique link and earn <span className="font-semibold text-primary">5 free credits</span> when your friend makes their first purchase!
+                    </p>
+                    
+                    {referralCode && (
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input 
+                            value={`${window.location.origin}/?ref=${referralCode}`}
+                            readOnly
+                            className="bg-secondary"
+                          />
+                          <Button onClick={copyReferralLink} variant="outline" className="shrink-0">
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        
+                        <div className="bg-secondary/50 rounded-lg p-3 text-sm">
+                          <p className="font-medium mb-2">Your Referral Stats</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Converted:</span>
+                              <span className="ml-1 font-semibold">{convertedReferrals}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Pending:</span>
+                              <span className="ml-1 font-semibold">{pendingReferrals}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Credits Earned:</span>
+                              <span className="ml-1 font-semibold text-primary">{convertedReferrals * 5}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground">
+                          Credits are awarded after your friend makes their first purchase.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Search & Filter Bar */}
