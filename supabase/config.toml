@@ -1,7 +1,7 @@
 project_id = "lzgzbowypsvbabpdjdqm"
 
 [functions.generate-cover]
-verify_jwt = false
+verify_jwt = true
 
 [functions.stripe-webhook]
 verify_jwt = false
