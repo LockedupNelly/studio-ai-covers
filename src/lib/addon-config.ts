@@ -14,7 +14,7 @@ export const ADDON_PRODUCTS = {
     price: 25.00,
     priceId: "price_1SdKPaFTlHtQpdKRpxK6TbnR",
     description: "8-second loop video for Spotify backgrounds.",
-    image: "/addons/song-promo-video.gif",
+    image: "/addons/spotify-canvas.gif",
   },
   "apple-music-motion": {
     id: "apple-music-motion",

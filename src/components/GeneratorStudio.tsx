@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ZoomIn, Infinity, ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -125,7 +125,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [textStyle, setTextStyle] = useState("none");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCanvasPopup, setShowCanvasPopup] = useState(false);
-  const [activeInputTab, setActiveInputTab] = useState<"text" | "audio">("text");
+  const [activeInputTab, setActiveInputTab] = useState<"text" | "audio" | "image">("text");
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [imagePrompt, setImagePrompt] = useState("");
   const textStylesRef = useRef<HTMLDivElement>(null);
 
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
@@ -164,19 +166,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleGenerate = () => {
-    if (prompt.trim()) {
-      // Include song title, artist name, text style, and parental advisory in the prompt
-      let fullPrompt = prompt;
-      if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
-      if (artistName) fullPrompt += ` | Artist: ${artistName}`;
-      if (selectedTextStyle && selectedTextStyle.prompt) {
-        fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
-      }
-      if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
-      if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
-      
-      onGenerate(fullPrompt, genre, style, mood);
+    let basePrompt = "";
+    
+    // Handle different input modes
+    if (activeInputTab === "image" && uploadedImage && imagePrompt.trim()) {
+      basePrompt = `[Reference Image Provided] ${imagePrompt}`;
+    } else if (prompt.trim()) {
+      basePrompt = prompt;
+    } else {
+      return;
     }
+
+    // Include song title, artist name, text style, and parental advisory in the prompt
+    let fullPrompt = basePrompt;
+    if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
+    if (artistName) fullPrompt += ` | Artist: ${artistName}`;
+    if (selectedTextStyle && selectedTextStyle.prompt) {
+      fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
+    }
+    if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
+    if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
+    
+    onGenerate(fullPrompt, genre, style, mood);
   };
 
   const handleDownload = () => {
@@ -508,28 +519,39 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             {/* Right Column - Prompt */}
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex items-center gap-4 border-b border-border pb-2">
+              <div className="flex items-center gap-2 md:gap-4 border-b border-border pb-2 overflow-x-auto">
                 <button 
                   onClick={() => setActiveInputTab("text")}
-                  className={`flex items-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
+                  className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                     activeInputTab === "text"
                       ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                       : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
                   }`}
                 >
-                  <Type className="w-4 h-4" />
+                  <Type className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   TEXT PROMPT
                 </button>
                 <button 
                   onClick={() => setActiveInputTab("audio")}
-                  className={`flex items-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
+                  className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                     activeInputTab === "audio"
                       ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                       : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
                   }`}
                 >
-                  <Mic className="w-4 h-4" />
+                  <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   AUDIO ANALYZER
+                </button>
+                <button 
+                  onClick={() => setActiveInputTab("image")}
+                  className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    activeInputTab === "image"
+                      ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                      : themeMode === "light" ? "text-gray-400 border-transparent hover:text-gray-600" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                  }`}
+                >
+                  <ImagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  UPLOAD IMAGE
                 </button>
               </div>
 
@@ -556,6 +578,79 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   />
                 </div>
               )}
+
+              {/* Upload Image */}
+              {activeInputTab === "image" && (
+                <div className="min-h-[200px] space-y-4">
+                  {!uploadedImage ? (
+                    <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      themeMode === "light"
+                        ? "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                        : "border-border bg-secondary/30 hover:bg-secondary/50"
+                    }`}>
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <ImagePlus className={`w-10 h-10 mb-3 ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`} />
+                        <p className={`mb-2 text-sm ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className={`text-xs ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`}>
+                          PNG, JPG, WEBP (Max 10MB)
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 10 * 1024 * 1024) {
+                              toast.error("File size must be less than 10MB");
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setUploadedImage(ev.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <img
+                          src={uploadedImage}
+                          alt="Uploaded"
+                          className="w-full h-48 object-contain rounded-lg border border-border"
+                        />
+                        <button
+                          onClick={() => {
+                            setUploadedImage(null);
+                            setImagePrompt("");
+                          }}
+                          className={`absolute top-2 right-2 p-1.5 rounded-full ${
+                            themeMode === "light" ? "bg-white/90 text-gray-700" : "bg-card/90 text-foreground"
+                          }`}
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <Textarea
+                        placeholder="Describe what you want to change or add to this image..."
+                        value={imagePrompt}
+                        onChange={(e) => setImagePrompt(e.target.value)}
+                        className={`min-h-[100px] resize-none text-base ${
+                          themeMode === "light" 
+                            ? "bg-gray-100 border-gray-200 placeholder:text-gray-400" 
+                            : "bg-secondary border-border placeholder:text-foreground/40"
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -570,7 +665,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               variant="studio" 
               size="xl" 
               onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
+              disabled={
+                isGenerating || 
+                (activeInputTab === "text" && !prompt.trim()) ||
+                (activeInputTab === "image" && (!uploadedImage || !imagePrompt.trim()))
+              }
               className="w-full sm:w-auto"
             >
               {isGenerating ? (
