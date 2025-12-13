@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const Footer = () => {
   return (
     <footer className="border-t border-border py-8 mt-16">
@@ -10,9 +12,9 @@ export const Footer = () => {
             <p className="text-xs text-foreground/60 mt-1">DESIGN DIVISION</p>
           </div>
           <nav className="flex items-center gap-6 text-sm text-foreground/70">
-            <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
-            <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Licensing</a>
+            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+            <a href="mailto:support@coverartmaker.com" className="hover:text-primary transition-colors">Contact</a>
           </nav>
         </div>
       </div>
