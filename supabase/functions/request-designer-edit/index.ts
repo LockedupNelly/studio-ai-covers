@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -35,16 +36,9 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-// Validate email format
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 255;
-}
-
 interface DesignerEditRequest {
   imageUrl: string;
   feedback: string;
-  userEmail: string;
   userName?: string;
   songTitle?: string;
   artistName?: string;
@@ -57,15 +51,43 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const body = await req.json();
-    const { imageUrl, feedback, userEmail, userName, songTitle, artistName } = body as DesignerEditRequest;
-
-    console.log("Processing designer edit request for:", userEmail);
-
-    // Validate required fields
-    if (!imageUrl || !feedback || !userEmail) {
+    // Extract and verify the JWT token to get authenticated user
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: imageUrl, feedback, or userEmail" }),
+        JSON.stringify({ error: "Missing authorization header" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create Supabase client to verify user
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - please sign in" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Get authenticated user's email from the token (trusted source)
+    const userEmail = user.email;
+    if (!userEmail) {
+      return new Response(
+        JSON.stringify({ error: "User email not available" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -73,10 +95,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate email format
-    if (!isValidEmail(userEmail)) {
+    const body = await req.json();
+    const { imageUrl, feedback, userName, songTitle, artistName } = body as DesignerEditRequest;
+
+    console.log("Processing designer edit request for authenticated user:", userEmail);
+
+    // Validate required fields
+    if (!imageUrl || !feedback) {
       return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
+        JSON.stringify({ error: "Missing required fields: imageUrl or feedback" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -138,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Sanitize all user inputs for HTML embedding
     const safeFeedback = sanitizeHtml(feedback);
-    const safeUserName = userName ? sanitizeHtml(userName) : undefined;
+    const safeUserName = userName ? sanitizeHtml(userName) : user.user_metadata?.full_name ? sanitizeHtml(user.user_metadata.full_name) : undefined;
     const safeSongTitle = songTitle ? sanitizeHtml(songTitle) : undefined;
     const safeArtistName = artistName ? sanitizeHtml(artistName) : undefined;
     const safeUserEmail = sanitizeHtml(userEmail);
