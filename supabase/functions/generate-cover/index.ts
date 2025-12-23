@@ -105,7 +105,8 @@ serve(async (req) => {
       logStep("Using reference image for editing");
       
       const contentParts: any[] = [
-        { type: "text", text: `Edit this image to create professional album cover art in a square 1:1 aspect ratio.
+        { type: "text", text: `Edit this image to create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+
 Keep the main subject/person from the original image but transform it according to these instructions:
 ${prompt}
 
@@ -113,7 +114,14 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-IMPORTANT: Preserve the likeness and key features of the person/subject in the original image while applying the creative transformation. Make it visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music.` },
+CRITICAL REQUIREMENTS:
+1. Output resolution MUST be exactly 3000x3000 pixels
+2. Preserve the likeness and key features of the person/subject in the original image
+3. The text (song title and artist name) must be DEEPLY INTEGRATED into the artwork - not just placed on top
+4. ALL text must be FULLY VISIBLE with at least 10% margin from all edges
+5. Make it visually striking, high quality, and suitable for Spotify and Apple Music
+
+The final image should have a subtle light grey outline/border around the cover.` },
         { type: "image_url", image_url: { url: referenceImage } }
       ];
 
@@ -121,7 +129,8 @@ IMPORTANT: Preserve the likeness and key features of the person/subject in the o
       if (textStyleReferenceImage) {
         contentParts[0] = { 
           type: "text", 
-          text: `Edit this image to create professional album cover art in a square 1:1 aspect ratio.
+          text: `Edit this image to create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+
 Keep the main subject/person from the original image but transform it.
 
 ${prompt}
@@ -132,9 +141,10 @@ Mood/Vibe: ${mood}
 
 CRITICAL TEXT RULES - MANDATORY:
 1. The reference image shows styling for the SONG TITLE - replicate this exact style
-2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above and use that exact value
-3. ALL text must be FULLY VISIBLE - NEVER cut off at any edge. Keep at least 10% safe margin from all edges
+2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above
+3. ALL text must be FULLY VISIBLE with at least 10% safe margin from all edges
 4. The reference image is ONLY for text STYLE - do NOT copy its placeholder words
+5. Create a COMPLEMENTARY style for the artist name that pairs well with the song title
 
 TEXT STYLING REQUIREMENTS (from second reference image):
 - Match the exact letterform style (brush strokes, edges, distortion, thickness)
@@ -142,7 +152,11 @@ TEXT STYLING REQUIREMENTS (from second reference image):
 - Use the same color palette for the text
 - Copy the texture, imperfections, and artistic details
 
-IMPORTANT: Preserve the likeness and key features of the person/subject in the first image while applying the creative transformation and text styling from the second reference.`
+CRITICAL REQUIREMENTS:
+1. Output resolution MUST be exactly 3000x3000 pixels
+2. Text must be DEEPLY INTEGRATED into the artwork, not overlaid
+3. Add a subtle light grey outline/border around the final cover
+4. Preserve the likeness of the person/subject from the first image`
         };
         contentParts.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
         logStep("Added text style reference image");
@@ -162,7 +176,7 @@ IMPORTANT: Preserve the likeness and key features of the person/subject in the f
       // Text generation with style reference - AI sees the style to match
       logStep("Using text style reference image for generation");
       
-      const stylePrompt = `Create professional album cover art in a square 1:1 aspect ratio.
+      const stylePrompt = `Create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
 ${prompt}
 
@@ -172,9 +186,10 @@ Mood/Vibe: ${mood}
 
 CRITICAL TEXT RULES - MANDATORY:
 1. The reference image shows styling for the SONG TITLE - replicate this exact style
-2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above and use that exact value
-3. ALL text must be FULLY VISIBLE - NEVER cut off at any edge. Keep at least 10% safe margin from all edges
+2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above
+3. ALL text must be FULLY VISIBLE with at least 10% safe margin from all edges
 4. The reference image is ONLY for text STYLE - do NOT copy its placeholder words
+5. Create a COMPLEMENTARY style for the artist name that pairs well with the song title
 
 TEXT STYLING REQUIREMENTS (from reference image):
 - Match the exact letterform style (brush strokes, edges, distortion, thickness)
@@ -182,9 +197,13 @@ TEXT STYLING REQUIREMENTS (from reference image):
 - Use the same color palette for the text
 - Copy the texture, imperfections, and artistic details
 
-Generate cover art where the text looks like it was created by the SAME artist who made the reference - but using the ACTUAL song title from the prompt.
+CRITICAL REQUIREMENTS:
+1. Output resolution MUST be exactly 3000x3000 pixels
+2. Text must be DEEPLY INTEGRATED into the artwork, not just overlaid on top
+3. Add a subtle light grey outline/border around the final cover
+4. Generate cover art where the text looks like it was created by the SAME artist who made the reference
 
-Make the overall image visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music.`;
+Make the overall image visually striking, high quality, and suitable for Spotify and Apple Music.`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
@@ -201,14 +220,20 @@ Make the overall image visually striking, high quality, and suitable for music s
       };
     } else {
       // Text-only generation mode (no reference images)
-      const enhancedPrompt = `Create a professional album cover art in a square 1:1 aspect ratio. 
+      const enhancedPrompt = `Create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 Subject: ${prompt}
 
-Make it visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music. 
-The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood.toLowerCase()} atmosphere.`;
+CRITICAL REQUIREMENTS:
+1. Output resolution MUST be exactly 3000x3000 pixels
+2. Text (song title and artist name) must be DEEPLY INTEGRATED into the artwork, not just overlaid
+3. Add a subtle light grey outline/border around the final cover
+4. ALL text must be FULLY VISIBLE with at least 10% margin from edges
+5. Make it visually striking, high quality, and suitable for Spotify and Apple Music
+6. The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood?.toLowerCase() || 'dynamic'} atmosphere`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
