@@ -1,5 +1,5 @@
 // Text Style Variants Configuration
-// Each style has 10 placeholder variants ready for custom reference images
+// Only 5 styles available: Creative, Dark, Futuristic, Modern, Retro
 
 export interface TextStyleVariant {
   id: string;
@@ -24,13 +24,9 @@ const createPlaceholderVariants = (styleId: string, styleName: string, count: nu
   const variantNames: Record<string, string[]> = {
     "futuristic": ["Cyber Grid", "Hologram", "Tech Pulse", "Quantum", "Neon Matrix", "Digital Core", "Void Stream", "Laser Edge", "Circuit Flow", "Plasma Wave"],
     "dark": ["Shadow Realm", "Midnight", "Obsidian", "Eclipse", "Abyss", "Phantom", "Noir", "Twilight", "Void", "Omen"],
-    "luxury": ["Golden Era", "Platinum", "Diamond", "Royal", "Opulent", "Prestige", "Elite", "Regal", "Imperial", "Majestic"],
     "modern": ["Clean Cut", "Sharp", "Sleek", "Refined", "Polished", "Contemporary", "Streamlined", "Crisp", "Structured", "Bold"],
-    "neon": ["Electric Pink", "Cyber Blue", "Laser Green", "Hot Orange", "Purple Haze", "Rainbow Glow", "Sunset Burst", "Arctic Ice", "Fire Wire", "Prism"],
     "retro": ["70s Funk", "80s Synth", "Vintage Vibes", "Throwback", "Classic Wave", "Old School", "Disco Era", "Analog", "Cassette", "VHS"],
-    "minimal": ["Pure", "Essential", "Zen", "Simple", "Clean", "Subtle", "Refined", "Bare", "Elegant", "Quiet"],
-    "creative": ["Abstract", "Artistic", "Expressive", "Unique", "Imaginative", "Bold Vision", "Freeform", "Dynamic", "Avant-garde", "Fusion"],
-    "playful": ["Bubbly", "Fun Pop", "Cheerful", "Bouncy", "Whimsical", "Joyful", "Cartoon", "Candy", "Party", "Vibrant"]
+    "creative": ["Abstract", "Artistic", "Expressive", "Unique", "Imaginative", "Bold Vision", "Freeform", "Dynamic", "Avant-garde", "Fusion"]
   };
 
   const names = variantNames[styleId] || Array.from({ length: count }, (_, i) => `Variant ${i + 1}`);
@@ -44,17 +40,13 @@ const createPlaceholderVariants = (styleId: string, styleName: string, count: nu
   }));
 };
 
-// Master configuration of all text style variants
+// Master configuration of all text style variants - Only 5 styles available
 export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
-  "futuristic": createPlaceholderVariants("futuristic", "Futuristic"),
-  "dark": createPlaceholderVariants("dark", "Dark"),
-  "luxury": createPlaceholderVariants("luxury", "Luxury"),
-  "modern": createPlaceholderVariants("modern", "Modern"),
-  "neon": createPlaceholderVariants("neon", "Neon"),
-  "retro": createPlaceholderVariants("retro", "Retro"),
-  "minimal": createPlaceholderVariants("minimal", "Minimal"),
   "creative": createPlaceholderVariants("creative", "Creative"),
-  "playful": createPlaceholderVariants("playful", "Playful")
+  "dark": createPlaceholderVariants("dark", "Dark"),
+  "futuristic": createPlaceholderVariants("futuristic", "Futuristic"),
+  "modern": createPlaceholderVariants("modern", "Modern"),
+  "retro": createPlaceholderVariants("retro", "Retro")
 };
 
 // Get variants for a specific text style
@@ -65,4 +57,9 @@ export function getTextStyleVariants(styleId: string): TextStyleVariant[] {
 // Check if a style has variants
 export function hasVariants(styleId: string): boolean {
   return (TEXT_STYLE_VARIANTS[styleId]?.length || 0) > 0;
+}
+
+// Get all available style IDs
+export function getAvailableStyleIds(): string[] {
+  return Object.keys(TEXT_STYLE_VARIANTS);
 }
