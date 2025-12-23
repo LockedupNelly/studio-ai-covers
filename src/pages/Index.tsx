@@ -21,13 +21,13 @@ const Index = () => {
 
   const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
 
-  const handleGenerate = async (prompt: string, genre: string, style: string, mood: string, referenceImage?: string) => {
+  const handleGenerate = async (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => {
     setIsGenerating(true);
     setLastGenParams({ prompt, genre, style, mood });
     
     try {
       const { data, error } = await supabase.functions.invoke("generate-cover", {
-        body: { prompt, genre, style, mood, referenceImage },
+        body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
       });
 
       if (error) throw error;

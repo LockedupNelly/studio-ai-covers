@@ -115,17 +115,18 @@ export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
     {
       id: "neon-glow-pink-electric",
       name: "Pink Electric",
-      description: "Hot pink and cyan neon with electric glow",
-      previewImage: "/text-styles/neon-pink-electric.jpg",
-      promptInstructions: `Create text with a hot pink and electric blue neon effect. The text should have:
-- Primary color: hot pink/magenta neon (#FF1493, #FF00FF)
-- Secondary accent: electric cyan/blue highlights and glow (#00FFFF, #0080FF)
-- Intense bloom effect with light bleeding around edges
-- Dark/black background with subtle chromatic aberration
-- Scratchy, distressed brush lettering style with raw edges
-- Neon light reflection on surrounding dark surfaces
-- Slight VHS/analog distortion effect
-- Typography style: aggressive brush script, slightly dripping/melting edges`
+      description: "Hot pink and cyan neon with aggressive brush strokes",
+      previewImage: "/text-styles/neon-pink-electric.png",
+      promptInstructions: `Create text EXACTLY matching the reference image style. Critical visual elements:
+- AGGRESSIVE BRUSH STROKE lettering - NOT clean fonts, hand-painted/scratched strokes with raw jagged edges
+- HOT PINK/MAGENTA core color (#FF1493, #FF00FF) with CYAN/BLUE outer glow (#00FFFF)
+- Letters appear SLASHED/scratched into existence with paint splatter and drips
+- Intense BLOOM/GLOW effect bleeding outward from each stroke
+- Pure BLACK background for maximum contrast
+- Glitchy/distorted edges on the letters like VHS corruption
+- Light LENS FLARE and chromatic aberration around the text
+- Each letter has visible brush texture and stroke variation
+- Style: 80s retro synthwave aesthetic, aggressive and energetic`
     }
   ],
   "3d-chrome": [
