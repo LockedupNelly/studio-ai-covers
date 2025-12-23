@@ -17,7 +17,8 @@ import { AudioAnalyzer } from "@/components/AudioAnalyzer";
 import { DesignerEditDialog } from "@/components/DesignerEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
+import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
+import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string) => void;
@@ -142,7 +143,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [recentCovers, setRecentCovers] = useState<{ id: string; image_url: string }[]>([]);
   const [expandedCover, setExpandedCover] = useState<string | null>(null);
   const [showDesignerEditDialog, setShowDesignerEditDialog] = useState(false);
-
+  const [showVariantDialog, setShowVariantDialog] = useState(false);
+  const [pendingStyleId, setPendingStyleId] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
@@ -223,9 +226,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     let fullPrompt = basePrompt;
     if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
-    if (selectedTextStyle && selectedTextStyle.prompt) {
+    
+    // Use variant's detailed prompt if selected, otherwise fall back to base text style
+    if (selectedVariant && selectedVariant.promptInstructions) {
+      fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
+    } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
     }
+    
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
@@ -251,9 +259,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     let fullPrompt = suggestion.prompt;
     if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
-    if (selectedTextStyle && selectedTextStyle.prompt) {
+    
+    // Use variant's detailed prompt if selected, otherwise fall back to base text style
+    if (selectedVariant && selectedVariant.promptInstructions) {
+      fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
+    } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
     }
+    
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
@@ -510,7 +523,16 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             <Tooltip key={ts.id}>
                               <TooltipTrigger asChild>
                                 <button
-                                  onClick={() => setTextStyle(ts.id)}
+                                  onClick={() => {
+                                    // If this style has variants, show the variant dialog
+                                    if (hasVariants(ts.id)) {
+                                      setPendingStyleId(ts.id);
+                                      setShowVariantDialog(true);
+                                    } else {
+                                      setTextStyle(ts.id);
+                                      setSelectedVariant(null);
+                                    }
+                                  }}
                                   className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
                                     textStyle === ts.id
                                       ? themeMode === "light"
@@ -522,6 +544,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                   }`}
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
+                                  {hasVariants(ts.id) && (
+                                    <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                      textStyle === ts.id ? "bg-white text-primary" : "bg-primary text-primary-foreground"
+                                    }`}>
+                                      +
+                                    </span>
+                                  )}
                                   {ts.example && (
                                     <button
                                       type="button"
@@ -984,6 +1013,21 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Text Style Variant Selection Dialog */}
+      <TextStyleVariantDialog
+        open={showVariantDialog}
+        onOpenChange={setShowVariantDialog}
+        styleName={textStyles.find(t => t.id === pendingStyleId)?.name || ""}
+        styleId={pendingStyleId || ""}
+        selectedVariantId={selectedVariant?.id}
+        onSelectVariant={(variant) => {
+          setTextStyle(pendingStyleId || "");
+          setSelectedVariant(variant);
+          setPendingStyleId(null);
+          toast.success(`Selected: ${variant.name}`);
+        }}
+      />
     </section>
   );
 };
