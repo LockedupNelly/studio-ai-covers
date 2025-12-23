@@ -41,7 +41,7 @@ export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
       id: "neon-glow-pink-electric",
       name: "Pink Electric",
       description: "Hot pink and cyan neon with electric glow",
-      previewImage: "/text-styles/neon-pink.jpg",
+      previewImage: "/text-styles/neon-pink-electric.jpg",
       promptInstructions: `Create text with a hot pink and electric blue neon effect. The text should have:
 - Primary color: hot pink/magenta neon (#FF1493, #FF00FF)
 - Secondary accent: electric cyan/blue highlights and glow (#00FFFF, #0080FF)
