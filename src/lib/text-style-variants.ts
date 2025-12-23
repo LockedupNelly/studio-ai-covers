@@ -19,21 +19,11 @@ export interface TextStyleWithVariants {
   variants: TextStyleVariant[];
 }
 
-// Helper to generate placeholder variants
-const createPlaceholderVariants = (styleId: string, styleName: string, count: number = 10): TextStyleVariant[] => {
-  const variantNames: Record<string, string[]> = {
-    "futuristic": ["Cyber Grid", "Hologram", "Tech Pulse", "Quantum", "Neon Matrix", "Digital Core", "Void Stream", "Laser Edge", "Circuit Flow", "Plasma Wave"],
-    "dark": ["Shadow Realm", "Midnight", "Obsidian", "Eclipse", "Abyss", "Phantom", "Noir", "Twilight", "Void", "Omen"],
-    "modern": ["Clean Cut", "Sharp", "Sleek", "Refined", "Polished", "Contemporary", "Streamlined", "Crisp", "Structured", "Bold"],
-    "retro": ["70s Funk", "80s Synth", "Vintage Vibes", "Throwback", "Classic Wave", "Old School", "Disco Era", "Analog", "Cassette", "VHS"],
-    "creative": ["Abstract", "Artistic", "Expressive", "Unique", "Imaginative", "Bold Vision", "Freeform", "Dynamic", "Avant-garde", "Fusion"]
-  };
-
-  const names = variantNames[styleId] || Array.from({ length: count }, (_, i) => `Variant ${i + 1}`);
-
-  return names.map((name, index) => ({
+// Helper to generate variants with V1-V10 naming
+const createVariants = (styleId: string, styleName: string, count: number = 10): TextStyleVariant[] => {
+  return Array.from({ length: count }, (_, index) => ({
     id: `${styleId}-${index + 1}`,
-    name,
+    name: `V${index + 1}`,
     description: `${styleName} style variation ${index + 1}`,
     previewImage: `/text-styles/${styleId}/${styleId}-${index + 1}.png`,
     promptInstructions: `Apply the ${styleName} text style as shown in the reference image. Match the exact letterforms, effects, colors, and styling.`
@@ -42,11 +32,11 @@ const createPlaceholderVariants = (styleId: string, styleName: string, count: nu
 
 // Master configuration of all text style variants - Only 5 styles available
 export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
-  "creative": createPlaceholderVariants("creative", "Creative"),
-  "dark": createPlaceholderVariants("dark", "Dark"),
-  "futuristic": createPlaceholderVariants("futuristic", "Futuristic"),
-  "modern": createPlaceholderVariants("modern", "Modern"),
-  "retro": createPlaceholderVariants("retro", "Retro")
+  "creative": createVariants("creative", "Creative"),
+  "dark": createVariants("dark", "Dark"),
+  "futuristic": createVariants("futuristic", "Futuristic"),
+  "modern": createVariants("modern", "Modern"),
+  "retro": createVariants("retro", "Retro")
 };
 
 // Get variants for a specific text style
