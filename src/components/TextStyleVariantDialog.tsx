@@ -31,12 +31,18 @@ export function TextStyleVariantDialog({
       // Try to fetch from GitHub first, fall back to local config
       fetchVariantsFromGitHub(styleId)
         .then((githubVariants) => {
-          if (githubVariants && githubVariants.length > 0) {
+          const localVariants = getTextStyleVariants(styleId);
+
+          // If GitHub loads but some configs are broken (e.g., JSON parse error), prefer local.
+          const githubLooksUsable =
+            !!githubVariants &&
+            githubVariants.length > 0 &&
+            githubVariants.every((v) => !!v.previewImage);
+
+          if (githubLooksUsable) {
             console.log(`Loaded ${githubVariants.length} variants from GitHub for ${styleId}`);
             setVariants(githubVariants);
           } else {
-            // Fall back to local config
-            const localVariants = getTextStyleVariants(styleId);
             console.log(`Using ${localVariants.length} local variants for ${styleId}`);
             setVariants(localVariants);
           }
