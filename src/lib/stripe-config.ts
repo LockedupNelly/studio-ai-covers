@@ -1,13 +1,6 @@
 // Credit packages (one-time purchase)
 export const CREDIT_PACKAGES = [
   {
-    id: "100",
-    credits: 100,
-    price: 1,
-    priceId: "price_1ShZLYFTlHtQpdKRw3OG5qhf",
-    popular: true,
-  },
-  {
     id: "10",
     credits: 10,
     price: 5,
@@ -19,7 +12,7 @@ export const CREDIT_PACKAGES = [
     credits: 50,
     price: 20,
     priceId: "price_1SdJUbFTlHtQpdKRJDQrJSPY",
-    popular: false,
+    popular: true,
   },
   {
     id: "150",
