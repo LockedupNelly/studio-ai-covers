@@ -40,23 +40,18 @@ const genres = [
   "Classical"
 ];
 
-// Text/Typography style presets for AI generation with example images
+// Text/Typography style presets for AI generation - 9 main categories with 10 variants each
 const textStyles = [
   { id: "none", name: "No Text Style", description: "Let AI decide the typography", prompt: "", example: "" },
-  { id: "3d-chrome", name: "3D Chrome", description: "Metallic chrome with depth", prompt: "3D chrome metallic text with reflections and depth", example: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&h=200&fit=crop" },
-  { id: "neon-glow", name: "Neon Glow", description: "Vibrant neon with glow effects", prompt: "neon glowing text with bright electric colors and light bloom", example: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&h=200&fit=crop" },
-  { id: "gothic-script", name: "Gothic Script", description: "Ornate blackletter style", prompt: "ornate gothic blackletter calligraphy typography", example: "https://images.unsplash.com/photo-1515405295579-ba7b45403062?w=200&h=200&fit=crop" },
-  { id: "grunge-distressed", name: "Grunge Distressed", description: "Worn, textured, raw", prompt: "grunge distressed worn textured typography with scratches", example: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop" },
-  { id: "retro-vintage", name: "Retro Vintage", description: "Classic 70s-80s style", prompt: "retro vintage 70s 80s style typography with warm tones", example: "https://images.unsplash.com/photo-1516796181074-bf453fbfa3e6?w=200&h=200&fit=crop" },
-  { id: "minimalist-sans", name: "Minimalist Sans", description: "Clean modern typography", prompt: "clean minimalist sans-serif modern typography", example: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=200&h=200&fit=crop" },
-  { id: "hand-drawn", name: "Hand Drawn", description: "Organic sketch style", prompt: "hand-drawn organic sketch style lettering", example: "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=200&h=200&fit=crop" },
-  { id: "graffiti", name: "Graffiti", description: "Street art spray paint", prompt: "graffiti street art spray paint style bold lettering", example: "https://images.unsplash.com/photo-1520697830682-bbb6e85e2b0b?w=200&h=200&fit=crop" },
-  { id: "fire-flames", name: "Fire & Flames", description: "Burning fiery text", prompt: "text engulfed in flames and fire with embers", example: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=200&h=200&fit=crop" },
-  { id: "ice-crystal", name: "Ice Crystal", description: "Frozen crystalline style", prompt: "frozen ice crystal typography with frost and snow effects", example: "https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=200&h=200&fit=crop" },
-  { id: "gold-luxury", name: "Gold Luxury", description: "Premium gold embossed", prompt: "luxury gold embossed premium metallic text", example: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=200&h=200&fit=crop" },
-  { id: "glitch-digital", name: "Glitch Digital", description: "Cyberpunk glitch effect", prompt: "digital glitch cyberpunk distorted text with RGB split", example: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200&h=200&fit=crop" },
-  { id: "blood-horror", name: "Blood Horror", description: "Dripping horror style", prompt: "dripping blood horror style dark text", example: "https://images.unsplash.com/photo-1509248961725-aec71f3e816e?w=200&h=200&fit=crop" },
-  { id: "bubble-3d", name: "Bubble 3D", description: "Playful inflated style", prompt: "3D bubble inflated playful rounded typography", example: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?w=200&h=200&fit=crop" },
+  { id: "futuristic", name: "Futuristic", description: "Sci-fi, tech, cyber aesthetics", prompt: "futuristic sci-fi technology cyber text with holographic effects", example: "" },
+  { id: "dark", name: "Dark", description: "Moody, shadow, gothic vibes", prompt: "dark moody gothic shadow text with dramatic lighting", example: "" },
+  { id: "luxury", name: "Luxury", description: "Premium, elegant, gold accents", prompt: "luxury premium elegant text with gold metallic finish", example: "" },
+  { id: "modern", name: "Modern", description: "Clean, contemporary, sharp", prompt: "modern clean contemporary sharp typography", example: "" },
+  { id: "neon", name: "Neon", description: "Glowing, electric, vibrant", prompt: "neon glowing electric vibrant text with light bloom", example: "" },
+  { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
+  { id: "minimal", name: "Minimal", description: "Simple, refined, elegant", prompt: "minimal simple refined elegant clean typography", example: "" },
+  { id: "creative", name: "Creative", description: "Artistic, unique, expressive", prompt: "creative artistic unique expressive typography", example: "" },
+  { id: "playful", name: "Playful", description: "Fun, bouncy, colorful", prompt: "playful fun bouncy colorful cartoon text", example: "" },
 ];
 
 // Genre-based visual style presets
