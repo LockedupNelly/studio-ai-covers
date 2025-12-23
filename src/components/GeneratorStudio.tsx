@@ -1028,17 +1028,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             {/* Right Column - Generated Image or Placeholder (50%) */}
             <div className="lg:w-1/2 lg:max-h-full lg:overflow-hidden">
               <div className={`rounded-2xl border p-4 flex flex-col h-full overflow-hidden ${cardBgClass}`}>
-                {/* Progress bar during generation */}
-                {isGenerating && (
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
-                      <span className={mutedTextClass}>{progressStages[progressStage]?.progress}%</span>
-                    </div>
-                    <Progress value={progressStages[progressStage]?.progress} className="h-2" />
-                  </div>
-                )}
-
                 {generatedImage ? (
                   <>
                     <div className="flex items-center justify-between mb-3">
@@ -1121,6 +1110,17 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </p>
                       </div>
                     </div>
+
+                    {/* Progress bar during generation - below the placeholder */}
+                    {isGenerating && (
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
+                          <span className={mutedTextClass}>{progressStages[progressStage]?.progress}%</span>
+                        </div>
+                        <Progress value={progressStages[progressStage]?.progress} className="h-2" />
+                      </div>
+                    )}
 
                     {/* Divider with View Previous Link */}
                     {recentCovers.length > 0 && (
