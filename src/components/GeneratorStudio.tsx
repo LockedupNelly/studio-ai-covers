@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 import { Progress } from "@/components/ui/progress";
+import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
@@ -51,16 +52,19 @@ const textStyles = [
   { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 ];
 
-// Text color options
-const textColorOptions = [
-  { id: "ai", name: "AI Select", description: "AI integrates based on cover design" },
-  { id: "white", name: "White", description: "Clean white text" },
-  { id: "black", name: "Black", description: "Bold black text" },
-  { id: "gold", name: "Gold", description: "Luxurious gold text" },
-  { id: "silver", name: "Silver", description: "Metallic silver text" },
-  { id: "red", name: "Red", description: "Bold red text" },
-  { id: "blue", name: "Blue", description: "Cool blue text" },
-  { id: "neon", name: "Neon", description: "Glowing neon text" },
+// Progress stages for generation - more granular for smoother animation
+const progressStages = [
+  { label: "Compiling info...", progress: 5 },
+  { label: "Analyzing preferences...", progress: 12 },
+  { label: "Preparing assets...", progress: 20 },
+  { label: "Initializing generation...", progress: 28 },
+  { label: "Generating cover...", progress: 38 },
+  { label: "Rendering artwork...", progress: 50 },
+  { label: "Applying effects...", progress: 60 },
+  { label: "Designing text...", progress: 72 },
+  { label: "Integrating elements...", progress: 82 },
+  { label: "Finalizing artwork...", progress: 92 },
+  { label: "Almost ready...", progress: 96 },
 ];
 
 // Genre-based visual style presets
@@ -122,14 +126,6 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
   }
 };
 
-// Progress stages for generation
-const progressStages = [
-  { label: "Compiling info...", progress: 10 },
-  { label: "Analyzing style preferences...", progress: 25 },
-  { label: "Generating cover...", progress: 50 },
-  { label: "Designing text...", progress: 75 },
-  { label: "Finalizing artwork...", progress: 90 },
-];
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
@@ -168,23 +164,44 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
-  // Progress animation during generation
+  // Progress animation during generation - smoother with more stages
+  const [smoothProgress, setSmoothProgress] = useState(0);
+  
   useEffect(() => {
     if (isGenerating) {
       setProgressStage(0);
-      const interval = setInterval(() => {
+      setSmoothProgress(0);
+      
+      // Slower interval for stage changes (3 seconds each)
+      const stageInterval = setInterval(() => {
         setProgressStage(prev => {
           if (prev < progressStages.length - 1) {
             return prev + 1;
           }
           return prev;
         });
-      }, 2500);
-      return () => clearInterval(interval);
+      }, 3000);
+      
+      // Smooth progress animation every 100ms
+      const smoothInterval = setInterval(() => {
+        setSmoothProgress(prev => {
+          const target = progressStages[progressStage]?.progress || 0;
+          if (prev < target) {
+            return Math.min(prev + 0.5, target);
+          }
+          return prev;
+        });
+      }, 100);
+      
+      return () => {
+        clearInterval(stageInterval);
+        clearInterval(smoothInterval);
+      };
     } else {
       setProgressStage(0);
+      setSmoothProgress(0);
     }
-  }, [isGenerating]);
+  }, [isGenerating, progressStage]);
 
   const scrollTextStyles = (direction: 'left' | 'right') => {
     if (textStylesRef.current) {
@@ -636,22 +653,22 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Main Color
                       </label>
-                      <Input
-                        placeholder="e.g. Deep purple, Midnight blue..."
+                      <ColorPickerPopover
+                        label="Select Main Color"
                         value={mainColor}
-                        onChange={(e) => setMainColor(e.target.value)}
-                        className={`h-10 ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                        onChange={setMainColor}
+                        themeMode={themeMode}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Accent Color
                       </label>
-                      <Input
-                        placeholder="e.g. Gold, Neon pink..."
+                      <ColorPickerPopover
+                        label="Select Accent Color"
                         value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className={`h-10 ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                        onChange={setAccentColor}
+                        themeMode={themeMode}
                       />
                     </div>
                   </div>
@@ -659,12 +676,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   {/* Text Style Selector */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
-                        Text Style
-                      </label>
-                      <span className={`text-xs ${mutedTextClass}`}>
-                        Click to choose over 50 styles
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                          Text Style
+                        </label>
+                        <span className={`text-xs ${mutedTextClass}`}>
+                          click to choose over 50 styles
+                        </span>
+                      </div>
                     </div>
                     <div className="relative">
                       <button
@@ -681,7 +700,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           className="flex gap-2 overflow-x-auto scrollbar-hide px-6 py-2"
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
-                          {textStyles.map((ts) => (
+                          {/* Reorder: selected style goes to the end (right) */}
+                          {textStyles
+                            .slice()
+                            .sort((a, b) => {
+                              if (a.id === textStyle) return 1;
+                              if (b.id === textStyle) return -1;
+                              return 0;
+                            })
+                            .map((ts) => (
                             <Tooltip key={ts.id}>
                               <TooltipTrigger asChild>
                                 <button
@@ -698,9 +725,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                     textStyle === ts.id
                                       ? "bg-destructive text-destructive-foreground border-destructive"
                                       : themeMode === "light"
-                                        ? "bg-white text-gray-700 border-gray-300 hover:border-gray-500"
-                                        : "bg-secondary text-foreground border-border hover:border-primary/50"
-                                  }`}
+                                        ? "bg-white text-gray-400 border-gray-200 hover:border-gray-400 opacity-60"
+                                        : "bg-secondary text-foreground/50 border-border hover:border-primary/50 opacity-60"
+                                  } ${textStyle !== ts.id && textStyle !== "none" ? "opacity-50" : ""}`}
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">
                                     {ts.name}
@@ -733,21 +760,43 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Text Color */}
-                  <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                      Text Color
-                    </label>
-                    <Select value={textColor} onValueChange={setTextColor}>
-                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                        <SelectValue placeholder="Select text color..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {textColorOptions.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Text Color + Parental Advisory on same row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Text Color
+                      </label>
+                      <ColorPickerPopover
+                        label="Select Text Color"
+                        value={textColor}
+                        onChange={setTextColor}
+                        themeMode={themeMode}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                        Parental Advisory
+                      </label>
+                      <RadioGroup
+                        value={parentalAdvisory}
+                        onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
+                        className="flex gap-3 h-10 items-center"
+                        disabled={isGenerating}
+                      >
+                        <div className="flex items-center space-x-1.5">
+                          <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
+                          <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
+                            Yes
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                          <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
+                          <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
+                            No
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
                 </>
               )}
@@ -780,65 +829,52 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 </div>
               </div>
 
-              {/* Parental Advisory + Upload Inspiration Row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                    Parental Advisory
-                  </label>
-                  <RadioGroup
-                    value={parentalAdvisory}
-                    onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
-                    className="flex gap-3 h-9 items-center"
-                    disabled={isGenerating}
-                  >
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
-                      <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
-                        Yes
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
-                      <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
-                        No
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                <div className="space-y-1">
-                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                    Upload Inspiration ({inspirationImages.length}/5)
-                  </label>
-                  <div className="flex items-center gap-2 h-9">
-                    {inspirationImages.length < 5 && (
-                      <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer border transition-colors ${
-                        themeMode === "light" 
-                          ? "bg-gray-50 border-gray-300 hover:bg-gray-100 text-gray-700" 
-                          : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
-                      }`}>
-                        <Upload className="w-3.5 h-3.5" />
-                        <span className="text-xs">Add</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/png,image/jpeg,image/webp"
-                          multiple
-                          onChange={handleInspirationUpload}
-                        />
+              {/* Upload Inspiration - Its own section above input tabs */}
+              <div className={`p-4 rounded-lg border ${cardBgClass}`}>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border transition-colors ${
+                      themeMode === "light" 
+                        ? "bg-white border-gray-300 hover:bg-gray-50 text-gray-700" 
+                        : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
+                    } ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm font-medium">Upload</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/png,image/jpeg,image/webp"
+                        multiple
+                        disabled={inspirationImages.length >= 5}
+                        onChange={handleInspirationUpload}
+                      />
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                        Upload Inspiration ({inspirationImages.length}/5)
                       </label>
-                    )}
-                    {inspirationImages.map((img, idx) => (
-                      <div key={idx} className="relative w-9 h-9 rounded overflow-hidden border border-border">
-                        <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => removeInspirationImage(idx)}
-                          className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
+                    </div>
+                    {inspirationImages.length === 0 ? (
+                      <p className={`text-xs ${mutedTextClass}`}>
+                        Drag and drop or click Upload to add up to 5 inspiration images. AI will use these for visual reference but ignore any text.
+                      </p>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {inspirationImages.map((img, idx) => (
+                          <div key={idx} className="relative w-12 h-12 rounded overflow-hidden border border-border">
+                            <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              onClick={() => removeInspirationImage(idx)}
+                              className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>
@@ -1116,9 +1152,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
-                          <span className={mutedTextClass}>{progressStages[progressStage]?.progress}%</span>
+                          <span className={mutedTextClass}>{Math.round(smoothProgress)}%</span>
                         </div>
-                        <Progress value={progressStages[progressStage]?.progress} className="h-2" />
+                        <Progress value={smoothProgress} className="h-2" />
                       </div>
                     )}
 
