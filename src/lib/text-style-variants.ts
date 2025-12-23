@@ -1,27 +1,13 @@
 // Text Style Variants Configuration
-// Each text style can have multiple variants with detailed prompt instructions
-// This structure allows for GitHub-managed JSON configs to be imported
-
-import { 
-  STYLE_REGISTRY_BASE, 
-  fetchStyleIndex,
-  fetchStyleConfig,
-  fetchPromptTemplate,
-  getImageUrl,
-  buildPromptFromConfig,
-  type StyleIndexEntry,
-  type GitHubStyleConfig 
-} from './github-style-registry';
+// All style variants are defined locally for simplicity and reliability.
 
 export interface TextStyleVariant {
   id: string;
   name: string;
   description: string;
-  previewImage: string; // URL to preview image
+  previewImage: string; // URL to preview image (in public/text-styles/)
   promptInstructions: string; // Detailed AI prompt for this exact style
   referenceImages?: string[]; // Additional reference images for AI
-  stylePath?: string; // Path in GitHub registry
-  githubConfig?: GitHubStyleConfig; // Full config from GitHub
 }
 
 export interface TextStyleWithVariants {
@@ -29,72 +15,11 @@ export interface TextStyleWithVariants {
   name: string;
   description: string;
   example: string;
-  prompt: string; // Base prompt
+  prompt: string;
   variants: TextStyleVariant[];
 }
 
-// Re-export for use elsewhere
-export { STYLE_REGISTRY_BASE, fetchPromptTemplate, buildPromptFromConfig };
-
-// Map local style IDs to GitHub category names
-const STYLE_ID_TO_CATEGORY: Record<string, string> = {
-  "neon-glow": "neon",
-  "3d-chrome": "chrome",
-  "gothic-script": "gothic",
-  "grunge-distressed": "grunge",
-  "fire-flames": "fire",
-  "glitch-digital": "glitch"
-};
-
-/**
- * Fetch variants from GitHub registry and convert to local format
- * Falls back to local config if GitHub fetch fails
- */
-export async function fetchVariantsFromGitHub(styleId: string): Promise<TextStyleVariant[] | null> {
-  try {
-    const styleIndex = await fetchStyleIndex();
-    
-    if (!styleIndex) {
-      console.warn("Could not fetch style index from GitHub");
-      return null;
-    }
-
-    // Map local styleId to GitHub category
-    const category = STYLE_ID_TO_CATEGORY[styleId];
-    if (!category || !styleIndex[category]) {
-      console.warn(`No GitHub category found for ${styleId}`);
-      return null;
-    }
-
-    const entries: StyleIndexEntry[] = styleIndex[category];
-    
-    // Fetch each variant's full config
-    const variants: TextStyleVariant[] = await Promise.all(
-      entries.map(async (entry) => {
-        const config = await fetchStyleConfig(entry.path);
-        
-        return {
-          id: entry.style_id,
-          name: entry.display_name,
-          description: config?.description || "",
-          previewImage: getImageUrl(entry.path, entry.thumbnail),
-          promptInstructions: config ? JSON.stringify(config) : "", // Store full config as JSON
-          referenceImages: config?.reference_images.map(img => getImageUrl(entry.path, img.file)) || [],
-          stylePath: entry.path,
-          githubConfig: config || undefined
-        };
-      })
-    );
-
-    console.log(`Loaded ${variants.length} variants from GitHub for ${styleId}`);
-    return variants;
-  } catch (error) {
-    console.error("Error fetching variants from GitHub:", error);
-    return null;
-  }
-}
-
-// This is the master configuration - you can expand this or load from external JSON
+// Master configuration of all text style variants
 export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
   "neon-glow": [
     {
@@ -282,12 +207,12 @@ export const TEXT_STYLE_VARIANTS: Record<string, TextStyleVariant[]> = {
   ]
 };
 
-// Function to get variants for a specific text style
+// Get variants for a specific text style
 export function getTextStyleVariants(styleId: string): TextStyleVariant[] {
   return TEXT_STYLE_VARIANTS[styleId] || [];
 }
 
-// Function to check if a style has variants
+// Check if a style has variants
 export function hasVariants(styleId: string): boolean {
   return (TEXT_STYLE_VARIANTS[styleId]?.length || 0) > 0;
 }

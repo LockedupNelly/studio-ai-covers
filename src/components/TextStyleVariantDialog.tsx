@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Loader2 } from "lucide-react";
-import { TextStyleVariant, getTextStyleVariants, fetchVariantsFromGitHub } from "@/lib/text-style-variants";
+import { Check, Sparkles } from "lucide-react";
+import { TextStyleVariant, getTextStyleVariants } from "@/lib/text-style-variants";
 
 interface TextStyleVariantDialogProps {
   open: boolean;
@@ -22,36 +22,12 @@ export function TextStyleVariantDialog({
   selectedVariantId
 }: TextStyleVariantDialogProps) {
   const [variants, setVariants] = useState<TextStyleVariant[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open && styleId) {
-      setIsLoading(true);
-      
-      // Try to fetch from GitHub first, fall back to local config
-      fetchVariantsFromGitHub(styleId)
-        .then((githubVariants) => {
-          const localVariants = getTextStyleVariants(styleId);
-
-          // If GitHub loads but some configs are broken (e.g., JSON parse error), prefer local.
-          const githubLooksUsable =
-            !!githubVariants &&
-            githubVariants.length > 0 &&
-            githubVariants.every((v) => !!v.previewImage);
-
-          if (githubLooksUsable) {
-            console.log(`Loaded ${githubVariants.length} variants from GitHub for ${styleId}`);
-            setVariants(githubVariants);
-          } else {
-            console.log(`Using ${localVariants.length} local variants for ${styleId}`);
-            setVariants(localVariants);
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching variants:", error);
-          setVariants(getTextStyleVariants(styleId));
-        })
-        .finally(() => setIsLoading(false));
+      // Use local variants only - simple and reliable
+      const localVariants = getTextStyleVariants(styleId);
+      setVariants(localVariants);
     }
   }, [open, styleId]);
 
@@ -70,23 +46,11 @@ export function TextStyleVariantDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="ml-3 text-muted-foreground">Loading styles from registry...</span>
-          </div>
-        ) : variants.length === 0 ? (
+        {variants.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <span className="text-muted-foreground">No variants available for this style</span>
           </div>
         ) : (
-          <>
-            {variants[0]?.stylePath && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                Loaded from GitHub registry
-              </div>
-            )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             {variants.map((variant) => (
               <button
@@ -101,7 +65,7 @@ export function TextStyleVariantDialog({
                     : "border-border hover:border-primary/50"
                 }`}
               >
-                {/* Preview Image Placeholder */}
+                {/* Preview Image */}
                 <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
                   {variant.previewImage ? (
                     <img 
@@ -109,7 +73,6 @@ export function TextStyleVariantDialog({
                       alt={variant.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Hide broken images
                         e.currentTarget.style.display = 'none';
                       }}
                     />
@@ -141,7 +104,6 @@ export function TextStyleVariantDialog({
               </button>
             ))}
           </div>
-          </>
         )}
 
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border">
