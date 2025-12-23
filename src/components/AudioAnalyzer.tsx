@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, Music, Sparkles, X, Wand2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, Loader2, Music, Sparkles, X, Wand2, Edit3, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,6 +10,8 @@ interface AudioSuggestion {
   prompt: string;
   mood: string;
   style: string;
+  isEditing?: boolean;
+  editedPrompt?: string;
 }
 
 interface AudioAnalysisResult {
@@ -33,10 +36,42 @@ const truncateWords = (text: string, maxWords: number): string => {
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
+// Generate truly different concepts based on analysis
+const generateDifferentConcepts = (data: AudioAnalysisResult): AudioSuggestion[] => {
+  const basePrompt = data.suggestedPrompt;
+  const genre = data.suggestedGenre;
+  
+  // Create genuinely different visual concepts
+  const conceptVariations: { title: string; modifier: string; moodTwist: string; styleTwist: string }[] = [
+    {
+      title: "Concept A",
+      modifier: "with dramatic lighting and deep shadows, cinematic composition",
+      moodTwist: data.detectedMood,
+      styleTwist: data.suggestedStyle
+    },
+    {
+      title: "Concept B", 
+      modifier: "reimagined with abstract geometric shapes, vibrant colors, and surreal elements",
+      moodTwist: data.detectedMood === "Dark" ? "Mysterious" : data.detectedMood === "Euphoric" ? "Dreamy" : "Ethereal",
+      styleTwist: data.suggestedStyle === "Grunge" ? "Abstract Art" : data.suggestedStyle === "Neon Glow" ? "Surreal" : "Mixed Media"
+    }
+  ];
+
+  return conceptVariations.map(variation => ({
+    title: variation.title,
+    prompt: truncateWords(`${basePrompt} ${variation.modifier}`, 30),
+    mood: variation.moodTwist,
+    style: variation.styleTwist,
+    isEditing: false,
+    editedPrompt: ""
+  }));
+};
+
 export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggestion }: AudioAnalyzerProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
+  const [suggestions, setSuggestions] = useState<AudioSuggestion[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +92,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
       
       setSelectedFile(file);
       setAnalysisResult(null);
+      setSuggestions([]);
     }
   };
 
@@ -97,24 +133,12 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
         throw new Error(data.error);
       }
 
-      // Generate 2 suggestions based on the analysis (capped at 25 words each)
-      const suggestions: AudioSuggestion[] = [
-        {
-          title: "Concept 1",
-          prompt: truncateWords(data.suggestedPrompt, 25),
-          mood: data.detectedMood,
-          style: data.suggestedStyle
-        },
-        {
-          title: "Concept 2",
-          prompt: truncateWords(`${data.suggestedPrompt} with abstract artistic elements`, 25),
-          mood: data.detectedMood,
-          style: data.suggestedStyle
-        }
-      ];
-
-      const resultWithSuggestions = { ...data, suggestions };
+      // Generate 2 genuinely different suggestions based on the analysis
+      const differentConcepts = generateDifferentConcepts(data);
+      
+      const resultWithSuggestions = { ...data, suggestions: differentConcepts };
       setAnalysisResult(resultWithSuggestions);
+      setSuggestions(differentConcepts);
       toast.success("Audio analyzed successfully!");
     } catch (error) {
       console.error('Analysis error:', error);
@@ -122,6 +146,42 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleToggleEdit = (index: number) => {
+    setSuggestions(prev => prev.map((s, i) => {
+      if (i === index) {
+        return {
+          ...s,
+          isEditing: !s.isEditing,
+          editedPrompt: s.isEditing ? "" : s.prompt // Reset or initialize
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleUpdatePrompt = (index: number, newPrompt: string) => {
+    setSuggestions(prev => prev.map((s, i) => {
+      if (i === index) {
+        return { ...s, editedPrompt: newPrompt };
+      }
+      return s;
+    }));
+  };
+
+  const handleConfirmEdit = (index: number) => {
+    setSuggestions(prev => prev.map((s, i) => {
+      if (i === index && s.editedPrompt) {
+        return { 
+          ...s, 
+          prompt: s.editedPrompt,
+          isEditing: false,
+          editedPrompt: ""
+        };
+      }
+      return { ...s, isEditing: false };
+    }));
   };
 
   const handleGenerateSuggestion = (suggestion: AudioSuggestion) => {
@@ -133,6 +193,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
   const clearSelection = () => {
     setSelectedFile(null);
     setAnalysisResult(null);
+    setSuggestions([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -213,7 +274,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
           </Button>
         </div>
       ) : (
-        /* Analysis Results - 2 column layout */
+        /* Analysis Results - 2 different concept cards */
         <div className="space-y-3">
           {/* File info + metadata row */}
           <div className="flex items-start gap-4">
@@ -248,18 +309,18 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
             <div className={`flex-1 rounded-lg p-3 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
               <div className={`flex items-center gap-2 mb-2 ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
                 <Sparkles className="w-4 h-4" />
-                <span className="font-medium text-sm">2 Cover Concepts</span>
+                <span className="font-medium text-sm">2 Different Cover Concepts</span>
               </div>
               <div className={`flex gap-4 text-xs ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
                 <span><span className="font-medium">Genre:</span> {analysisResult.suggestedGenre}</span>
-                <span><span className="font-medium">Mood:</span> {analysisResult.detectedMood}</span>
+                <span><span className="font-medium">Base Mood:</span> {analysisResult.detectedMood}</span>
               </div>
             </div>
           </div>
 
           {/* 2 Suggestion Cards - side by side */}
           <div className="grid grid-cols-2 gap-3">
-            {analysisResult.suggestions?.map((suggestion, index) => (
+            {suggestions.map((suggestion, index) => (
               <div 
                 key={index}
                 className={`rounded-lg p-3 border ${
@@ -268,17 +329,48 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
                     : "bg-secondary/30 border-border"
                 }`}
               >
-                <p className={`font-medium text-sm mb-1 ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
-                  {suggestion.title}
-                </p>
-                <p className={`text-xs mb-3 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                  {suggestion.prompt}
-                </p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className={`font-medium text-sm ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                    {suggestion.title}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => suggestion.isEditing ? handleConfirmEdit(index) : handleToggleEdit(index)}
+                    className="h-6 px-2"
+                  >
+                    {suggestion.isEditing ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Edit3 className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+                
+                <div className={`flex gap-2 text-[10px] mb-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/50"}`}>
+                  <span className="px-1.5 py-0.5 rounded bg-secondary/50">{suggestion.mood}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-secondary/50">{suggestion.style}</span>
+                </div>
+
+                {suggestion.isEditing ? (
+                  <Textarea
+                    value={suggestion.editedPrompt}
+                    onChange={(e) => handleUpdatePrompt(index, e.target.value)}
+                    placeholder="Edit the concept..."
+                    className={`text-xs mb-3 min-h-[60px] ${themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/50 border-border"}`}
+                  />
+                ) : (
+                  <p className={`text-xs mb-3 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                    {suggestion.prompt}
+                  </p>
+                )}
+                
                 <Button
                   size="sm"
                   variant={themeMode === "light" ? "default" : "studio"}
                   onClick={() => handleGenerateSuggestion(suggestion)}
                   className="w-full"
+                  disabled={suggestion.isEditing}
                 >
                   <Wand2 className="w-3 h-3 mr-1" />
                   Generate
