@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { TextStyleVariant, getTextStyleVariants } from "@/lib/text-style-variants";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TextStyleVariantDialogProps {
   open: boolean;
@@ -22,6 +30,7 @@ export function TextStyleVariantDialog({
   selectedVariantId
 }: TextStyleVariantDialogProps) {
   const [variants, setVariants] = useState<TextStyleVariant[]>([]);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && styleId) {
@@ -35,7 +44,7 @@ export function TextStyleVariantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border">
+      <DialogContent className="sm:max-w-4xl bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -51,58 +60,81 @@ export function TextStyleVariantDialog({
             <span className="text-muted-foreground">No variants available for this style</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            {variants.map((variant) => (
-              <button
-                key={variant.id}
-                onClick={() => {
-                  onSelectVariant(variant);
-                  onOpenChange(false);
-                }}
-                className={`relative group rounded-xl overflow-hidden border-2 transition-all duration-200 text-left ${
-                  selectedVariantId === variant.id
-                    ? "border-primary ring-2 ring-primary/30"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                {/* Preview Image */}
-                <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
-                  {variant.previewImage ? (
-                    <img 
-                      src={variant.previewImage} 
-                      alt={variant.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
+          <div className="mt-4 px-8">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {variants.map((variant) => (
+                  <CarouselItem 
+                    key={variant.id} 
+                    className={`pl-2 md:pl-4 ${isMobile ? 'basis-1/2' : 'basis-1/4'}`}
+                  >
+                    <button
+                      onClick={() => {
+                        onSelectVariant(variant);
+                        onOpenChange(false);
                       }}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <Sparkles className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                        <span className="text-sm text-muted-foreground">Preview</span>
+                      className={`relative group rounded-xl overflow-hidden border-2 transition-all duration-200 text-left w-full ${
+                        selectedVariantId === variant.id
+                          ? "border-primary ring-2 ring-primary/30"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {/* Preview Image */}
+                      <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                        {variant.previewImage ? (
+                          <img 
+                            src={variant.previewImage} 
+                            alt={variant.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <Sparkles className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                              <span className="text-sm text-muted-foreground">Preview</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Selected Indicator */}
+                        {selectedVariantId === variant.id && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                        )}
+
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Selected Indicator */}
-                  {selectedVariantId === variant.id && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                  )}
 
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-
-                {/* Variant Info */}
-                <div className="p-4 bg-card">
-                  <h3 className="font-semibold text-foreground">{variant.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{variant.description}</p>
-                </div>
-              </button>
-            ))}
+                      {/* Variant Info */}
+                      <div className="p-3 bg-card">
+                        <h3 className="font-semibold text-foreground text-sm truncate">{variant.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{variant.description}</p>
+                      </div>
+                    </button>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-4 md:-left-6" />
+              <CarouselNext className="-right-4 md:-right-6" />
+            </Carousel>
+            
+            {/* Pagination indicator */}
+            <div className="flex justify-center mt-4 gap-1">
+              <span className="text-sm text-muted-foreground">
+                Swipe or use arrows to see more • {variants.length} variants
+              </span>
+            </div>
           </div>
         )}
 
