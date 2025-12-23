@@ -5,7 +5,7 @@ export const HeroSection = () => {
   return (
     <section className="relative min-h-[60vh] flex flex-col items-center justify-center pt-24 pb-12 overflow-hidden">
       {/* Background glow effect */}
-      <div className="absolute inset-0 bg-primary-glow pointer-events-none" />
+      <div className="absolute inset-0 bg-red-glow pointer-events-none" />
       
       {/* Status Badges - Horizontal */}
       <div className="flex items-center gap-3 mb-8">
