@@ -105,7 +105,7 @@ serve(async (req) => {
       logStep("Using reference image for editing");
       
       const contentParts: any[] = [
-        { type: "text", text: `Edit this image to create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+        { type: "text", text: `You are a world-class album cover designer. Edit this image to create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
 Keep the main subject/person from the original image but transform it according to these instructions:
 ${prompt}
@@ -119,9 +119,10 @@ CRITICAL REQUIREMENTS:
 2. Preserve the likeness and key features of the person/subject in the original image
 3. The text (song title and artist name) must be DEEPLY INTEGRATED into the artwork - not just placed on top
 4. ALL text must be FULLY VISIBLE with at least 10% margin from all edges
-5. Make it visually striking, high quality, and suitable for Spotify and Apple Music
+5. PHOTOREALISTIC quality - this should look like a real professional album cover
+6. Spend extra effort perfecting the REALISM and DETAIL of all elements
 
-The final image should have a subtle light grey outline/border around the cover.` },
+The final image should have a subtle 1-2px light grey border around the cover.` },
         { type: "image_url", image_url: { url: referenceImage } }
       ];
 
@@ -129,7 +130,7 @@ The final image should have a subtle light grey outline/border around the cover.
       if (textStyleReferenceImage) {
         contentParts[0] = { 
           type: "text", 
-          text: `Edit this image to create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+          text: `You are a world-class album cover designer. Edit this image to create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
 Keep the main subject/person from the original image but transform it.
 
@@ -139,24 +140,33 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-CRITICAL TEXT RULES - MANDATORY:
-1. The reference image shows styling for the SONG TITLE - replicate this exact style
-2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above
-3. ALL text must be FULLY VISIBLE with at least 10% safe margin from all edges
-4. The reference image is ONLY for text STYLE - do NOT copy its placeholder words
-5. Create a COMPLEMENTARY style for the artist name that pairs well with the song title
+=== ABSOLUTE PRIORITY: TEXT STYLE REPLICATION ===
+The SECOND reference image shows the EXACT text style you MUST replicate for the SONG TITLE. This is the #1 priority.
 
-TEXT STYLING REQUIREMENTS (from second reference image):
-- Match the exact letterform style (brush strokes, edges, distortion, thickness)
-- Replicate all glow/bloom/lighting effects around the text
-- Use the same color palette for the text
-- Copy the texture, imperfections, and artistic details
+MANDATORY TEXT STYLE REQUIREMENTS:
+1. Study the second reference image carefully - it shows a specific artistic text treatment
+2. PERFECTLY REPLICATE the exact same visual effect for the song title:
+   - Same smoke/glow/distortion/brush effects
+   - Same color tones and gradients
+   - Same texture and imperfections
+   - Same letterform style and weight
+   - Same artistic technique (smoke, neon, 3D, grunge, etc.)
+3. The song title text should look IDENTICAL in style to the reference - as if made by the same artist
+4. Create a COMPLEMENTARY but simpler style for the artist name that pairs well
+
+CRITICAL DO NOTs:
+- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt above
+- NEVER use generic fonts or cheap-looking text like basic grunge or distressed fonts
+- NEVER ignore the reference style - it's the most important element
+- NEVER make the text look overlaid or pasted on - it must be INTEGRATED
 
 CRITICAL REQUIREMENTS:
 1. Output resolution MUST be exactly 3000x3000 pixels
-2. Text must be DEEPLY INTEGRATED into the artwork, not overlaid
-3. Add a subtle light grey outline/border around the final cover
-4. Preserve the likeness of the person/subject from the first image`
+2. Preserve the likeness of the person/subject from the first image
+3. PHOTOREALISTIC quality throughout
+4. Add a subtle 1-2px light grey border around the final cover
+
+The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`
         };
         contentParts.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
         logStep("Added text style reference image");
@@ -176,34 +186,45 @@ CRITICAL REQUIREMENTS:
       // Text generation with style reference - AI sees the style to match
       logStep("Using text style reference image for generation");
       
-      const stylePrompt = `Create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+      const stylePrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
+USER REQUEST:
 ${prompt}
 
-Genre: ${genre}
-Visual Style: ${style}
-Mood/Vibe: ${mood}
+MUSIC CONTEXT:
+- Genre: ${genre}
+- Visual Style: ${style}
+- Mood/Vibe: ${mood}
 
-CRITICAL TEXT RULES - MANDATORY:
-1. The reference image shows styling for the SONG TITLE - replicate this exact style
-2. NEVER write "Song Title" literally - extract the ACTUAL song title from the prompt above
-3. ALL text must be FULLY VISIBLE with at least 10% safe margin from all edges
-4. The reference image is ONLY for text STYLE - do NOT copy its placeholder words
-5. Create a COMPLEMENTARY style for the artist name that pairs well with the song title
+=== ABSOLUTE PRIORITY: TEXT STYLE REPLICATION ===
+The attached reference image shows the EXACT text style you MUST replicate for the SONG TITLE. This is the #1 priority.
 
-TEXT STYLING REQUIREMENTS (from reference image):
-- Match the exact letterform style (brush strokes, edges, distortion, thickness)
-- Replicate all glow/bloom/lighting effects around the text
-- Use the same color palette for the text
-- Copy the texture, imperfections, and artistic details
+MANDATORY TEXT STYLE REQUIREMENTS:
+1. Study the reference image carefully - it shows a specific artistic text treatment
+2. PERFECTLY REPLICATE the exact same visual effect for the song title:
+   - Same smoke/glow/distortion/brush effects
+   - Same color tones and gradients
+   - Same texture and imperfections
+   - Same letterform style and weight
+   - Same artistic technique (smoke, neon, 3D, grunge, etc.)
+3. The song title text should look IDENTICAL in style to the reference - as if made by the same artist
+4. Create a COMPLEMENTARY but simpler style for the artist name that pairs well
 
-CRITICAL REQUIREMENTS:
-1. Output resolution MUST be exactly 3000x3000 pixels
-2. Text must be DEEPLY INTEGRATED into the artwork, not just overlaid on top
-3. Add a subtle light grey outline/border around the final cover
-4. Generate cover art where the text looks like it was created by the SAME artist who made the reference
+CRITICAL DO NOTs:
+- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt above
+- NEVER use generic fonts or cheap-looking text like basic grunge, distressed, or scratchy fonts
+- NEVER ignore the reference style - it's the most important element
+- NEVER make the text look overlaid or pasted on - it must be INTEGRATED into the artwork
 
-Make the overall image visually striking, high quality, and suitable for Spotify and Apple Music.`;
+QUALITY REQUIREMENTS:
+1. Ultra-high resolution 3000x3000 pixels
+2. PHOTOREALISTIC quality - this should look like a real professional album cover
+3. Spend extra effort perfecting the REALISM and DETAIL of all elements
+4. The artwork should be gallery-worthy, not AI-generated looking
+5. Text must be deeply integrated into the scene, not floating on top
+6. Add a subtle 1-2px light grey border around the final cover
+
+The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
@@ -220,7 +241,7 @@ Make the overall image visually striking, high quality, and suitable for Spotify
       };
     } else {
       // Text-only generation mode (no reference images)
-      const enhancedPrompt = `Create professional album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+      const enhancedPrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
 Genre: ${genre}
 Visual Style: ${style}
@@ -230,10 +251,13 @@ Subject: ${prompt}
 CRITICAL REQUIREMENTS:
 1. Output resolution MUST be exactly 3000x3000 pixels
 2. Text (song title and artist name) must be DEEPLY INTEGRATED into the artwork, not just overlaid
-3. Add a subtle light grey outline/border around the final cover
+3. Add a subtle 1-2px light grey border around the final cover
 4. ALL text must be FULLY VISIBLE with at least 10% margin from edges
-5. Make it visually striking, high quality, and suitable for Spotify and Apple Music
-6. The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood?.toLowerCase() || 'dynamic'} atmosphere`;
+5. PHOTOREALISTIC quality - this should look like a real professional album cover
+6. Spend extra effort perfecting the REALISM and DETAIL of all elements
+7. The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood?.toLowerCase() || 'dynamic'} atmosphere
+
+The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
