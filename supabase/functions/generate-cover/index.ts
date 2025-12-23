@@ -140,31 +140,36 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-=== ABSOLUTE PRIORITY: TEXT STYLE REPLICATION ===
-The SECOND reference image shows the EXACT text style you MUST replicate for the SONG TITLE. This is the #1 priority.
+=== CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
+The SECOND reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
 
-MANDATORY TEXT STYLE REQUIREMENTS:
-1. Study the second reference image carefully - it shows a specific artistic text treatment
-2. PERFECTLY REPLICATE the exact same visual effect for the song title:
-   - Same smoke/glow/distortion/brush effects
-   - Same color tones and gradients
-   - Same texture and imperfections
-   - Same letterform style and weight
-   - Same artistic technique (smoke, neon, 3D, grunge, etc.)
-3. The song title text should look IDENTICAL in style to the reference - as if made by the same artist
-4. Create a COMPLEMENTARY but simpler style for the artist name that pairs well
+MANDATORY RULES - READ CAREFULLY:
+1. ONLY use the text style shown in the provided reference image - NO OTHER STYLES
+2. DO NOT mix, blend, or incorporate elements from any other text styles
+3. DO NOT add smoke effects unless the reference specifically shows smoke
+4. DO NOT add glow effects unless the reference specifically shows glow
+5. DO NOT add distortion unless the reference specifically shows distortion
+6. MATCH THE EXACT VISUAL TREATMENT: letterforms, colors, textures, effects - EXACTLY as shown
 
-CRITICAL DO NOTs:
-- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt above
-- NEVER use generic fonts or cheap-looking text like basic grunge or distressed fonts
-- NEVER ignore the reference style - it's the most important element
-- NEVER make the text look overlaid or pasted on - it must be INTEGRATED
+WHAT TO REPLICATE FROM THE REFERENCE:
+- The exact font style/weight
+- The exact color palette
+- The exact effects (only if present in reference)
+- The exact texture treatment
+- The exact artistic technique
 
-CRITICAL REQUIREMENTS:
-1. Output resolution MUST be exactly 3000x3000 pixels
+STRICT PROHIBITIONS:
+- NEVER add effects not present in the reference image
+- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt
+- NEVER use generic or cheap fonts
+- NEVER make the text look overlaid - it must be INTEGRATED
+
+ADDITIONAL REQUIREMENTS:
+1. Output resolution MUST be exactly 3000x3000 pixels (SQUARE - not landscape, not portrait)
 2. Preserve the likeness of the person/subject from the first image
 3. PHOTOREALISTIC quality throughout
-4. Add a subtle 1-2px light grey border around the final cover
+4. Create a COMPLEMENTARY but simpler style for the artist name
+5. Add a subtle 1-2px light grey border around the final cover
 
 The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`
         };
@@ -186,7 +191,7 @@ The final result should be indistinguishable from a cover designed by a top musi
       // Text generation with style reference - AI sees the style to match
       logStep("Using text style reference image for generation");
       
-      const stylePrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+      const stylePrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
 
 USER REQUEST:
 ${prompt}
@@ -196,33 +201,40 @@ MUSIC CONTEXT:
 - Visual Style: ${style}
 - Mood/Vibe: ${mood}
 
-=== ABSOLUTE PRIORITY: TEXT STYLE REPLICATION ===
-The attached reference image shows the EXACT text style you MUST replicate for the SONG TITLE. This is the #1 priority.
+=== CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
+The attached reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
 
-MANDATORY TEXT STYLE REQUIREMENTS:
-1. Study the reference image carefully - it shows a specific artistic text treatment
-2. PERFECTLY REPLICATE the exact same visual effect for the song title:
-   - Same smoke/glow/distortion/brush effects
-   - Same color tones and gradients
-   - Same texture and imperfections
-   - Same letterform style and weight
-   - Same artistic technique (smoke, neon, 3D, grunge, etc.)
-3. The song title text should look IDENTICAL in style to the reference - as if made by the same artist
-4. Create a COMPLEMENTARY but simpler style for the artist name that pairs well
+MANDATORY RULES - READ CAREFULLY:
+1. ONLY use the text style shown in the provided reference image - NO OTHER STYLES
+2. DO NOT mix, blend, or incorporate elements from any other text styles
+3. DO NOT add smoke effects unless the reference SPECIFICALLY shows smoke
+4. DO NOT add glow effects unless the reference SPECIFICALLY shows glow
+5. DO NOT add distortion unless the reference SPECIFICALLY shows distortion
+6. DO NOT add any visual effects not clearly present in the reference
+7. MATCH THE EXACT VISUAL TREATMENT: letterforms, colors, textures, effects - EXACTLY as shown
 
-CRITICAL DO NOTs:
-- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt above
-- NEVER use generic fonts or cheap-looking text like basic grunge, distressed, or scratchy fonts
-- NEVER ignore the reference style - it's the most important element
-- NEVER make the text look overlaid or pasted on - it must be INTEGRATED into the artwork
+WHAT TO REPLICATE FROM THE REFERENCE:
+- The exact font style and weight
+- The exact color palette used
+- The exact effects (ONLY if present in reference)
+- The exact texture treatment
+- The exact artistic technique shown
+
+STRICT PROHIBITIONS:
+- NEVER add effects not present in the reference image
+- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt
+- NEVER use generic, cheap, or basic grunge/distressed fonts
+- NEVER make the text look overlaid or pasted - it must be INTEGRATED into the artwork
+- NEVER interpret the style - COPY it exactly
 
 QUALITY REQUIREMENTS:
-1. Ultra-high resolution 3000x3000 pixels
+1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE)
 2. PHOTOREALISTIC quality - this should look like a real professional album cover
 3. Spend extra effort perfecting the REALISM and DETAIL of all elements
 4. The artwork should be gallery-worthy, not AI-generated looking
-5. Text must be deeply integrated into the scene, not floating on top
-6. Add a subtle 1-2px light grey border around the final cover
+5. Text must be deeply integrated into the scene
+6. Create a COMPLEMENTARY but simpler style for the artist name
+7. Add a subtle 1-2px light grey border around the final cover
 
 The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
 
@@ -241,7 +253,7 @@ The final result should be indistinguishable from a cover designed by a top musi
       };
     } else {
       // Text-only generation mode (no reference images)
-      const enhancedPrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
+      const enhancedPrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
 
 Genre: ${genre}
 Visual Style: ${style}
@@ -249,7 +261,7 @@ Mood/Vibe: ${mood}
 Subject: ${prompt}
 
 CRITICAL REQUIREMENTS:
-1. Output resolution MUST be exactly 3000x3000 pixels
+1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
 2. Text (song title and artist name) must be DEEPLY INTEGRATED into the artwork, not just overlaid
 3. Add a subtle 1-2px light grey border around the final cover
 4. ALL text must be FULLY VISIBLE with at least 10% margin from edges
