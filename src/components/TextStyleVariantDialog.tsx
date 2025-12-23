@@ -67,13 +67,20 @@ export function TextStyleVariantDialog({
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="ml-3 text-muted-foreground">Loading variants...</span>
+            <span className="ml-3 text-muted-foreground">Loading styles from registry...</span>
           </div>
         ) : variants.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <span className="text-muted-foreground">No variants available</span>
+            <span className="text-muted-foreground">No variants available for this style</span>
           </div>
         ) : (
+          <>
+            {variants[0]?.stylePath && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                Loaded from GitHub registry
+              </div>
+            )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             {variants.map((variant) => (
               <button
@@ -128,6 +135,7 @@ export function TextStyleVariantDialog({
               </button>
             ))}
           </div>
+          </>
         )}
 
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border">
