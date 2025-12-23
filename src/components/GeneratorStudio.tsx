@@ -231,12 +231,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     // Use variant's detailed prompt if selected, otherwise fall back to base text style
     if (selectedVariant && selectedVariant.promptInstructions) {
       fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
-      // If the variant has a preview image, use it as reference for the AI to see
-      if (selectedVariant.previewImage) {
-        // Convert relative path to absolute URL for the edge function
-        textStyleRefImage = selectedVariant.previewImage.startsWith('http') 
-          ? selectedVariant.previewImage 
-          : `${window.location.origin}${selectedVariant.previewImage}`;
+
+      // Provide a reference image for the AI to match whenever possible.
+      const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
+      if (rawRef) {
+        // Convert relative path to absolute URL for the backend/AI gateway
+        const normalized = rawRef.startsWith("/") ? rawRef : `/${rawRef}`;
+        textStyleRefImage = rawRef.startsWith("http") ? rawRef : `${window.location.origin}${normalized}`;
       }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
@@ -273,11 +274,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     // Use variant's detailed prompt if selected, otherwise fall back to base text style
     if (selectedVariant && selectedVariant.promptInstructions) {
       fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
-      // If the variant has a preview image, use it as reference for the AI to see
-      if (selectedVariant.previewImage) {
-        textStyleRefImage = selectedVariant.previewImage.startsWith('http') 
-          ? selectedVariant.previewImage 
-          : `${window.location.origin}${selectedVariant.previewImage}`;
+
+      // Provide a reference image for the AI to match whenever possible.
+      const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
+      if (rawRef) {
+        const normalized = rawRef.startsWith("/") ? rawRef : `/${rawRef}`;
+        textStyleRefImage = rawRef.startsWith("http") ? rawRef : `${window.location.origin}${normalized}`;
       }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
