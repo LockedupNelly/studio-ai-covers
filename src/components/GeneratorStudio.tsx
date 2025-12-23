@@ -229,15 +229,21 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
     
     // Use variant's detailed prompt if selected, otherwise fall back to base text style
+    console.log("[DEBUG] handleGenerate - selectedVariant:", selectedVariant);
+    console.log("[DEBUG] handleGenerate - selectedTextStyle:", selectedTextStyle);
+    console.log("[DEBUG] handleGenerate - textStyle:", textStyle);
+    
     if (selectedVariant && selectedVariant.promptInstructions) {
       fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
 
       // Provide a reference image for the AI to match whenever possible.
       const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
+      console.log("[DEBUG] handleGenerate - rawRef:", rawRef);
       if (rawRef) {
         // Convert relative path to absolute URL for the backend/AI gateway
         const normalized = rawRef.startsWith("/") ? rawRef : `/${rawRef}`;
         textStyleRefImage = rawRef.startsWith("http") ? rawRef : `${window.location.origin}${normalized}`;
+        console.log("[DEBUG] handleGenerate - textStyleRefImage:", textStyleRefImage);
       }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
@@ -1040,6 +1046,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
         styleId={pendingStyleId || ""}
         selectedVariantId={selectedVariant?.id}
         onSelectVariant={(variant) => {
+          console.log("[DEBUG] onSelectVariant - variant:", variant);
           setTextStyle(pendingStyleId || "");
           setSelectedVariant(variant);
           setPendingStyleId(null);
