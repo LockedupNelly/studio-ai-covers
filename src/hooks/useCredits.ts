@@ -26,7 +26,7 @@ export function useCredits() {
 
       if (error) {
         console.error("Error fetching credits:", error);
-        setCredits(0);
+        // Don't clobber the UI with 0 on transient errors; keep the previous value.
       } else {
         setCredits(data?.credits ?? 0);
       }
@@ -38,7 +38,7 @@ export function useCredits() {
       }
     } catch (error) {
       console.error("Error fetching credits:", error);
-      setCredits(0);
+      // Keep last known credits on errors.
     } finally {
       setLoading(false);
     }

@@ -83,57 +83,10 @@ serve(async (req) => {
           }
         }
 
-        // Check and deduct credits if not unlimited
+        // Credits are deducted AFTER a successful generation.
+        // This prevents users from losing credits when the AI request fails or times out.
         if (!hasUnlimitedAccess) {
-          const { data: creditsData, error: creditsError } = await supabaseClient
-            .from("user_credits")
-            .select("credits")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (creditsError) {
-            logStep("Error fetching credits", { error: creditsError.message });
-            throw new Error("Failed to check credits");
-          }
-
-          const currentCredits = creditsData?.credits ?? 0;
-          logStep("Current credits", { credits: currentCredits });
-
-          if (currentCredits < 1) {
-            return new Response(
-              JSON.stringify({ error: "No credits remaining. Please purchase more credits to continue." }),
-              { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-
-          // Deduct 1 credit
-          if (creditsData) {
-            const { error: updateError } = await supabaseClient
-              .from("user_credits")
-              .update({ credits: currentCredits - 1 })
-              .eq("user_id", userId);
-
-            if (updateError) {
-              logStep("Error deducting credit", { error: updateError.message });
-              throw new Error("Failed to deduct credit");
-            }
-          } else {
-            // User has no credits record, create one with -1 (shouldn't happen normally)
-            return new Response(
-              JSON.stringify({ error: "No credits available. Please purchase credits to continue." }),
-              { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-
-          // Log the transaction
-          await supabaseClient.from("credit_transactions").insert({
-            user_id: userId,
-            amount: -1,
-            type: "generation",
-            description: `Generated ${genre} cover art`,
-          });
-
-          logStep("Credit deducted", { newBalance: currentCredits - 1 });
+          logStep("Credits will be deducted after generation (not upfront)");
         }
       }
     }
@@ -254,28 +207,39 @@ The image should be bold, memorable, and capture the essence of ${genre} music w
       };
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const controller = new AbortController();
+    const timeoutMs = 55_000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        logStep("AI request timed out", { timeoutMs });
+        return new Response(
+          JSON.stringify({ error: "Generation timed out. Please try again." }),
+          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw e;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
       logStep("AI gateway error", { status: response.status, error: errorText });
-      
+
       if (response.status === 429) {
-        // Refund the credit on rate limit
-        if (userId && !hasUnlimitedAccess) {
-          await supabaseClient
-            .from("user_credits")
-            .update({ credits: supabaseClient.rpc("increment_credits", { user_id: userId }) })
-            .eq("user_id", userId);
-        }
-        
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -283,11 +247,11 @@ The image should be bold, memorable, and capture the essence of ${genre} music w
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please try again later." }),
+          JSON.stringify({ error: "AI service credits exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
@@ -302,6 +266,49 @@ The image should be bold, memorable, and capture the essence of ${genre} music w
     }
 
     logStep("Cover generated successfully");
+
+    // Deduct 1 credit only after we have a generated image (prevents accidental credit loss).
+    if (userId && !hasUnlimitedAccess) {
+      const { data: creditsData, error: creditsError } = await supabaseClient
+        .from("user_credits")
+        .select("credits")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (creditsError) {
+        logStep("Error fetching credits (post-generation)", { error: creditsError.message });
+        throw new Error("Failed to check credits");
+      }
+
+      const currentCredits = creditsData?.credits ?? 0;
+      logStep("Current credits (post-generation)", { credits: currentCredits });
+
+      if (currentCredits < 1) {
+        return new Response(
+          JSON.stringify({ error: "No credits remaining. Please purchase more credits to continue." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: updateError } = await supabaseClient
+        .from("user_credits")
+        .update({ credits: currentCredits - 1 })
+        .eq("user_id", userId);
+
+      if (updateError) {
+        logStep("Error deducting credit (post-generation)", { error: updateError.message });
+        throw new Error("Failed to deduct credit");
+      }
+
+      await supabaseClient.from("credit_transactions").insert({
+        user_id: userId,
+        amount: -1,
+        type: "generation",
+        description: `Generated ${genre} cover art`,
+      });
+
+      logStep("Credit deducted (post-generation)", { newBalance: currentCredits - 1 });
+    }
 
     return new Response(
       JSON.stringify({ imageUrl }),
