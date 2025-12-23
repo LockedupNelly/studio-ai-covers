@@ -9,6 +9,7 @@ const corsHeaders = {
 
 // Price IDs for credit packages (one-time)
 const CREDIT_PRICES = {
+  "100": "price_1ShZLYFTlHtQpdKRw3OG5qhf",
   "10": "price_1SdJUPFTlHtQpdKR3VROMY2P",
   "50": "price_1SdJUbFTlHtQpdKRJDQrJSPY",
   "150": "price_1SdJUlFTlHtQpdKRBrIVTSJK",

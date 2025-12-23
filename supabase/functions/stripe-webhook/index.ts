@@ -9,6 +9,7 @@ const corsHeaders = {
 
 // Credit amounts for each package
 const CREDIT_AMOUNTS: Record<string, number> = {
+  "100": 100,
   "10": 10,
   "50": 50,
   "150": 150,
