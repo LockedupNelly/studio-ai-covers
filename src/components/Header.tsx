@@ -110,7 +110,7 @@ export const Header = () => {
                 ) : (
                   <>
                     <Coins className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">{credits ?? 0}</span>
+                    <span className="text-sm font-medium text-primary">{credits ?? "—"}</span>
                   </>
                 )}
               </button>
@@ -140,7 +140,7 @@ export const Header = () => {
                     ) : (
                       <>
                         <Coins className="w-3 h-3" />
-                        {credits ?? 0} credits available
+                        {credits ?? "—"} credits available
                       </>
                     )}
                   </div>
