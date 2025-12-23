@@ -2,12 +2,20 @@
 // Each text style can have multiple variants with detailed prompt instructions
 // This structure allows for GitHub-managed JSON configs to be imported
 
+import { 
+  STYLE_REGISTRY_BASE, 
+  fetchStyleFromRegistry, 
+  resolveReferenceImages,
+  type GitHubStyleConfig 
+} from './github-style-registry';
+
 export interface TextStyleVariant {
   id: string;
   name: string;
   description: string;
   previewImage: string; // URL to preview image
   promptInstructions: string; // Detailed AI prompt for this exact style
+  referenceImages?: string[]; // Additional reference images for AI
 }
 
 export interface TextStyleWithVariants {
@@ -17,6 +25,33 @@ export interface TextStyleWithVariants {
   example: string;
   prompt: string; // Base prompt
   variants: TextStyleVariant[];
+}
+
+// Re-export the registry base URL for use elsewhere
+export { STYLE_REGISTRY_BASE };
+
+/**
+ * Fetch variants from GitHub registry and convert to local format
+ * Falls back to local config if GitHub fetch fails
+ */
+export async function fetchVariantsFromGitHub(styleId: string): Promise<TextStyleVariant[] | null> {
+  const githubConfig = await fetchStyleFromRegistry(styleId);
+  
+  if (!githubConfig) {
+    return null;
+  }
+
+  // Convert GitHub format to local format
+  return githubConfig.variants.map(variant => ({
+    id: variant.id,
+    name: variant.name,
+    description: variant.description,
+    previewImage: variant.reference_images[0] 
+      ? `${STYLE_REGISTRY_BASE}${styleId}/${variant.reference_images[0].file}`
+      : `/text-styles/${variant.id}.jpg`,
+    promptInstructions: variant.prompt_instructions,
+    referenceImages: resolveReferenceImages(styleId, variant.reference_images)
+  }));
 }
 
 // This is the master configuration - you can expand this or load from external JSON
