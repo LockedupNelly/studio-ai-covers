@@ -130,13 +130,19 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-CRITICAL TEXT RULES - READ CAREFULLY:
-1. NEVER write "Song Title" literally - use ONLY the actual song/title text provided in the prompt above
-2. Text must NEVER be cut off at edges - keep ALL text FULLY VISIBLE within the image bounds
-3. Position text with safe margins (at least 5% from any edge) - center, bottom-center, or other placements are fine
-4. The second reference image is ONLY for TEXT STYLE - do NOT copy its words, only the visual style
+CRITICAL TEXT RULES - MANDATORY:
+1. The reference image shows styling for BOTH "Song Title" AND "Artist Name" - you must style BOTH elements the same way
+2. NEVER write "Song Title" or "Artist Name" literally - extract the ACTUAL song title and artist name from the prompt above and use those exact values
+3. ALL text must be FULLY VISIBLE - NEVER cut off at any edge. Keep at least 10% safe margin from all edges
+4. The reference image is ONLY for text STYLE and LAYOUT - do NOT copy its placeholder words
+5. Apply the IDENTICAL text style to both the song title AND artist name
 
-TEXT STYLING: Match the letterform style, glow effects, colors, and brushstroke characteristics from the second reference image precisely.
+TEXT STYLING REQUIREMENTS (from second reference image):
+- Match the exact letterform style (brush strokes, edges, distortion, thickness)
+- Replicate all glow/bloom/lighting effects around the text
+- Use the same color palette for the text
+- Copy the texture, imperfections, and artistic details
+- Maintain the same relative positioning of song title vs artist name as shown
 
 IMPORTANT: Preserve the likeness and key features of the person/subject in the first image while applying the creative transformation and text styling from the second reference.`
         };
@@ -166,20 +172,21 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-CRITICAL TEXT RULES - READ CAREFULLY:
-1. NEVER write "Song Title" literally - use ONLY the actual song/title text provided in the prompt above
-2. Text must NEVER be cut off at edges - keep ALL text FULLY VISIBLE within the image bounds
-3. Position text with safe margins (at least 5% from any edge) - center, bottom-center, or other placements are fine
-4. The reference image is ONLY for TEXT STYLE - do NOT copy the words from it, only the visual style
+CRITICAL TEXT RULES - MANDATORY:
+1. The reference image shows styling for BOTH "Song Title" AND "Artist Name" - you must style BOTH elements the same way
+2. NEVER write "Song Title" or "Artist Name" literally - extract the ACTUAL song title and artist name from the prompt above and use those exact values
+3. ALL text must be FULLY VISIBLE - NEVER cut off at any edge. Keep at least 10% safe margin from all edges
+4. The reference image is ONLY for text STYLE and LAYOUT - do NOT copy its placeholder words
+5. Apply the IDENTICAL text style to both the song title AND artist name
 
-TEXT STYLING FROM REFERENCE: Study the attached reference image and replicate its text style:
-- The letterform style (brush strokes, edges, distortion)
-- The glow/bloom effects around the text
-- The color palette and lighting
-- The texture and imperfections in the strokes
-- The overall aesthetic of the lettering
+TEXT STYLING REQUIREMENTS (from reference image):
+- Match the exact letterform style (brush strokes, edges, distortion, thickness)
+- Replicate all glow/bloom/lighting effects around the text
+- Use the same color palette for the text
+- Copy the texture, imperfections, and artistic details
+- Maintain the same relative positioning of song title vs artist name as shown in the reference
 
-Generate the cover art with text that looks like it was created by the SAME artist who made the reference, but using the ACTUAL song title from the prompt.
+Generate cover art where the text looks like it was created by the SAME artist who made the reference - but using the ACTUAL song title and artist name from the prompt.
 
 Make the overall image visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music.`;
 
