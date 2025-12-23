@@ -130,7 +130,13 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-TEXT STYLING: The second reference image shows the EXACT text style to replicate for any text/title in the cover. Match the letterform style, glow effects, colors, and brushstroke characteristics precisely. The text should look like it was created by the same artist as the reference.
+CRITICAL TEXT RULES - READ CAREFULLY:
+1. NEVER write "Song Title" literally - use ONLY the actual song/title text provided in the prompt above
+2. Text must NEVER be cut off at edges - keep ALL text FULLY VISIBLE within the image bounds
+3. Position text with safe margins (at least 5% from any edge) - center, bottom-center, or other placements are fine
+4. The second reference image is ONLY for TEXT STYLE - do NOT copy its words, only the visual style
+
+TEXT STYLING: Match the letterform style, glow effects, colors, and brushstroke characteristics from the second reference image precisely.
 
 IMPORTANT: Preserve the likeness and key features of the person/subject in the first image while applying the creative transformation and text styling from the second reference.`
         };
@@ -160,14 +166,20 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 
-CRITICAL TEXT STYLING INSTRUCTION: The attached reference image shows the EXACT text style you MUST replicate for any text/title in this cover art. Study the reference image carefully and match:
+CRITICAL TEXT RULES - READ CAREFULLY:
+1. NEVER write "Song Title" literally - use ONLY the actual song/title text provided in the prompt above
+2. Text must NEVER be cut off at edges - keep ALL text FULLY VISIBLE within the image bounds
+3. Position text with safe margins (at least 5% from any edge) - center, bottom-center, or other placements are fine
+4. The reference image is ONLY for TEXT STYLE - do NOT copy the words from it, only the visual style
+
+TEXT STYLING FROM REFERENCE: Study the attached reference image and replicate its text style:
 - The letterform style (brush strokes, edges, distortion)
 - The glow/bloom effects around the text
-- The color palette (pink/magenta core, cyan outer glow if shown)
+- The color palette and lighting
 - The texture and imperfections in the strokes
-- The overall aggressive/scratched aesthetic if present
+- The overall aesthetic of the lettering
 
-Generate the cover art with text that looks like it was created by the SAME artist who made the reference. The text style must be nearly identical to the reference.
+Generate the cover art with text that looks like it was created by the SAME artist who made the reference, but using the ACTUAL song title from the prompt.
 
 Make the overall image visually striking, high quality, and suitable for music streaming platforms like Spotify and Apple Music.`;
 
