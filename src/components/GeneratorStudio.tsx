@@ -21,7 +21,7 @@ import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 
 interface GeneratorStudioProps {
-  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string) => void;
+  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
   generatedImage: string | null;
   isGenerating: boolean;
 }
@@ -211,6 +211,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
     let basePrompt = "";
     let refImage: string | undefined = undefined;
+    let textStyleRefImage: string | undefined = undefined;
     
     // Handle different input modes
     if (activeInputTab === "image" && uploadedImage) {
@@ -230,6 +231,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     // Use variant's detailed prompt if selected, otherwise fall back to base text style
     if (selectedVariant && selectedVariant.promptInstructions) {
       fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
+      // If the variant has a preview image, use it as reference for the AI to see
+      if (selectedVariant.previewImage) {
+        // Convert relative path to absolute URL for the edge function
+        textStyleRefImage = selectedVariant.previewImage.startsWith('http') 
+          ? selectedVariant.previewImage 
+          : `${window.location.origin}${selectedVariant.previewImage}`;
+      }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
     }
@@ -237,7 +245,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
-    onGenerate(fullPrompt, genre, style, mood, refImage);
+    onGenerate(fullPrompt, genre, style, mood, refImage, textStyleRefImage);
   };
 
   const handleGenerateFromSuggestion = (suggestion: { prompt: string; mood: string; style: string }, suggestedGenre: string) => {
@@ -260,9 +268,17 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
     
+    let textStyleRefImage: string | undefined = undefined;
+    
     // Use variant's detailed prompt if selected, otherwise fall back to base text style
     if (selectedVariant && selectedVariant.promptInstructions) {
       fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
+      // If the variant has a preview image, use it as reference for the AI to see
+      if (selectedVariant.previewImage) {
+        textStyleRefImage = selectedVariant.previewImage.startsWith('http') 
+          ? selectedVariant.previewImage 
+          : `${window.location.origin}${selectedVariant.previewImage}`;
+      }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
     }
@@ -270,7 +286,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
-    onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood);
+    onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, undefined, textStyleRefImage);
   };
 
   const handleDownload = () => {
