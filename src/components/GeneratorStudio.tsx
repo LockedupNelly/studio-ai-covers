@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink, Maximize2, X, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
+import { Progress } from "@/components/ui/progress";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
@@ -40,78 +41,95 @@ const genres = [
   "Classical"
 ];
 
-// Text/Typography style presets for AI generation - 9 main categories with 10 variants each
+// Text/Typography style presets - Only 5 main categories + AI Select
 const textStyles = [
-  { id: "none", name: "No Text Style", description: "Let AI decide the typography", prompt: "", example: "" },
-  { id: "futuristic", name: "Futuristic", description: "Sci-fi, tech, cyber aesthetics", prompt: "futuristic sci-fi technology cyber text with holographic effects", example: "" },
-  { id: "dark", name: "Dark", description: "Moody, shadow, gothic vibes", prompt: "dark moody gothic shadow text with dramatic lighting", example: "" },
-  { id: "luxury", name: "Luxury", description: "Premium, elegant, gold accents", prompt: "luxury premium elegant text with gold metallic finish", example: "" },
-  { id: "modern", name: "Modern", description: "Clean, contemporary, sharp", prompt: "modern clean contemporary sharp typography", example: "" },
-  { id: "neon", name: "Neon", description: "Glowing, electric, vibrant", prompt: "neon glowing electric vibrant text with light bloom", example: "" },
-  { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
-  { id: "minimal", name: "Minimal", description: "Simple, refined, elegant", prompt: "minimal simple refined elegant clean typography", example: "" },
+  { id: "none", name: "AI Select", description: "AI selects the best typography based on your cover", prompt: "", example: "" },
   { id: "creative", name: "Creative", description: "Artistic, unique, expressive", prompt: "creative artistic unique expressive typography", example: "" },
-  { id: "playful", name: "Playful", description: "Fun, bouncy, colorful", prompt: "playful fun bouncy colorful cartoon text", example: "" },
+  { id: "dark", name: "Dark", description: "Moody, shadow, gothic vibes", prompt: "dark moody gothic shadow text with dramatic lighting", example: "" },
+  { id: "futuristic", name: "Futuristic", description: "Sci-fi, tech, cyber aesthetics", prompt: "futuristic sci-fi technology cyber text with holographic effects", example: "" },
+  { id: "modern", name: "Modern", description: "Clean, contemporary, sharp", prompt: "modern clean contemporary sharp typography", example: "" },
+  { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
+];
+
+// Text color options
+const textColorOptions = [
+  { id: "ai", name: "AI Select", description: "AI integrates based on cover design" },
+  { id: "white", name: "White", description: "Clean white text" },
+  { id: "black", name: "Black", description: "Bold black text" },
+  { id: "gold", name: "Gold", description: "Luxurious gold text" },
+  { id: "silver", name: "Silver", description: "Metallic silver text" },
+  { id: "red", name: "Red", description: "Bold red text" },
+  { id: "blue", name: "Blue", description: "Cool blue text" },
+  { id: "neon", name: "Neon", description: "Glowing neon text" },
 ];
 
 // Genre-based visual style presets
 const genreStyles: Record<string, { styles: string[]; moods: string[]; description: string }> = {
   "Hip-Hop / Rap": {
-    styles: ["Grunge Collage", "Dark Texture", "Street Art", "Vintage Film"],
-    moods: ["Aggressive", "Dark", "Mysterious", "Raw"],
+    styles: ["None", "Grunge Collage", "Dark Texture", "Street Art", "Vintage Film"],
+    moods: ["None", "Aggressive", "Dark", "Mysterious", "Raw"],
     description: "Gritty textures, torn paper, xerox aesthetics"
   },
   "Pop": {
-    styles: ["Bright & Bold", "Minimalist", "Gradient Glow", "Retro Pop"],
-    moods: ["Euphoric", "Uplifting", "Playful", "Vibrant"],
+    styles: ["None", "Bright & Bold", "Minimalist", "Gradient Glow", "Retro Pop"],
+    moods: ["None", "Euphoric", "Uplifting", "Playful", "Vibrant"],
     description: "Clean, colorful, eye-catching visuals"
   },
   "EDM": {
-    styles: ["Neon Glow", "Cyberpunk", "Abstract Waves", "Laser Grid"],
-    moods: ["Euphoric", "Electric", "Intense", "Hypnotic"],
+    styles: ["None", "Neon Glow", "Cyberpunk", "Abstract Waves", "Laser Grid"],
+    moods: ["None", "Euphoric", "Electric", "Intense", "Hypnotic"],
     description: "Vibrant neon, glow effects, futuristic feel"
   },
   "R&B": {
-    styles: ["Smooth Gradient", "Luxury Minimal", "Soft Focus", "Night Aesthetic"],
-    moods: ["Romantic", "Sensual", "Chill", "Intimate"],
+    styles: ["None", "Smooth Gradient", "Luxury Minimal", "Soft Focus", "Night Aesthetic"],
+    moods: ["None", "Romantic", "Sensual", "Chill", "Intimate"],
     description: "Smooth gradients, elegant, intimate vibes"
   },
   "Rock": {
-    styles: ["Grunge", "Distressed", "High Contrast", "Vintage Band"],
-    moods: ["Aggressive", "Raw", "Rebellious", "Powerful"],
+    styles: ["None", "Grunge", "Distressed", "High Contrast", "Vintage Band"],
+    moods: ["None", "Aggressive", "Raw", "Rebellious", "Powerful"],
     description: "Raw textures, bold contrasts, vintage feel"
   },
   "Alternative": {
-    styles: ["Abstract Art", "Surreal", "Experimental", "Mixed Media"],
-    moods: ["Melancholic", "Mysterious", "Ethereal", "Introspective"],
+    styles: ["None", "Abstract Art", "Surreal", "Experimental", "Mixed Media"],
+    moods: ["None", "Melancholic", "Mysterious", "Ethereal", "Introspective"],
     description: "Artistic, unconventional, thought-provoking"
   },
   "Indie": {
-    styles: ["Film Grain", "Polaroid", "Hand-drawn", "Lo-fi"],
-    moods: ["Nostalgic", "Dreamy", "Warm", "Authentic"],
+    styles: ["None", "Film Grain", "Polaroid", "Hand-drawn", "Lo-fi"],
+    moods: ["None", "Nostalgic", "Dreamy", "Warm", "Authentic"],
     description: "Vintage warmth, authentic, handcrafted feel"
   },
   "Metal": {
-    styles: ["Dark Gothic", "Skull Art", "Fire & Flames", "Brutal"],
-    moods: ["Aggressive", "Dark", "Intense", "Chaotic"],
+    styles: ["None", "Dark Gothic", "Skull Art", "Fire & Flames", "Brutal"],
+    moods: ["None", "Aggressive", "Dark", "Intense", "Chaotic"],
     description: "Dark imagery, intense, powerful visuals"
   },
   "Country": {
-    styles: ["Natural Scenery", "Rustic Wood", "Golden Hour", "Americana"],
-    moods: ["Warm", "Nostalgic", "Peaceful", "Down-to-earth"],
+    styles: ["None", "Natural Scenery", "Rustic Wood", "Golden Hour", "Americana"],
+    moods: ["None", "Warm", "Nostalgic", "Peaceful", "Down-to-earth"],
     description: "Light, scenic, calming natural aesthetics"
   },
   "Jazz": {
-    styles: ["Smoky Club", "Art Deco", "Classic Noir", "Sophisticated"],
-    moods: ["Smooth", "Sophisticated", "Mysterious", "Timeless"],
+    styles: ["None", "Smoky Club", "Art Deco", "Classic Noir", "Sophisticated"],
+    moods: ["None", "Smooth", "Sophisticated", "Mysterious", "Timeless"],
     description: "Classic, sophisticated, timeless elegance"
   },
   "Classical": {
-    styles: ["Elegant", "Baroque", "Orchestral", "Minimalist"],
-    moods: ["Grand", "Peaceful", "Dramatic", "Refined"],
+    styles: ["None", "Elegant", "Baroque", "Orchestral", "Minimalist"],
+    moods: ["None", "Grand", "Peaceful", "Dramatic", "Refined"],
     description: "Elegant, refined, artistic compositions"
   }
 };
+
+// Progress stages for generation
+const progressStages = [
+  { label: "Compiling info...", progress: 10 },
+  { label: "Analyzing style preferences...", progress: 25 },
+  { label: "Generating cover...", progress: 50 },
+  { label: "Designing text...", progress: 75 },
+  { label: "Finalizing artwork...", progress: 90 },
+];
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
@@ -121,18 +139,22 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
   const [genre, setGenre] = useState("Hip-Hop / Rap");
-  const [style, setStyle] = useState("Grunge Collage");
-  const [mood, setMood] = useState("Aggressive");
+  const [style, setStyle] = useState("None");
+  const [mood, setMood] = useState("None");
   const [studioMode, setStudioMode] = useState<"basic" | "advanced">("basic");
   const [coverCount, setCoverCount] = useState<"1" | "2">("1");
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
   const [textStyle, setTextStyle] = useState("none");
+  const [textColor, setTextColor] = useState("ai");
+  const [mainColor, setMainColor] = useState("");
+  const [accentColor, setAccentColor] = useState("");
   
   const [showCanvasPopup, setShowCanvasPopup] = useState(false);
   const [activeInputTab, setActiveInputTab] = useState<"text" | "audio" | "image">("text");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState("");
+  const [inspirationImages, setInspirationImages] = useState<string[]>([]);
   const textStylesRef = useRef<HTMLDivElement>(null);
   const [previewStyle, setPreviewStyle] = useState<{ id: string; name: string; description: string; example: string } | null>(null);
   const [recentCovers, setRecentCovers] = useState<{ id: string; image_url: string }[]>([]);
@@ -141,8 +163,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [showVariantDialog, setShowVariantDialog] = useState(false);
   const [pendingStyleId, setPendingStyleId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [progressStage, setProgressStage] = useState(0);
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
+
+  // Progress animation during generation
+  useEffect(() => {
+    if (isGenerating) {
+      setProgressStage(0);
+      const interval = setInterval(() => {
+        setProgressStage(prev => {
+          if (prev < progressStages.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 2500);
+      return () => clearInterval(interval);
+    } else {
+      setProgressStage(0);
+    }
+  }, [isGenerating]);
 
   const scrollTextStyles = (direction: 'left' | 'right') => {
     if (textStylesRef.current) {
@@ -197,6 +239,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
   };
 
+  const handleInspirationUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const remaining = 5 - inspirationImages.length;
+    const filesToProcess = Array.from(files).slice(0, remaining);
+
+    filesToProcess.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Each file must be less than 10MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setInspirationImages(prev => [...prev, ev.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeInspirationImage = (index: number) => {
+    setInspirationImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleGenerate = () => {
     // Require core metadata first
     if (!songTitle.trim() || !artistName.trim()) {
@@ -223,16 +289,27 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (songTitle) fullPrompt += ` | Song Title: ${songTitle}`;
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
     
+    // Add color preferences
+    if (mainColor) fullPrompt += ` | Main color: ${mainColor}`;
+    if (accentColor) fullPrompt += ` | Accent color: ${accentColor}`;
+    if (textColor !== "ai") fullPrompt += ` | Text color: ${textColor}`;
+
+    // Add inspiration images instruction
+    if (inspirationImages.length > 0) {
+      fullPrompt += ` | Use the provided inspiration images for visual reference, but ignore any text in them. Only add the song title and artist name provided.`;
+    }
+    
     // Use variant's details if selected, otherwise fall back to base text style
     if (selectedVariant) {
       if (selectedVariant.promptInstructions) {
         fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
       } else {
-        // GitHub variant configs can fail to parse; still force the AI to copy the style from the reference image.
         fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Match the EXACT text style shown in the provided reference image (letterforms, brush strokes, glow, colors, texture).`;
       }
 
-      // Always provide a reference image for the AI to match.
+      // Create complementary artist name styling
+      fullPrompt += ` | ARTIST NAME STYLING: Create a text design for the artist name that complements the chosen song title text style while maintaining visual hierarchy.`;
+
       const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
       if (rawRef) {
         const normalized = rawRef.startsWith("/") ? rawRef : `/${rawRef}`;
@@ -240,12 +317,22 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
+      fullPrompt += ` | ARTIST NAME STYLING: Create a complementary text design for the artist name that pairs well with the song title typography.`;
+    } else {
+      // AI Select mode in basic - let AI choose text design
+      fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Choose an appropriate and integrated text style for the song title and artist name that fits the overall cover design. The text should feel integrated into the artwork, not just placed on top.`;
     }
     
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
-    onGenerate(fullPrompt, genre, style, mood, refImage, textStyleRefImage);
+    // Critical: Ensure text is integrated
+    fullPrompt += " | CRITICAL: The text (song title and artist name) must be deeply integrated into the cover design, not just overlaid. The text should feel like part of the artwork with effects, textures, or styling that matches the overall aesthetic.";
+    
+    // Always generate at 3000x3000
+    fullPrompt += " | Generate at exactly 3000x3000 pixels resolution (2K quality).";
+    
+    onGenerate(fullPrompt, genre, style === "None" ? "" : style, mood === "None" ? "" : mood, refImage, textStyleRefImage);
   };
 
   const handleGenerateFromSuggestion = (suggestion: { prompt: string; mood: string; style: string }, suggestedGenre: string) => {
@@ -270,13 +357,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     
     let textStyleRefImage: string | undefined = undefined;
     
-    // Use variant's details if selected, otherwise fall back to base text style
     if (selectedVariant) {
       if (selectedVariant.promptInstructions) {
         fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
       } else {
-        fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Match the EXACT text style shown in the provided reference image (letterforms, brush strokes, glow, colors, texture).`;
+        fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Match the EXACT text style shown in the provided reference image.`;
       }
+
+      fullPrompt += ` | ARTIST NAME STYLING: Create a complementary text design for the artist name.`;
 
       const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
       if (rawRef) {
@@ -285,10 +373,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       }
     } else if (selectedTextStyle && selectedTextStyle.prompt) {
       fullPrompt += ` | Typography style: ${selectedTextStyle.prompt}`;
+    } else {
+      fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Choose an appropriate integrated text style for the song title and artist name.`;
     }
     
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
+    
+    fullPrompt += " | CRITICAL: The text must be deeply integrated into the cover design.";
+    fullPrompt += " | Generate at exactly 3000x3000 pixels resolution.";
     
     onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, undefined, textStyleRefImage);
   };
@@ -306,12 +399,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     setPrompt(result.suggestedPrompt);
     setMood(result.detectedMood);
     
-    // Update genre if it's valid
     if (genres.includes(result.suggestedGenre)) {
       setGenre(result.suggestedGenre);
       const genreData = genreStyles[result.suggestedGenre];
       if (genreData) {
-        // Try to match the suggested style, otherwise use the first one
         if (genreData.styles.includes(result.suggestedStyle)) {
           setStyle(result.suggestedStyle);
         } else {
@@ -335,11 +426,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   return (
     <section className="py-12 relative z-10 bg-background">
       <div className="container mx-auto px-4">
-        <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 ${
+        <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 transition-opacity ${
           themeMode === "light" 
             ? "bg-white border-gray-200" 
             : "bg-card border-border"
-        }`}>
+        } ${isGenerating ? "opacity-60 pointer-events-none" : ""}`}>
           {/* Header */}
           <div className="flex flex-col gap-4 mb-6">
             {/* Title Row */}
@@ -352,7 +443,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <h2 className={`font-display text-xl md:text-2xl tracking-wide ${textClass}`}>
                         DESIGN STUDIO
                       </h2>
-                      {/* Token Info - directly beside header */}
+                      {/* Token Info */}
                       <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
                         themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"
                       }`}>
@@ -382,7 +473,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Controls Row */}
               <div className="flex flex-wrap items-center gap-3 md:gap-4">
-                {/* Covers to Generate - moved to header */}
+                {/* Covers to Generate */}
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
                     Covers
@@ -452,54 +543,74 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             </div>
           </div>
 
-          {/* Main content - Two column layout - left column determines height */}
+          {/* Main content - Two column layout */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left Column - Controls & Prompt (50%) - this column determines the section height */}
+            {/* Left Column - Controls & Prompt (50%) */}
             <div className="lg:w-1/2 space-y-4 lg:flex-shrink-0">
-              {/* Genre Select */}
-              <div className="space-y-2">
-                <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
-                  Select Genre
-                </label>
-                <Select value={genre} onValueChange={handleGenreChange}>
-                  <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                    <SelectValue placeholder="Select genre..." className={themeMode === "light" ? "text-gray-900" : ""} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    {genres.map((g) => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Basic Mode Info OR Advanced Controls */}
               {studioMode === "basic" ? (
-                <div className={`p-4 rounded-lg border ${cardBgClass}`}>
-                  <p className={`text-sm ${mutedTextClass}`}>
-                    <span className={`font-medium ${themeMode === "light" ? "text-gray-800" : "text-primary"}`}>Basic Mode:</span> Visual style and mood are automatically optimized.
-                  </p>
-                  <p className={`text-xs mt-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/50"}`}>
-                    Switch to Advanced for full control including text styles.
-                  </p>
-                </div>
-              ) : (
                 <>
-                  {/* Visual Style */}
+                  {/* Genre Select */}
                   <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                      Visual Style
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                      Select Genre
                     </label>
-                  <Select value={style} onValueChange={setStyle}>
+                    <Select value={genre} onValueChange={handleGenreChange}>
                       <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                        <SelectValue placeholder="Select style..." />
+                        <SelectValue placeholder="Select genre..." className={themeMode === "light" ? "text-gray-900" : ""} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {currentGenreData.styles.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        {genres.map((g) => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className={`p-4 rounded-lg border ${cardBgClass}`}>
+                    <p className={`text-sm ${mutedTextClass}`}>
+                      <span className={`font-medium ${themeMode === "light" ? "text-gray-800" : "text-primary"}`}>Basic Mode:</span> Visual style, mood, and text design are automatically optimized.
+                    </p>
+                    <p className={`text-xs mt-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/50"}`}>
+                      Switch to Advanced for full control including text styles and colors.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Genre + Visual Style on same row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                        Genre
+                      </label>
+                      <Select value={genre} onValueChange={handleGenreChange}>
+                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Select genre..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {genres.map((g) => (
+                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Visual Style
+                      </label>
+                      <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Select style..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {currentGenreData.styles.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Mood / Vibe */}
@@ -507,7 +618,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                       Mood / Vibe
                     </label>
-                  <Select value={mood} onValueChange={setMood}>
+                    <Select value={mood} onValueChange={setMood}>
                       <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
                         <SelectValue placeholder="Select mood..." />
                       </SelectTrigger>
@@ -519,11 +630,42 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </Select>
                   </div>
 
+                  {/* Main Color + Accent Color */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Main Color
+                      </label>
+                      <Input
+                        placeholder="e.g. Deep purple, Midnight blue..."
+                        value={mainColor}
+                        onChange={(e) => setMainColor(e.target.value)}
+                        className={`h-10 ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Accent Color
+                      </label>
+                      <Input
+                        placeholder="e.g. Gold, Neon pink..."
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className={`h-10 ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                      />
+                    </div>
+                  </div>
+
                   {/* Text Style Selector */}
                   <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
-                      Text Style
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                        Text Style
+                      </label>
+                      <span className={`text-xs ${mutedTextClass}`}>
+                        Click to choose over 50 styles
+                      </span>
+                    </div>
                     <div className="relative">
                       <button
                         onClick={() => scrollTextStyles('left')}
@@ -544,7 +686,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => {
-                                    // If this style has variants, show the variant dialog
                                     if (hasVariants(ts.id)) {
                                       setPendingStyleId(ts.id);
                                       setShowVariantDialog(true);
@@ -555,48 +696,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                   }}
                                   className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
                                     textStyle === ts.id
-                                      ? themeMode === "light"
-                                        ? "bg-gray-800 text-white border-gray-800"
-                                        : "bg-primary text-primary-foreground border-primary"
+                                      ? "bg-destructive text-destructive-foreground border-destructive"
                                       : themeMode === "light"
                                         ? "bg-white text-gray-700 border-gray-300 hover:border-gray-500"
                                         : "bg-secondary text-foreground border-border hover:border-primary/50"
                                   }`}
                                 >
-                                  <span className="text-sm font-medium whitespace-nowrap">{ts.name}</span>
+                                  <span className="text-sm font-medium whitespace-nowrap">
+                                    {ts.name}
+                                    {selectedVariant && textStyle === ts.id && (
+                                      <span className="ml-1">({selectedVariant.name})</span>
+                                    )}
+                                  </span>
                                   {hasVariants(ts.id) && (
                                     <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                                      textStyle === ts.id ? "bg-white text-primary" : "bg-primary text-primary-foreground"
+                                      textStyle === ts.id ? "bg-white text-destructive" : "bg-destructive text-destructive-foreground"
                                     }`}>
                                       +
                                     </span>
                                   )}
-                                  {ts.example && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPreviewStyle({
-                                          id: ts.id,
-                                          name: ts.name,
-                                          description: ts.description,
-                                          example: ts.example,
-                                        });
-                                      }}
-                                      className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${
-                                        textStyle === ts.id 
-                                          ? "bg-white/10 text-white/80" 
-                                          : themeMode === "light" ? "bg-gray-100 text-gray-500" : "bg-card/80 text-foreground/60"
-                                      }`}
-                                    >
-                                      <Info className="w-3 h-3" />
-                                    </button>
-                                  )}
                                 </button>
                               </TooltipTrigger>
-                              {ts.example && (
-                                <TooltipContent side="top" className="hidden" />
-                              )}
+                              <TooltipContent side="top" className="hidden" />
                             </Tooltip>
                           ))}
                         </div>
@@ -610,6 +731,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
+                  </div>
+
+                  {/* Text Color */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                      Text Color
+                    </label>
+                    <Select value={textColor} onValueChange={setTextColor}>
+                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectValue placeholder="Select text color..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {textColorOptions.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </>
               )}
@@ -642,7 +780,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 </div>
               </div>
 
-              {/* Covers to Generate + Parental Advisory Row */}
+              {/* Parental Advisory + Upload Inspiration Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
@@ -667,6 +805,41 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </Label>
                     </div>
                   </RadioGroup>
+                </div>
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                    Upload Inspiration ({inspirationImages.length}/5)
+                  </label>
+                  <div className="flex items-center gap-2 h-9">
+                    {inspirationImages.length < 5 && (
+                      <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer border transition-colors ${
+                        themeMode === "light" 
+                          ? "bg-gray-50 border-gray-300 hover:bg-gray-100 text-gray-700" 
+                          : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
+                      }`}>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span className="text-xs">Add</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/png,image/jpeg,image/webp"
+                          multiple
+                          onChange={handleInspirationUpload}
+                        />
+                      </label>
+                    )}
+                    {inspirationImages.map((img, idx) => (
+                      <div key={idx} className="relative w-9 h-9 rounded overflow-hidden border border-border">
+                        <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeInspirationImage(idx)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -780,12 +953,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         />
                       </label>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="relative">
+                      <div className="flex gap-3">
+                        {/* Image on left */}
+                        <div className="relative w-32 h-32 flex-shrink-0">
                           <img
                             src={uploadedImage}
                             alt="Uploaded"
-                            className={`w-full h-28 object-contain rounded-lg border ${borderClass}`}
+                            className={`w-full h-full object-cover rounded-lg border ${borderClass}`}
                           />
                           <button
                             onClick={() => {
@@ -799,12 +973,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             <RefreshCw className="w-4 h-4" />
                           </button>
                         </div>
-                        <Textarea
-                          placeholder="Describe what you want to change or add to this image..."
-                          value={imagePrompt}
-                          onChange={(e) => setImagePrompt(e.target.value)}
-                          className={`min-h-[60px] resize-none text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"}`}
-                        />
+                        {/* Text box on right */}
+                        <div className="flex-1">
+                          <Textarea
+                            placeholder="Describe what you want to change or add to this image..."
+                            value={imagePrompt}
+                            onChange={(e) => setImagePrompt(e.target.value)}
+                            className={`h-32 resize-none text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"}`}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -848,14 +1025,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               )}
             </div>
 
-            {/* Right Column - Generated Image or Placeholder (50%) - clips to left column height */}
+            {/* Right Column - Generated Image or Placeholder (50%) */}
             <div className="lg:w-1/2 lg:max-h-full lg:overflow-hidden">
               <div className={`rounded-2xl border p-4 flex flex-col h-full overflow-hidden ${cardBgClass}`}>
+                {/* Progress bar during generation */}
+                {isGenerating && (
+                  <div className="mb-4 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
+                      <span className={mutedTextClass}>{progressStages[progressStage]?.progress}%</span>
+                    </div>
+                    <Progress value={progressStages[progressStage]?.progress} className="h-2" />
+                  </div>
+                )}
+
                 {generatedImage ? (
                   <>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
                       <div className="flex items-center gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => setShowFullscreen(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => setShowDesignerEditDialog(true)} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
                           <Edit3 className="w-3.5 h-3.5" />
                         </Button>
@@ -868,7 +1059,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                      <div className={`relative aspect-square rounded-lg overflow-hidden border ${borderClass} w-full`}>
+                      <div className={`relative aspect-square rounded-lg overflow-hidden w-full border-2 ${
+                        themeMode === "light" ? "border-gray-300" : "border-gray-500"
+                      }`}>
                         <img 
                           src={generatedImage} 
                           alt="Generated Cover Art" 
@@ -912,8 +1105,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   <div className="flex flex-col h-full">
                     {/* Locked Square Placeholder fills most of card */}
                     <div className="flex-1 flex items-center justify-center">
-                      <div className={`aspect-square w-full max-w-[360px] rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center mx-auto ${
-                        themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-border bg-secondary/30"
+                      <div className={`aspect-square w-full max-w-[360px] rounded-lg border-2 flex flex-col items-center justify-center text-center mx-auto ${
+                        themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-gray-500 bg-secondary/30"
                       }`}>
                         <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${
                           themeMode === "light" ? "bg-gray-200" : "bg-secondary"
@@ -1003,6 +1196,35 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 alt="Previous cover"
                 className="w-full h-full object-cover"
               />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fullscreen Cover View */}
+      <Dialog open={showFullscreen} onOpenChange={setShowFullscreen}>
+        <DialogContent className="max-w-4xl bg-black/95 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Your Cover Art</DialogTitle>
+          </DialogHeader>
+          {generatedImage && (
+            <div className="flex flex-col items-center gap-4">
+              <div className="aspect-square w-full max-w-2xl rounded-lg overflow-hidden border-2 border-gray-500">
+                <img
+                  src={generatedImage}
+                  alt="Generated cover art"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={handleDownload} className="border-gray-600 text-white hover:bg-gray-800">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button variant="outline" onClick={() => setShowFullscreen(false)} className="border-gray-600 text-white hover:bg-gray-800">
+                  Close
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
