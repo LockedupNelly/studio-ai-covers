@@ -397,7 +397,98 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       throw new Error("No image generated");
     }
 
-    logStep("Cover generated successfully");
+    logStep("Pass 1 complete - initial cover generated");
+
+    // === PASS 2: TEXT INTEGRATION POLISH ===
+    // Run a second AI call to improve how the text integrates with the artwork
+    logStep("Starting Pass 2 - Text integration polish");
+    
+    const textPolishPrompt = `You are a professional graphic designer reviewing an album cover. Your ONLY task is to improve how the text integrates with the artwork.
+
+The song title is: "${actualSongTitle || 'as shown'}"
+The artist name is: "${actualArtistName || 'as shown'}"
+
+=== YOUR MISSION ===
+Make the text look like it was DESIGNED WITH the artwork, not placed ON TOP.
+
+=== IMPROVEMENTS TO MAKE ===
+1. Add subtle shadows behind text that match the scene's lighting direction
+2. Blend text edges naturally into the background where appropriate
+3. Ensure text colors complement and integrate with the artwork's palette
+4. Add subtle texture or environmental effects to the text (matching the scene - like slight dust, light leaks, atmospheric haze)
+5. Make sure text has proper depth - it should feel part of the scene, not floating above it
+6. If the scene has light sources, ensure text reacts to them subtly
+
+=== STRICT RULES ===
+- DO NOT change the background artwork or composition AT ALL
+- DO NOT change the position of the text
+- DO NOT change what the text says - keep the EXACT same text content
+- DO NOT add new text elements
+- DO NOT crop or resize the image
+- Keep the EXACT same 3000x3000 pixel dimensions
+- The text must remain fully legible and visible
+- Output must extend edge-to-edge with NO borders
+
+=== QUALITY ===
+Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
+
+    const polishRequestBody = {
+      model: "google/gemini-2.5-flash-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: textPolishPrompt },
+            { type: "image_url", image_url: { url: imageUrl } }
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    };
+
+    const polishController = new AbortController();
+    const polishTimeoutMs = 45_000;
+    const polishTimeout = setTimeout(() => polishController.abort(), polishTimeoutMs);
+
+    let polishedImageUrl = imageUrl; // Fallback to original if polish fails
+
+    try {
+      const polishResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(polishRequestBody),
+        signal: polishController.signal,
+      });
+
+      clearTimeout(polishTimeout);
+
+      if (polishResponse.ok) {
+        const polishData = await polishResponse.json();
+        const polishedUrl = polishData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (polishedUrl) {
+          polishedImageUrl = polishedUrl;
+          logStep("Pass 2 complete - text integration polished successfully");
+        } else {
+          logStep("Pass 2 - No polished image returned, using original");
+        }
+      } else {
+        const polishError = await polishResponse.text();
+        logStep("Pass 2 failed, using original image", { status: polishResponse.status, error: polishError });
+      }
+    } catch (polishError) {
+      clearTimeout(polishTimeout);
+      if (polishError instanceof DOMException && polishError.name === "AbortError") {
+        logStep("Pass 2 timed out, using original image");
+      } else {
+        logStep("Pass 2 error, using original image", { error: polishError instanceof Error ? polishError.message : String(polishError) });
+      }
+    }
+
+    logStep("Cover generation complete", { usedPolishedVersion: polishedImageUrl !== imageUrl });
 
     // Deduct 1 credit only after we have a generated image (prevents accidental credit loss).
     if (userId && !hasUnlimitedAccess) {
@@ -443,7 +534,7 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
     }
 
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({ imageUrl: polishedImageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

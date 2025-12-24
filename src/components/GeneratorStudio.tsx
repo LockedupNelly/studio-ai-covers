@@ -52,19 +52,20 @@ const textStyles = [
   { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 ];
 
-// Progress stages for generation - more granular for smoother animation
+// Progress stages for generation - two-pass system (initial + text polish)
 const progressStages = [
-  { label: "Compiling info...", progress: 5 },
-  { label: "Analyzing preferences...", progress: 12 },
-  { label: "Preparing assets...", progress: 20 },
-  { label: "Initializing generation...", progress: 28 },
-  { label: "Generating cover...", progress: 38 },
-  { label: "Rendering artwork...", progress: 50 },
-  { label: "Applying effects...", progress: 60 },
-  { label: "Designing text...", progress: 72 },
-  { label: "Integrating elements...", progress: 82 },
-  { label: "Finalizing artwork...", progress: 92 },
-  { label: "Almost ready...", progress: 96 },
+  { label: "Compiling info...", progress: 3 },
+  { label: "Analyzing preferences...", progress: 8 },
+  { label: "Preparing assets...", progress: 12 },
+  { label: "Initializing generation...", progress: 18 },
+  { label: "Generating artwork...", progress: 28 },
+  { label: "Rendering scene...", progress: 38 },
+  { label: "Creating composition...", progress: 48 },
+  { label: "Polishing text integration...", progress: 58 },
+  { label: "Blending text with artwork...", progress: 68 },
+  { label: "Adding depth & shadows...", progress: 78 },
+  { label: "Final refinements...", progress: 88 },
+  { label: "Almost ready...", progress: 94 },
 ];
 
 // Genre-based visual style presets
