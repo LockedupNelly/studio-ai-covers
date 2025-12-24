@@ -112,15 +112,24 @@ const Profile = () => {
   };
 
   const fetchGenerations = async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
     try {
+      console.log("[Profile] Fetching generations for user:", user.id);
       const { data, error } = await supabase
         .from("generations")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Profile] Supabase error:", error);
+        throw error;
+      }
+      console.log("[Profile] Generations fetched:", data?.length ?? 0);
       setGenerations(data || []);
     } catch (error) {
       console.error("Error fetching generations:", error);

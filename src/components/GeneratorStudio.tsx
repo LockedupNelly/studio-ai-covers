@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -164,48 +164,39 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
-  // Progress animation during generation - smoother with more stages
+  // Progress animation during generation - tied to actual generation state
   const [smoothProgress, setSmoothProgress] = useState(0);
+  const generationStartTime = useRef<number | null>(null);
   
   useEffect(() => {
     if (isGenerating) {
+      generationStartTime.current = Date.now();
       setProgressStage(0);
       setSmoothProgress(0);
       
-      // Progress animation - only ever increases, never decreases
-      let currentProgress = 0;
-      let currentStage = 0;
-      
-      // Slowly increment progress every 100ms
+      // Animate progress smoothly toward 95% over time (never reaches 100 until done)
       const progressInterval = setInterval(() => {
-        const targetProgress = progressStages[currentStage]?.progress || 0;
+        const elapsed = Date.now() - (generationStartTime.current || Date.now());
+        // Use asymptotic curve: quickly to 50%, slowly to 95% over ~45 seconds
+        const targetProgress = Math.min(95, 50 * (1 - Math.exp(-elapsed / 8000)) + 45 * (1 - Math.exp(-elapsed / 25000)));
+        setSmoothProgress((prev) => Math.max(prev, targetProgress));
         
-        // Smoothly approach target (never exceed it, never go backwards)
-        if (currentProgress < targetProgress) {
-          currentProgress = Math.min(currentProgress + 0.3, targetProgress);
-          setSmoothProgress(currentProgress);
-        }
+        // Update stage label based on progress
+        const stageIdx = progressStages.findIndex(s => s.progress > targetProgress);
+        setProgressStage(Math.max(0, stageIdx - 1));
       }, 100);
-      
-      // Advance to next stage every 3 seconds
-      const stageInterval = setInterval(() => {
-        if (currentStage < progressStages.length - 1) {
-          currentStage += 1;
-          setProgressStage(currentStage);
-        }
-      }, 3000);
       
       return () => {
         clearInterval(progressInterval);
-        clearInterval(stageInterval);
       };
     } else if (generatedImage) {
-      // When generation completes, smoothly go to 100%
+      // When generation completes, instantly jump to 100%
       setSmoothProgress(100);
       setProgressStage(progressStages.length - 1);
     } else {
       setProgressStage(0);
       setSmoothProgress(0);
+      generationStartTime.current = null;
     }
   }, [isGenerating, generatedImage]);
 
@@ -719,21 +710,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
                   {/* Text Style Selector */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
-                          Text Style
-                        </label>
-                        <span className={`text-xs ${mutedTextClass}`}>
-                          click to choose over 50 styles
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
+                        Text Style
+                      </label>
+                      <span className={`text-xs ${mutedTextClass}`}>
+                        click to choose over 50 styles
+                      </span>
                     </div>
-                  <div className="relative pl-1">
+                    <div className="relative">
                       <TooltipProvider>
                         <div
                           ref={textStylesRef}
-                          className="flex gap-2 overflow-x-auto scrollbar-hide px-6 py-2"
+                          className="flex gap-2 overflow-x-auto scrollbar-hide py-2"
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {/* Reorder: selected style goes to the end (right) */}
@@ -844,10 +833,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Upload Inspiration - 5 clickable boxes with + icons */}
               <div className={`p-4 rounded-lg border ${cardBgClass}`}>
-                <label className={`text-xs font-semibold tracking-wider uppercase mb-3 block text-center ${labelClass}`}>
+                <label className={`text-xs font-semibold tracking-wider uppercase mb-3 block ${labelClass}`}>
                   Upload Inspiration ({inspirationImages.length}/5)
                 </label>
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-start gap-3">
                   {[0, 1, 2, 3, 4].map((idx) => {
                     const img = inspirationImages[idx];
                     return (
