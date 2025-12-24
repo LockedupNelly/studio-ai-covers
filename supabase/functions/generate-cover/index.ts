@@ -122,14 +122,16 @@ If you write "Song Title" literally instead of "${actualSongTitle}", the output 
 ===`
       : "";
 
-    // Build the fill-canvas rule
+    // Build the fill-canvas rule - CRITICAL for no borders
     const fillCanvasRule = `
 
-=== CANVAS FILL REQUIREMENT ===
-The artwork MUST completely fill the entire 3000x3000 pixel canvas.
-There must be NO empty space, NO borders, NO margins around the artwork.
-NO black borders, NO white borders, NO grey borders, NO empty corners.
-The design must extend edge-to-edge on all four sides.
+=== ABSOLUTE CANVAS FILL REQUIREMENT (CRITICAL) ===
+The artwork MUST completely fill the ENTIRE 3000x3000 pixel canvas with NO exceptions.
+ZERO empty space. ZERO borders. ZERO margins. ZERO padding.
+NO black borders. NO white borders. NO grey borders. NO empty corners. NO letterboxing.
+The visual content MUST extend completely edge-to-edge on ALL FOUR sides.
+If any pixel along any edge is empty/black/white/grey background, the output is REJECTED.
+The design elements and background must bleed off all edges.
 ===`;
 
     if (referenceImage) {

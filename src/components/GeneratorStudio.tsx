@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Edit3, Sparkles, ChevronLeft, ChevronRight, ImagePlus, Info, Image, ExternalLink, Maximize2, X, Upload } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Sparkles, ImagePlus, Image, Maximize2, X, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -141,7 +141,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
   const [textStyle, setTextStyle] = useState("");
-  const [textColor, setTextColor] = useState("ai");
+  const [textColor, setTextColor] = useState("");
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
   
@@ -316,9 +316,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (accentColor) fullPrompt += ` | Accent color: ${getColorValue(accentColor)}`;
 
     // Text color rules
-    if (textColor === "ai") {
-      fullPrompt += " | Text color: gradient red to silver";
-    } else if (textColor) {
+    if (textColor) {
       fullPrompt += ` | Text color: ${getColorValue(textColor)}`;
     }
 
@@ -683,7 +681,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   </div>
 
                   {/* Mood / Vibe + Main Color + Accent Color on same row - equal widths */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-2">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Mood / Vibe
@@ -735,7 +733,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </span>
                       </div>
                     </div>
-                  <div className="relative">
+                  <div className="relative pl-1">
                       <TooltipProvider>
                         <div
                           ref={textStylesRef}
@@ -799,7 +797,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         Text Color
                       </label>
                       <ColorPickerPopover
-                        label="Select Text Color"
+                        label="Text Color"
                         value={textColor}
                         onChange={setTextColor}
                         themeMode={themeMode}
@@ -861,64 +859,59 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 </div>
               </div>
 
-              {/* Upload Inspiration - Its own section above input tabs */}
+              {/* Upload Inspiration - 5 clickable boxes with + icons */}
               <div className={`p-4 rounded-lg border ${cardBgClass}`}>
-                <div className="flex items-center gap-4">
-                  {/* Upload Button */}
-                  <label className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border transition-colors ${
-                    themeMode === "light" 
-                      ? "bg-white border-gray-300 hover:bg-gray-50 text-gray-700" 
-                      : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
-                  } ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}>
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm font-medium">Upload</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/png,image/jpeg,image/webp"
-                      multiple
-                      disabled={inspirationImages.length >= 5}
-                      onChange={handleInspirationUpload}
-                    />
-                  </label>
-                  
-                  {/* Title + Boxes container */}
-                  <div className="flex-1 flex flex-col items-center">
-                    <label className={`text-xs font-semibold tracking-wider uppercase mb-2 ${labelClass}`}>
-                      Upload Inspiration ({inspirationImages.length}/5)
-                    </label>
-                    {/* 5 slots - centered */}
-                    <div className="flex items-center justify-center gap-3">
-                      {[0, 1, 2, 3, 4].map((idx) => {
-                        const img = inspirationImages[idx];
-                        return (
-                          <div key={idx} className="relative">
-                            <div 
-                              className={`w-12 h-12 rounded border-2 border-dashed overflow-hidden ${
-                                img 
-                                  ? "border-transparent" 
-                                  : themeMode === "light" ? "border-gray-400" : "border-border/70"
-                              }`}
-                            >
-                              {img ? (
-                                <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className={`w-full h-full ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/30"}`} />
-                              )}
+                <label className={`text-xs font-semibold tracking-wider uppercase mb-3 block text-center ${labelClass}`}>
+                  Upload Inspiration ({inspirationImages.length}/5)
+                </label>
+                <div className="flex items-center justify-center gap-3">
+                  {[0, 1, 2, 3, 4].map((idx) => {
+                    const img = inspirationImages[idx];
+                    return (
+                      <div key={idx} className="relative">
+                        {img ? (
+                          <>
+                            <div className="w-16 h-16 rounded-lg border-2 border-transparent overflow-hidden">
+                              <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
                             </div>
-                            {img && (
-                              <button
-                                onClick={() => removeInspirationImage(idx)}
-                                className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md z-10"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                            <button
+                              onClick={() => removeInspirationImage(idx)}
+                              className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md z-10"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <label className={`w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                            themeMode === "light" 
+                              ? "border-gray-400 bg-gray-100 hover:bg-gray-200" 
+                              : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
+                          }`}>
+                            <Plus className="w-5 h-5 text-primary" />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast.error("File size must be less than 10MB");
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    setInspirationImages(prev => [...prev, ev.target?.result as string]);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1112,18 +1105,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
                       <div className="flex items-center gap-1.5">
-                        <Button variant="outline" size="sm" onClick={() => setShowFullscreen(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setShowDesignerEditDialog(true)} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
-                          <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <Button variant="default" size="sm" onClick={handleDownload} className="h-8 px-2">
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setShowFullscreen(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                                <Maximize2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Expand</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Re-Generate</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center gap-2">
@@ -1144,29 +1143,34 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <p className={`text-center text-xs ${mutedTextClass}`}>
                         3000 × 3000px · Ready for streaming
                       </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`mt-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                        onClick={() => setShowDesignerEditDialog(true)}
-                        disabled={isGenerating}
-                      >
-                        <Edit3 className="w-3.5 h-3.5 mr-1" />
-                        REQUEST REAL DESIGNER EDITS (24H)
-                      </Button>
-                      <div className={`mt-3 rounded-lg border px-4 py-3 text-xs text-center w-full ${
-                        themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/40 border-border"
-                      }`}>
-                        <p className="font-semibold mb-1">Want professional exclusive pre-made designs made by real designers?</p>
-                        <p className="mb-2 text-foreground/70">
-                          Browse hundreds of ready-to-use covers crafted by our design team.
-                        </p>
-                        <Button asChild variant="outline" size="sm" className="h-8">
-                          <a href="https://coverartmarket.com" target="_blank" rel="noreferrer">
-                            VISIT COVERARTMARKET.COM
-                          </a>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}
+                          onClick={() => setShowDesignerEditDialog(true)}
+                          disabled={isGenerating}
+                        >
+                          Request Design Edits
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleDownload}
+                        >
+                          Download
                         </Button>
                       </div>
+                      <button
+                        onClick={() => navigate("/profile")}
+                        className={`mt-3 text-xs font-medium transition-colors underline ${
+                          themeMode === "light" 
+                            ? "text-gray-600 hover:text-gray-900" 
+                            : "text-foreground/60 hover:text-foreground"
+                        }`}
+                      >
+                        View Past Generations
+                      </button>
                     </div>
                   </>
                 ) : (
@@ -1201,22 +1205,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </div>
                     )}
 
-                    {/* Divider with View Previous Link */}
-                    {recentCovers.length > 0 && (
-                      <div className={`flex items-center gap-3 pt-4 ${borderClass}`}>
-                        <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
+                    {/* View Past Generations link */}
+                    {recentCovers.length > 0 && !isGenerating && (
+                      <div className="pt-4 text-center">
                         <button
                           onClick={() => navigate("/profile")}
-                          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                          className={`text-xs font-medium transition-colors underline ${
                             themeMode === "light" 
                               ? "text-gray-600 hover:text-gray-900" 
                               : "text-foreground/60 hover:text-foreground"
                           }`}
                         >
-                          View previous generations
-                          <ExternalLink className="w-3 h-3" />
+                          View Past Generations
                         </button>
-                        <div className={`flex-1 h-px ${themeMode === "light" ? "bg-gray-200" : "bg-border"}`} />
                       </div>
                     )}
                   </div>
