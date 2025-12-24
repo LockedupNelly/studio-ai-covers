@@ -160,6 +160,115 @@ The output must be print-ready, ultra-crisp, with no blur, no noise, no compress
 Render all textures, lighting, and details at maximum fidelity as if for a gallery print.
 ===`;
 
+    // Helper function to enhance user prompt with rich detail and text integration plan
+    const enhanceUserPrompt = async (userPrompt: string): Promise<{ enhancedDescription: string; textIntegrationPlan: string }> => {
+      logStep("Enhancing user prompt with gemini-2.5-flash-lite");
+      
+      // Extract just the description part (after "Description:")
+      const descriptionMatch = userPrompt.match(/Description:\s*(.+?)(?:\s*$|\s*Song Title:)/is);
+      const coreIdea = descriptionMatch ? descriptionMatch[1].trim() : userPrompt;
+      
+      const enhancementPrompt = `You are a creative director for album cover art. Take this basic concept and expand it into a rich, detailed visual description.
+
+USER'S CORE IDEA: "${coreIdea}"
+GENRE: ${genre}
+STYLE: ${style}
+MOOD: ${mood}
+
+Your task:
+1. EXPAND the visual description with specific, vivid details (lighting, textures, atmosphere, composition, colors)
+2. Stay TRUE to the user's core idea - don't add new major concepts, just enrich what they described
+3. Write ONE detailed paragraph for the TEXT INTEGRATION PLAN - exactly HOW the song title "${actualSongTitle}" and artist name "${actualArtistName}" should be physically integrated into this specific scene
+
+For the text integration plan, be VERY SPECIFIC about:
+- What physical surface or element the text should appear ON or IN (e.g., "carved into the piano wood", "formed by the candle flames", "embossed on the velvet curtain")
+- How the text should interact with the lighting (e.g., "catching warm candlelight glow", "casting soft shadows on the floor")
+- What textures or effects make it feel PART of the artwork (e.g., "same wood grain texture as the piano", "slightly worn gilded letters")
+- The text should look like it was CREATED WITH the scene, not added afterward
+
+Respond with ONLY this JSON format (no markdown, no explanation):
+{
+  "enhancedDescription": "Your expanded visual description here (2-3 sentences with vivid details)",
+  "textIntegrationPlan": "Detailed paragraph on how to physically integrate the text into this specific scene so it looks like part of the artwork"
+}`;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12_000);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "user",
+                content: enhancementPrompt,
+              },
+            ],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          logStep("Prompt enhancement failed", { status: response.status });
+          return { enhancedDescription: coreIdea, textIntegrationPlan: "" };
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        
+        logStep("Prompt enhancement raw response", { content: content.slice(0, 500) });
+
+        // Parse JSON from response
+        let jsonStr = content;
+        if (content.includes("```")) {
+          const match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+          jsonStr = match ? match[1].trim() : content;
+        }
+
+        try {
+          const result = JSON.parse(jsonStr);
+          logStep("Prompt enhanced successfully", { 
+            originalLength: coreIdea.length, 
+            enhancedLength: result.enhancedDescription?.length || 0,
+            hasIntegrationPlan: !!result.textIntegrationPlan
+          });
+          return {
+            enhancedDescription: result.enhancedDescription || coreIdea,
+            textIntegrationPlan: result.textIntegrationPlan || "",
+          };
+        } catch (parseError) {
+          logStep("Failed to parse enhancement JSON", { error: String(parseError) });
+          return { enhancedDescription: coreIdea, textIntegrationPlan: "" };
+        }
+      } catch (e) {
+        logStep("Prompt enhancement error", { error: e instanceof Error ? e.message : String(e) });
+        return { enhancedDescription: coreIdea, textIntegrationPlan: "" };
+      }
+    };
+
+    // Enhance the user's prompt before generation
+    const { enhancedDescription, textIntegrationPlan } = await enhanceUserPrompt(prompt);
+    
+    // Build text integration instruction if we have a plan
+    const textIntegrationInstruction = textIntegrationPlan 
+      ? `
+
+=== CRITICAL TEXT INTEGRATION PLAN (FOLLOW EXACTLY) ===
+${textIntegrationPlan}
+
+The text MUST look like it was CREATED WITH the artwork, not pasted on top.
+DO NOT just overlay white text. The text must be PHYSICALLY PART of the scene.
+===`
+      : "";
+
     let requestBody: any;
 
     if (referenceImage) {
@@ -170,12 +279,13 @@ Render all textures, lighting, and details at maximum fidelity as if for a galle
         { type: "text", text: `You are a world-class album cover designer. Edit this image to create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
 
 Keep the main subject/person from the original image but transform it according to these instructions:
-${prompt}
+${enhancedDescription}
 
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 ${textEnforcementRule}
+${textIntegrationInstruction}
 ${fillCanvasRule}
 
 CRITICAL REQUIREMENTS:
@@ -199,12 +309,13 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
 
 Keep the main subject/person from the original image but transform it.
 
-${prompt}
+${enhancedDescription}
 
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 ${textEnforcementRule}
+${textIntegrationInstruction}
 ${fillCanvasRule}
 
 === CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
@@ -264,13 +375,14 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       const stylePrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
 
 USER REQUEST:
-${prompt}
+${enhancedDescription}
 
 MUSIC CONTEXT:
 - Genre: ${genre}
 - Visual Style: ${style}
 - Mood/Vibe: ${mood}
 ${textEnforcementRule}
+${textIntegrationInstruction}
 ${fillCanvasRule}
 
 === CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
@@ -328,13 +440,14 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       };
     } else {
       // Text-only generation mode (no reference images)
-      const enhancedPrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
+      const generationPrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
 
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
-Subject: ${prompt}
+Subject: ${enhancedDescription}
 ${textEnforcementRule}
+${textIntegrationInstruction}
 ${fillCanvasRule}
 
 CRITICAL REQUIREMENTS:
@@ -354,7 +467,7 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
         messages: [
           {
             role: "user",
-            content: enhancedPrompt,
+            content: generationPrompt,
           },
         ],
         modalities: ["image", "text"],
