@@ -842,6 +842,96 @@ Make this gallery-worthy, Grammy-worthy.`;
       }
     };
 
+    // Helper function for Style Enforcement Pass (runs when text style reference is provided)
+    const runStyleEnforcementPass = async (imageUrl: string): Promise<string> => {
+      if (!textStyleReferenceImage) {
+        logStep("Skipping Style Enforcement - no text style reference provided");
+        return imageUrl;
+      }
+      
+      logStep("Running Style Enforcement Pass - guaranteeing text style match");
+      
+      const styleEnforcementPrompt = `You are a typography specialist. Your ONLY job is to make the text on this album cover EXACTLY match the reference text style.
+
+Song title: "${actualSongTitle || 'as shown'}"
+Artist name: "${actualArtistName || 'as shown'}"
+
+=== ABSOLUTE REQUIREMENT ===
+The SECOND image shows the EXACT text style that MUST be used for the song title.
+Look at the reference carefully and note:
+- The EXACT font/typeface (script, sans-serif, serif, etc.)
+- The EXACT effects (glow, blur, shadow, texture, gradient)
+- The EXACT color palette
+- The EXACT stroke weight and letterform style
+
+=== YOUR TASK ===
+Compare the text on the cover to the reference style.
+If the text does NOT match the reference style:
+1. COMPLETELY REGENERATE the song title text to match the reference EXACTLY
+2. Keep the same text positioning
+3. Keep the background artwork UNCHANGED
+4. The artist name should complement the song title style
+
+=== STYLE MATCHING CHECKLIST ===
+- Is it the same typeface family? (script vs sans-serif vs serif)
+- Does it have the same glow/blur effect?
+- Is the color the same?
+- Are the letterforms the same style?
+- Does it have the same weight/thickness?
+
+If ANY of these don't match, regenerate the text to match.
+
+=== STRICT RULES ===
+- DO NOT change the background artwork
+- DO NOT change spelling (it has been verified)
+- ONLY change the text STYLING to match the reference
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders
+
+The text style MUST be a FLAWLESS match to the reference.`;
+
+      const content: any[] = [
+        { type: "text", text: styleEnforcementPrompt },
+        { type: "image_url", image_url: { url: imageUrl } },
+        { type: "image_url", image_url: { url: textStyleReferenceImage } }
+      ];
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 45_000);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [{ role: "user", content }],
+            modalities: ["image", "text"],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const data = await response.json();
+          const styledUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (styledUrl) {
+            logStep("Style Enforcement Pass complete - text style matched");
+            return styledUrl;
+          }
+        }
+        logStep("Style Enforcement Pass failed, using original");
+        return imageUrl;
+      } catch (e) {
+        logStep("Style Enforcement Pass error", { error: e instanceof Error ? e.message : String(e) });
+        return imageUrl;
+      }
+    };
+
     // ========== MAIN GENERATION FLOW ==========
     
     let imageUrl: string;
@@ -876,8 +966,17 @@ Make this gallery-worthy, Grammy-worthy.`;
 
     logStep("Pass 1 complete - initial cover generated");
 
+    // ========== STYLE ENFORCEMENT (runs first if text style reference provided) ==========
+    let finalImageUrl = imageUrl;
+    let passesRun = 1; // Initial generation counts as 1
+
+    if (textStyleReferenceImage) {
+      finalImageUrl = await runStyleEnforcementPass(finalImageUrl);
+      passesRun++;
+    }
+
     // ========== PRE-FLIGHT ANALYSIS ==========
-    const analysis = await runPreflightAnalysis(imageUrl);
+    const analysis = await runPreflightAnalysis(finalImageUrl);
     
     const hasTextIssues = !analysis.spellingCorrect || !analysis.noDuplicates || !analysis.textWithinBounds;
     const hasIntegrationIssues = !analysis.integrationGood;
@@ -892,9 +991,6 @@ Make this gallery-worthy, Grammy-worthy.`;
       issues: analysis.issues,
     });
 
-    let finalImageUrl = imageUrl;
-    let passesRun = 1; // Initial generation counts as 1
-
     // ========== CONDITIONAL FIX PASSES ==========
     
     // Fix Pass A: Text Issues (spelling, duplicates, boundaries)
@@ -905,12 +1001,12 @@ Make this gallery-worthy, Grammy-worthy.`;
       logStep("Skipping Fix Pass A - no text issues detected");
     }
 
-    // Fix Pass B: Integration Polish
-    if (hasIntegrationIssues) {
+    // Fix Pass B: Integration Polish (skip if we already ran style enforcement)
+    if (hasIntegrationIssues && !textStyleReferenceImage) {
       finalImageUrl = await runIntegrationFixPass(finalImageUrl);
       passesRun++;
     } else {
-      logStep("Skipping Fix Pass B - integration looks good");
+      logStep("Skipping Fix Pass B - integration looks good or style enforcement already ran");
     }
 
     logStep("Hybrid generation complete", { 
