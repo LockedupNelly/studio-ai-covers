@@ -100,6 +100,38 @@ serve(async (req) => {
 
     let requestBody: any;
 
+    // Extract song title and artist name from the prompt for strict enforcement
+    const songTitleMatch = prompt.match(/Song Title:\s*([^|]+)/i);
+    const artistNameMatch = prompt.match(/Artist:\s*([^|]+)/i);
+    const actualSongTitle = songTitleMatch ? songTitleMatch[1].trim() : null;
+    const actualArtistName = artistNameMatch ? artistNameMatch[1].trim() : null;
+    
+    logStep("Extracted text from prompt", { songTitle: actualSongTitle, artistName: actualArtistName });
+
+    // Build the critical text instruction that will be added to ALL prompts
+    const textEnforcementRule = actualSongTitle 
+      ? `
+
+=== ABSOLUTE CRITICAL RULE - TEXT CONTENT ===
+The song title on the cover MUST be EXACTLY: "${actualSongTitle}"
+The artist name on the cover MUST be EXACTLY: "${actualArtistName || 'as specified'}"
+
+FORBIDDEN: NEVER write "Song Title" as literal text. NEVER use placeholder text.
+The ONLY text that should appear is the EXACT song title and artist name provided above.
+If you write "Song Title" literally instead of "${actualSongTitle}", the output is REJECTED.
+===`
+      : "";
+
+    // Build the fill-canvas rule
+    const fillCanvasRule = `
+
+=== CANVAS FILL REQUIREMENT ===
+The artwork MUST completely fill the entire 3000x3000 pixel canvas.
+There must be NO empty space, NO borders, NO margins around the artwork.
+NO black borders, NO white borders, NO grey borders, NO empty corners.
+The design must extend edge-to-edge on all four sides.
+===`;
+
     if (referenceImage) {
       // Image editing mode - use the reference image (user uploaded photo)
       logStep("Using reference image for editing");
@@ -113,6 +145,8 @@ ${prompt}
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
+${textEnforcementRule}
+${fillCanvasRule}
 
 CRITICAL REQUIREMENTS:
 1. Output resolution MUST be exactly 3000x3000 pixels - PERFECTLY SQUARE
@@ -140,6 +174,8 @@ ${prompt}
 Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
+${textEnforcementRule}
+${fillCanvasRule}
 
 === CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
 The SECOND reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
@@ -204,6 +240,8 @@ MUSIC CONTEXT:
 - Genre: ${genre}
 - Visual Style: ${style}
 - Mood/Vibe: ${mood}
+${textEnforcementRule}
+${fillCanvasRule}
 
 === CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
 The attached reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
@@ -266,6 +304,8 @@ Genre: ${genre}
 Visual Style: ${style}
 Mood/Vibe: ${mood}
 Subject: ${prompt}
+${textEnforcementRule}
+${fillCanvasRule}
 
 CRITICAL REQUIREMENTS:
 1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
