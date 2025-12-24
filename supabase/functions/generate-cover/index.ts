@@ -176,10 +176,28 @@ GENRE: ${genre}
 STYLE: ${style}
 MOOD: ${mood}
 
+=== ABSOLUTE SPATIAL PRESERVATION RULES (CRITICAL - NEVER VIOLATE) ===
+You MUST preserve the EXACT spatial relationships the user described. This is NON-NEGOTIABLE.
+
+SPATIAL TERMS ARE LITERAL:
+- "on top of X" = subject is ABOVE X, resting on its surface, looking DOWN at or OUT from X
+- "in front of X" = subject is positioned BEFORE X, facing the viewer
+- "behind X" = subject is positioned AFTER X, partially or fully obscured
+- "next to X" = subject is BESIDE X, at the same level
+- "between X and Y" = subject is IN THE MIDDLE of X and Y
+- "under X" = subject is BELOW X
+
+FORBIDDEN REINTERPRETATIONS:
+- NEVER change "on top of" to "between" or "bridging" or "spanning"
+- NEVER add structures (bridges, platforms, tunnels) that change the spatial relationship
+- NEVER reposition the subject relative to the environment differently than described
+- NEVER add chasms, gaps, or voids that weren't mentioned
+
 Your task:
-1. EXPAND the visual description with specific, vivid details (lighting, textures, atmosphere, composition, colors)
-2. Stay TRUE to the user's core idea - don't add new major concepts, just enrich what they described
-3. Write ONE detailed paragraph for the TEXT PLACEMENT & STYLING PLAN for the song title "${actualSongTitle}" and artist name "${actualArtistName}"
+1. EXPAND the visual description with specific, vivid details (lighting, textures, atmosphere, colors)
+2. PRESERVE EXACTLY the user's spatial description - do NOT reinterpret positions or add new structural elements
+3. Only add ATMOSPHERIC details (lighting, weather, textures, colors) - NOT new objects or structural changes
+4. Write ONE detailed paragraph for the TEXT PLACEMENT & STYLING PLAN for the song title "${actualSongTitle}" and artist name "${actualArtistName}"
 
 === CRITICAL TEXT RULES ===
 READABILITY IS THE #1 PRIORITY. The text must be EASY TO READ at a glance.
@@ -203,8 +221,9 @@ INTEGRATION APPROACH:
 
 Respond with ONLY this JSON format (no markdown, no explanation):
 {
-  "enhancedDescription": "Your expanded visual description here (2-3 sentences with vivid details)",
-  "textIntegrationPlan": "Describe WHERE to place text for readability, WHAT modern typography style to use, and HOW to make it feel cohesive with the scene through color/atmosphere (not by embedding in objects)"
+  "enhancedDescription": "Your expanded visual description with ONLY lighting/texture/atmosphere additions - NO changes to spatial positioning or new structural elements",
+  "textIntegrationPlan": "Describe WHERE to place text for readability, WHAT modern typography style to use, and HOW to make it feel cohesive with the scene through color/atmosphere (not by embedding in objects)",
+  "spatialValidation": "Confirm: [subject] is [exact position from user's description] relative to [environment] - no structural additions"
 }`;
 
       try {
