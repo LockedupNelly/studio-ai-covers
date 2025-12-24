@@ -50,9 +50,21 @@ const Index = () => {
       const body = anyErr?.context?.body;
       if (body != null) {
         try {
-          const raw = typeof body === "string" ? body : JSON.stringify(body);
-          const parsed = JSON.parse(raw);
-          if (typeof parsed?.error === "string" && parsed.error.trim()) return parsed.error;
+          // In some builds, body can be a ReadableStream.
+          const raw =
+            typeof body === "string"
+              ? body
+              : body?.getReader
+                ? await new Response(body).text()
+                : JSON.stringify(body);
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed?.error === "string" && parsed.error.trim()) return parsed.error;
+          } catch {
+            // Not JSON (or already plain text) — return as-is if meaningful.
+            if (raw.trim()) return raw.trim();
+          }
         } catch {
           // ignore
         }
