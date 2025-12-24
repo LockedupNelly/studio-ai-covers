@@ -108,17 +108,32 @@ serve(async (req) => {
     
     logStep("Extracted text from prompt", { songTitle: actualSongTitle, artistName: actualArtistName });
 
+    // Build letter-by-letter spelling for strict enforcement
+    const songTitleSpelling = actualSongTitle ? actualSongTitle.toUpperCase().split('').join('-') : '';
+    const artistNameSpelling = actualArtistName ? actualArtistName.split('').join('-') : '';
+    const songTitleCharCount = actualSongTitle ? actualSongTitle.length : 0;
+    const artistNameCharCount = actualArtistName ? actualArtistName.length : 0;
+
     // Build the critical text instruction that will be added to ALL prompts
     const textEnforcementRule = actualSongTitle 
       ? `
 
-=== ABSOLUTE CRITICAL RULE - TEXT CONTENT ===
-The song title on the cover MUST be EXACTLY: "${actualSongTitle}"
-The artist name on the cover MUST be EXACTLY: "${actualArtistName || 'as specified'}"
+=== ABSOLUTE CRITICAL RULE - TEXT CONTENT & SPELLING ===
+The song title MUST be EXACTLY: "${actualSongTitle}"
+SPELL IT LETTER BY LETTER: ${songTitleSpelling}
+EXACT CHARACTER COUNT: ${songTitleCharCount} characters
+
+The artist name MUST be EXACTLY: "${actualArtistName || 'as specified'}"
+${actualArtistName ? `SPELL IT LETTER BY LETTER: ${artistNameSpelling}` : ''}
+${actualArtistName ? `EXACT CHARACTER COUNT: ${artistNameCharCount} characters` : ''}
+
+CRITICAL SPELLING CHECK: Before finalizing, verify each letter:
+- Song title "${actualSongTitle}" has these exact letters: ${songTitleSpelling}
+- Every single letter must be correct - no substitutions, no corruption
 
 FORBIDDEN: NEVER write "Song Title" as literal text. NEVER use placeholder text.
 The ONLY text that should appear is the EXACT song title and artist name provided above.
-If you write "Song Title" literally instead of "${actualSongTitle}", the output is REJECTED.
+If ANY letter is wrong or corrupted, the output is REJECTED.
 ===`
       : "";
 
@@ -403,15 +418,16 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
     // Run a second AI call to improve how the text integrates with the artwork
     logStep("Starting Pass 2 - Text integration polish");
     
-    const textPolishPrompt = `You are a professional graphic designer reviewing an album cover. Your ONLY task is to improve how the text integrates with the artwork.
+    const textPolishPrompt = `You are a professional graphic designer reviewing an album cover. Your task is to improve how BOTH the song title AND artist name integrate with the artwork.
 
-The song title is: "${actualSongTitle || 'as shown'}"
-The artist name is: "${actualArtistName || 'as shown'}"
+Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
+Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
 
 === YOUR MISSION ===
-Make the text look like it was DESIGNED WITH the artwork, not placed ON TOP.
+Make BOTH the song title AND artist name look like they were DESIGNED WITH the artwork, not placed ON TOP.
+The artist name is just as important as the song title - it should NOT look like an afterthought.
 
-=== IMPROVEMENTS TO MAKE ===
+=== IMPROVEMENTS TO MAKE FOR BOTH SONG TITLE AND ARTIST NAME ===
 1. Add subtle shadows behind text that match the scene's lighting direction
 2. Blend text edges naturally into the background where appropriate
 3. Ensure text colors complement and integrate with the artwork's palette
@@ -419,10 +435,14 @@ Make the text look like it was DESIGNED WITH the artwork, not placed ON TOP.
 5. Make sure text has proper depth - it should feel part of the scene, not floating above it
 6. If the scene has light sources, ensure text reacts to them subtly
 
+CRITICAL: The artist name must look EQUALLY designed-in as the song title.
+If the song title has glow effects, the artist name should have complementary effects.
+Both elements should feel cohesive and intentionally designed together.
+
 === STRICT RULES ===
 - DO NOT change the background artwork or composition AT ALL
 - DO NOT change the position of the text
-- DO NOT change what the text says - keep the EXACT same text content
+- SPELLING IS SACRED - DO NOT alter ANY letters. Keep exact spelling.
 - DO NOT add new text elements
 - DO NOT crop or resize the image
 - Keep the EXACT same 3000x3000 pixel dimensions
@@ -488,7 +508,112 @@ Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
       }
     }
 
-    logStep("Cover generation complete", { usedPolishedVersion: polishedImageUrl !== imageUrl });
+    // === PASS 3: SPELLING VERIFICATION ===
+    // Run a third AI call specifically to verify and fix any text spelling issues
+    logStep("Starting Pass 3 - Spelling verification");
+    
+    const spellingVerifyPrompt = `You are a text quality control specialist. Your ONLY task is to verify the spelling of text on this album cover.
+
+=== TEXT THAT MUST APPEAR EXACTLY ===
+Song title: "${actualSongTitle || 'as shown'}"
+Spelled letter-by-letter: ${songTitleSpelling || 'N/A'}
+Exact character count: ${songTitleCharCount} characters
+
+Artist name: "${actualArtistName || 'as shown'}"
+Spelled letter-by-letter: ${artistNameSpelling || 'N/A'}
+Exact character count: ${artistNameCharCount} characters
+
+=== YOUR TASK ===
+1. Look at the text currently on the cover
+2. Check EVERY SINGLE LETTER against the correct spelling above
+3. If ANY letter is wrong, corrupted, unclear, or missing:
+   - Regenerate ONLY the text with PERFECT spelling
+   - Keep ALL design effects (shadows, glow, textures, integration)
+   - Keep the EXACT same positioning and styling
+   - Do NOT change the background artwork at all
+4. If the spelling is already 100% correct, return the image UNCHANGED
+
+=== COMMON ISSUES TO FIX ===
+- "H" that looks like "S" or "N"
+- "E" that looks like "F" or "B"
+- Letters that are merged, overlapping incorrectly, or distorted
+- Missing letters
+- Extra letters that shouldn't be there
+- Any character that doesn't match the exact spelling above
+
+=== STRICT RULES ===
+- DO NOT change the background artwork or composition
+- DO NOT change text positioning or sizing
+- DO NOT change the artistic style of the text
+- ONLY fix incorrect letters while preserving the design
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders
+
+=== FINAL CHECK ===
+Before outputting, verify one more time:
+Does the song title spell exactly "${actualSongTitle}" with ${songTitleCharCount} characters? (${songTitleSpelling})
+Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCount} characters? (${artistNameSpelling})`;
+
+    const spellingRequestBody = {
+      model: "google/gemini-2.5-flash-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: spellingVerifyPrompt },
+            { type: "image_url", image_url: { url: polishedImageUrl } }
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    };
+
+    const spellingController = new AbortController();
+    const spellingTimeoutMs = 40_000;
+    const spellingTimeout = setTimeout(() => spellingController.abort(), spellingTimeoutMs);
+
+    let finalImageUrl = polishedImageUrl; // Fallback to polished if spelling check fails
+
+    try {
+      const spellingResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(spellingRequestBody),
+        signal: spellingController.signal,
+      });
+
+      clearTimeout(spellingTimeout);
+
+      if (spellingResponse.ok) {
+        const spellingData = await spellingResponse.json();
+        const spellingFixedUrl = spellingData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (spellingFixedUrl) {
+          finalImageUrl = spellingFixedUrl;
+          logStep("Pass 3 complete - spelling verified/fixed successfully");
+        } else {
+          logStep("Pass 3 - No image returned, using polished version");
+        }
+      } else {
+        const spellingError = await spellingResponse.text();
+        logStep("Pass 3 failed, using polished image", { status: spellingResponse.status, error: spellingError });
+      }
+    } catch (spellingError) {
+      clearTimeout(spellingTimeout);
+      if (spellingError instanceof DOMException && spellingError.name === "AbortError") {
+        logStep("Pass 3 timed out, using polished image");
+      } else {
+        logStep("Pass 3 error, using polished image", { error: spellingError instanceof Error ? spellingError.message : String(spellingError) });
+      }
+    }
+
+    logStep("Cover generation complete", { 
+      usedPolishedVersion: polishedImageUrl !== imageUrl,
+      usedSpellingFixedVersion: finalImageUrl !== polishedImageUrl
+    });
 
     // Deduct 1 credit only after we have a generated image (prevents accidental credit loss).
     if (userId && !hasUnlimitedAccess) {
@@ -534,7 +659,7 @@ Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
     }
 
     return new Response(
-      JSON.stringify({ imageUrl: polishedImageUrl }),
+      JSON.stringify({ imageUrl: finalImageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
