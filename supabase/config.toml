@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.edit-cover]
 verify_jwt = true
 
+[functions.enhance-cover]
+verify_jwt = true
+
 [functions.stripe-webhook]
 verify_jwt = false
 

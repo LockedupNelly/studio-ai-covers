@@ -116,9 +116,17 @@ const Index = () => {
           }
         }
 
-        toast.success("Cover art generated!", {
-          description: `${genre} cover with ${style} style is ready.`,
-        });
+        // Check for style mismatch warning
+        if (data.warning === "TEXT_STYLE_MISMATCH") {
+          toast.info("Cover generated with style variation", {
+            description: "The text style may differ slightly from your selection. You were not charged.",
+            duration: 6000,
+          });
+        } else {
+          toast.success("Cover art generated!", {
+            description: `${genre} cover with ${style} style is ready.`,
+          });
+        }
       }
     } catch (error) {
       console.error("Generation error:", error);
