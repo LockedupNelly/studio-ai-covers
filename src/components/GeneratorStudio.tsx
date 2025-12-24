@@ -171,36 +171,42 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       setProgressStage(0);
       setSmoothProgress(0);
       
-      // Slower interval for stage changes (3 seconds each)
-      const stageInterval = setInterval(() => {
-        setProgressStage(prev => {
-          if (prev < progressStages.length - 1) {
-            return prev + 1;
-          }
-          return prev;
-        });
-      }, 3000);
+      // Progress animation - only ever increases, never decreases
+      let currentProgress = 0;
+      let currentStage = 0;
       
-      // Smooth progress animation every 100ms
-      const smoothInterval = setInterval(() => {
-        setSmoothProgress(prev => {
-          const target = progressStages[progressStage]?.progress || 0;
-          if (prev < target) {
-            return Math.min(prev + 0.5, target);
-          }
-          return prev;
-        });
+      // Slowly increment progress every 100ms
+      const progressInterval = setInterval(() => {
+        const targetProgress = progressStages[currentStage]?.progress || 0;
+        
+        // Smoothly approach target (never exceed it, never go backwards)
+        if (currentProgress < targetProgress) {
+          currentProgress = Math.min(currentProgress + 0.3, targetProgress);
+          setSmoothProgress(currentProgress);
+        }
       }, 100);
       
+      // Advance to next stage every 3 seconds
+      const stageInterval = setInterval(() => {
+        if (currentStage < progressStages.length - 1) {
+          currentStage += 1;
+          setProgressStage(currentStage);
+        }
+      }, 3000);
+      
       return () => {
+        clearInterval(progressInterval);
         clearInterval(stageInterval);
-        clearInterval(smoothInterval);
       };
+    } else if (generatedImage) {
+      // When generation completes, smoothly go to 100%
+      setSmoothProgress(100);
+      setProgressStage(progressStages.length - 1);
     } else {
       setProgressStage(0);
       setSmoothProgress(0);
     }
-  }, [isGenerating, progressStage]);
+  }, [isGenerating, generatedImage]);
 
   const scrollTextStyles = (direction: 'left' | 'right') => {
     if (textStylesRef.current) {
@@ -665,7 +671,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </label>
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Select style..." />
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
                           {currentGenreData.styles.map((s) => (
@@ -676,15 +682,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe + Main Color + Accent Color on same row */}
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Mood / Vibe + Main Color + Accent Color on same row - equal widths */}
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Mood / Vibe
                       </label>
                       <Select value={mood} onValueChange={setMood}>
                         <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Mood..." />
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
                           {currentGenreData.moods.map((m) => (
@@ -729,15 +735,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </span>
                       </div>
                     </div>
-                    <div className="relative">
-                      <button
-                        onClick={() => scrollTextStyles('left')}
-                        className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
-                          themeMode === "light" ? "bg-white shadow-md text-gray-700 border border-gray-200" : "bg-card/90 shadow-md text-foreground"
-                        }`}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
+                  <div className="relative">
                       <TooltipProvider>
                         <div
                           ref={textStylesRef}
@@ -765,13 +763,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                       setSelectedVariant(null);
                                     }
                                   }}
-                                   className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
+                   className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
                                      textStyle === ts.id
                                        ? "bg-destructive text-destructive-foreground border-destructive"
                                        : themeMode === "light"
                                          ? "bg-white text-gray-900 border-gray-200 hover:border-gray-400"
                                          : "bg-secondary text-foreground border-border hover:border-primary/50"
-                                   } ${textStyle && textStyle !== ts.id ? "opacity-50" : ""}`}
+                                   } ${textStyle !== "" && textStyle !== ts.id ? "opacity-50" : ""}`}
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">
                                     {ts.name}
@@ -780,9 +778,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                     )}
                                   </span>
                                   {hasVariants(ts.id) && (
-                                    <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                                      textStyle === ts.id ? "bg-white text-destructive" : "bg-destructive text-destructive-foreground"
-                                    }`}>
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground">
                                       +
                                     </span>
                                   )}
@@ -793,14 +789,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           ))}
                         </div>
                       </TooltipProvider>
-                      <button
-                        onClick={() => scrollTextStyles('right')}
-                        className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full ${
-                          themeMode === "light" ? "bg-white shadow-md text-gray-700 border border-gray-200" : "bg-card/90 shadow-md text-foreground"
-                        }`}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
 
@@ -875,56 +863,56 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Upload Inspiration - Its own section above input tabs */}
               <div className={`p-4 rounded-lg border ${cardBgClass}`}>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border transition-colors ${
-                      themeMode === "light" 
-                        ? "bg-white border-gray-300 hover:bg-gray-50 text-gray-700" 
-                        : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
-                    } ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}>
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm font-medium">Upload</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/png,image/jpeg,image/webp"
-                        multiple
-                        disabled={inspirationImages.length >= 5}
-                        onChange={handleInspirationUpload}
-                      />
+                <div className="flex items-center gap-4">
+                  {/* Upload Button */}
+                  <label className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border transition-colors ${
+                    themeMode === "light" 
+                      ? "bg-white border-gray-300 hover:bg-gray-50 text-gray-700" 
+                      : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
+                  } ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                    <Upload className="w-4 h-4" />
+                    <span className="text-sm font-medium">Upload</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      disabled={inspirationImages.length >= 5}
+                      onChange={handleInspirationUpload}
+                    />
+                  </label>
+                  
+                  {/* Title + Boxes container */}
+                  <div className="flex-1 flex flex-col items-center">
+                    <label className={`text-xs font-semibold tracking-wider uppercase mb-2 ${labelClass}`}>
+                      Upload Inspiration ({inspirationImages.length}/5)
                     </label>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                        Upload Inspiration ({inspirationImages.length}/5)
-                      </label>
-                    </div>
-                    {/* Always show 5 slots */}
-                    <div className="flex items-center gap-2">
+                    {/* 5 slots - centered */}
+                    <div className="flex items-center justify-center gap-3">
                       {[0, 1, 2, 3, 4].map((idx) => {
                         const img = inspirationImages[idx];
                         return (
-                          <div 
-                            key={idx} 
-                            className={`relative w-12 h-12 rounded border-2 border-dashed ${
-                              img 
-                                ? "border-transparent" 
-                                : themeMode === "light" ? "border-gray-300" : "border-border"
-                            }`}
-                          >
-                            {img ? (
-                              <>
-                                <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover rounded" />
-                                <button
-                                  onClick={() => removeInspirationImage(idx)}
-                                  className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md z-10"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </>
-                            ) : (
-                              <div className={`w-full h-full rounded ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`} />
+                          <div key={idx} className="relative">
+                            <div 
+                              className={`w-12 h-12 rounded border-2 border-dashed overflow-hidden ${
+                                img 
+                                  ? "border-transparent" 
+                                  : themeMode === "light" ? "border-gray-400" : "border-border/70"
+                              }`}
+                            >
+                              {img ? (
+                                <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className={`w-full h-full ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/30"}`} />
+                              )}
+                            </div>
+                            {img && (
+                              <button
+                                onClick={() => removeInspirationImage(idx)}
+                                className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md z-10"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             )}
                           </div>
                         );
