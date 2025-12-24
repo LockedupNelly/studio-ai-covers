@@ -13,7 +13,7 @@ interface ColorPickerPopoverProps {
 // Color palette with shades
 const colorPalette = [
   // Row 1 - Reds
-  { id: "ai", name: "AI Select", color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+  { id: "ai", name: "AI Select", color: "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)" },
   { id: "red-light", name: "Light Red", color: "#f87171" },
   { id: "red", name: "Red", color: "#ef4444" },
   { id: "red-dark", name: "Dark Red", color: "#991b1b" },
@@ -78,13 +78,13 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
           }`}
         >
           {isAiSelect ? (
-            <div 
-              className="w-5 h-5 rounded-full border border-gray-400"
-              style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+            <div
+              className="w-5 h-5 rounded-full border border-border"
+              style={{ background: "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)" }}
             />
           ) : (
-            <div 
-              className="w-5 h-5 rounded-full border border-gray-400"
+            <div
+              className="w-5 h-5 rounded-full border border-border"
               style={{ backgroundColor: selectedColor.color }}
             />
           )}
@@ -101,11 +101,11 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               onClick={() => handleSelect(color.id)}
               className={`relative w-8 h-8 rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
-              } ${color.id === "white" ? "border border-gray-300" : ""}`}
-              style={{ 
-                background: color.id === "ai" 
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" 
-                  : color.color 
+              } ${color.id === "white" ? "border border-border" : ""}`}
+              style={{
+                background: color.id === "ai"
+                  ? "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)"
+                  : color.color
               }}
               title={color.name}
             >

@@ -163,6 +163,7 @@ STRICT PROHIBITIONS:
 - NEVER write "Song Title" literally - use the ACTUAL song title from the prompt
 - NEVER use generic or cheap fonts
 - NEVER make the text look overlaid - it must be INTEGRATED
+- NEVER add cracks, distressed textures, grunge, chips, or "broken" lettering unless the reference text style clearly contains them
 
 ADDITIONAL REQUIREMENTS:
 1. Output resolution MUST be exactly 3000x3000 pixels (SQUARE - not landscape, not portrait)
@@ -226,6 +227,7 @@ STRICT PROHIBITIONS:
 - NEVER use generic, cheap, or basic grunge/distressed fonts
 - NEVER make the text look overlaid or pasted - it must be INTEGRATED into the artwork
 - NEVER interpret the style - COPY it exactly
+- NEVER add cracks, distressed textures, grunge, chips, or "broken" lettering unless the reference text style clearly contains them
 
 QUALITY REQUIREMENTS:
 1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE)

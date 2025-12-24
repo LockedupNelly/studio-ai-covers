@@ -307,9 +307,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (artistName) fullPrompt += ` | Artist: ${artistName}`;
     
     // Add color preferences
-    if (mainColor) fullPrompt += ` | Main color: ${mainColor}`;
-    if (accentColor) fullPrompt += ` | Accent color: ${accentColor}`;
-    if (textColor !== "ai") fullPrompt += ` | Text color: ${textColor}`;
+    if (mainColor) fullPrompt += ` | Main color: ${getColorValue(mainColor)}`;
+    if (accentColor) fullPrompt += ` | Accent color: ${getColorValue(accentColor)}`;
+
+    // Text color rules
+    if (textColor === "ai") {
+      fullPrompt += " | Text color: gradient red to silver";
+    } else if (textColor) {
+      fullPrompt += ` | Text color: ${getColorValue(textColor)}`;
+    }
 
     // Add inspiration images instruction
     if (inspirationImages.length > 0) {
@@ -345,10 +351,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     
     // Critical: Ensure text is integrated
     fullPrompt += " | CRITICAL: The text (song title and artist name) must be deeply integrated into the cover design, not just overlaid. The text should feel like part of the artwork with effects, textures, or styling that matches the overall aesthetic.";
-    
+
+    // If generating 2 covers, force variation: one can be moody, one MUST be vibrant using the chosen main color
+    if (coverCount === "2" && mainColor) {
+      fullPrompt += ` | VARIATION RULE: Generate TWO distinct covers. Cover A can be cinematic/muted. Cover B MUST be vibrant and high-saturation, with ${getColorValue(mainColor)} as the dominant color family.`;
+    }
+
     // Always generate at 3000x3000
     fullPrompt += " | Generate at exactly 3000x3000 pixels resolution (2K quality).";
-    
+
     onGenerate(fullPrompt, genre, style === "None" ? "" : style, mood === "None" ? "" : mood, refImage, textStyleRefImage);
   };
 
@@ -403,8 +414,44 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, undefined, textStyleRefImage);
   };
 
-  const handleDownload = () => {
-    if (generatedImage) {
+  const handleDownload = async () => {
+    if (!generatedImage) return;
+
+    try {
+      const res = await fetch(generatedImage);
+      const blob = await res.blob();
+      const bitmap = await createImageBitmap(blob);
+
+      // Center-crop to square (covers any landscape/portrait outputs)
+      const side = Math.min(bitmap.width, bitmap.height);
+      const sx = Math.floor((bitmap.width - side) / 2);
+      const sy = Math.floor((bitmap.height - side) / 2);
+
+      const outSize = 3000;
+      const canvas = document.createElement("canvas");
+      canvas.width = outSize;
+      canvas.height = outSize;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, outSize, outSize);
+
+      const outBlob: Blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to encode PNG"))), "image/png");
+      });
+
+      const url = URL.createObjectURL(outBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "cover-art-3000x3000.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: direct download
       const link = document.createElement("a");
       link.href = generatedImage;
       link.download = "cover-art.png";
@@ -721,13 +768,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                       setSelectedVariant(null);
                                     }
                                   }}
-                                  className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
-                                    textStyle === ts.id
-                                      ? "bg-destructive text-destructive-foreground border-destructive"
-                                      : themeMode === "light"
-                                        ? "bg-white text-gray-400 border-gray-200 hover:border-gray-400 opacity-60"
-                                        : "bg-secondary text-foreground/50 border-border hover:border-primary/50 opacity-60"
-                                  } ${textStyle !== ts.id && textStyle !== "none" ? "opacity-50" : ""}`}
+                                   className={`relative flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${
+                                     textStyle === ts.id
+                                       ? "bg-destructive text-destructive-foreground border-destructive"
+                                       : themeMode === "light"
+                                         ? "bg-white text-gray-900 border-gray-200 hover:border-gray-400"
+                                         : "bg-secondary text-foreground border-border hover:border-primary/50"
+                                   } ${textStyle !== "none" && textStyle !== ts.id ? "opacity-50" : ""}`}
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">
                                     {ts.name}
