@@ -161,6 +161,12 @@ The output must be print-ready, ultra-crisp, with no blur, no noise, no compress
 Render all textures, lighting, and details at maximum fidelity as if for a gallery print.
 ===`;
 
+    // Extract TEXT STYLING INSTRUCTIONS from user prompt (these come from the variant's promptInstructions)
+    const textStylingMatch = prompt.match(/TEXT STYLING INSTRUCTIONS:\s*([^|]+)/i);
+    const userTextStylingInstructions = textStylingMatch ? textStylingMatch[1].trim() : null;
+    
+    logStep("Extracted text styling instructions", { hasInstructions: !!userTextStylingInstructions, preview: userTextStylingInstructions?.slice(0, 100) });
+
     // Helper function to enhance user prompt with rich detail and text integration plan
     const enhanceUserPrompt = async (userPrompt: string): Promise<{ enhancedDescription: string; textIntegrationPlan: string }> => {
       logStep("Enhancing user prompt with gemini-2.5-flash-lite");
@@ -169,6 +175,24 @@ Render all textures, lighting, and details at maximum fidelity as if for a galle
       const descriptionMatch = userPrompt.match(/Description:\s*(.+?)(?:\s*$|\s*Song Title:)/is);
       const coreIdea = descriptionMatch ? descriptionMatch[1].trim() : userPrompt;
       
+      // Build typography section - if user has specific text style instructions, preserve them!
+      const typographySection = userTextStylingInstructions 
+        ? `=== USER'S CHOSEN TEXT STYLE (MUST FOLLOW EXACTLY) ===
+The user has selected a specific text style. You MUST respect this choice.
+USER'S TEXT STYLE: "${userTextStylingInstructions}"
+
+Your textIntegrationPlan should focus ONLY on WHERE to place the text for readability.
+DO NOT suggest a different typography style - the user's choice is final.
+Just plan the optimal POSITION for the text (top, bottom, clear space areas).`
+        : `=== TEXT RULES (NO REFERENCE STYLE PROVIDED) ===
+READABILITY IS THE #1 PRIORITY. The text must be EASY TO READ at a glance.
+
+TYPOGRAPHY REQUIREMENTS:
+- Use MODERN, PREMIUM typography that looks like 2024-2025 design (think Apple, high-end fashion, Spotify editorial)
+- NEVER use dated effects like: bevels, embossing, drop shadows, reflections/mirror effects, 3D extrusion, chrome/metallic gradients, WordArt-style effects
+- Clean, sophisticated fonts - elegant serifs OR bold modern sans-serifs
+- The artist name should be SIMPLE and LEGIBLE - clean typography, no effects`;
+
       const enhancementPrompt = `You are a creative director for premium album cover art. Take this basic concept and expand it into a rich, detailed visual description.
 
 USER'S CORE IDEA: "${coreIdea}"
@@ -197,16 +221,9 @@ Your task:
 1. EXPAND the visual description with specific, vivid details (lighting, textures, atmosphere, colors)
 2. PRESERVE EXACTLY the user's spatial description - do NOT reinterpret positions or add new structural elements
 3. Only add ATMOSPHERIC details (lighting, weather, textures, colors) - NOT new objects or structural changes
-4. Write ONE detailed paragraph for the TEXT PLACEMENT & STYLING PLAN for the song title "${actualSongTitle}" and artist name "${actualArtistName}"
+4. Write ONE detailed paragraph for the TEXT PLACEMENT plan for the song title "${actualSongTitle}" and artist name "${actualArtistName}"
 
-=== CRITICAL TEXT RULES ===
-READABILITY IS THE #1 PRIORITY. The text must be EASY TO READ at a glance.
-
-TYPOGRAPHY REQUIREMENTS:
-- Use MODERN, PREMIUM typography that looks like 2024-2025 design (think Apple, high-end fashion, Spotify editorial)
-- NEVER use dated effects like: bevels, embossing, drop shadows, reflections/mirror effects, 3D extrusion, chrome/metallic gradients, WordArt-style effects
-- Clean, sophisticated fonts - elegant serifs OR bold modern sans-serifs
-- The artist name should be SIMPLE and LEGIBLE - clean typography, no effects
+${typographySection}
 
 TEXT PLACEMENT:
 - Place text in CLEAR SPACE where it's easily readable - NOT on top of busy/dark objects
@@ -215,14 +232,10 @@ TEXT PLACEMENT:
 - Good positions: top area against sky/atmosphere, bottom area against floor/ground, or floating in negative space
 - NEVER place text directly ON the main subject where it becomes illegible
 
-INTEGRATION APPROACH:
-- The text should feel like it BELONGS in the scene through matching color temperature, subtle atmospheric effects (light haze, ambient glow)
-- NOT through being carved/embedded into objects which destroys readability
-
 Respond with ONLY this JSON format (no markdown, no explanation):
 {
   "enhancedDescription": "Your expanded visual description with ONLY lighting/texture/atmosphere additions - NO changes to spatial positioning or new structural elements",
-  "textIntegrationPlan": "Describe WHERE to place text for readability, WHAT modern typography style to use, and HOW to make it feel cohesive with the scene through color/atmosphere (not by embedding in objects)",
+  "textIntegrationPlan": "Describe WHERE to place text for readability and HOW to make it feel cohesive with the scene through color/atmosphere",
   "spatialValidation": "Confirm: [subject] is [exact position from user's description] relative to [environment] - no structural additions"
 }`;
 
@@ -352,6 +365,14 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
 
       // If there's a text style reference, include it for the AI to match
       if (textStyleReferenceImage) {
+        // Build user's text style description if provided
+        const userStyleDesc = userTextStylingInstructions 
+          ? `\n\n=== USER'S SELECTED TEXT STYLE DESCRIPTION ===
+The user selected this specific style: "${userTextStylingInstructions}"
+This description tells you what the second reference image shows. Use BOTH the description AND the reference image to ensure accurate replication.
+===\n`
+          : "";
+
         contentParts[0] = { 
           type: "text", 
           text: `You are a world-class album cover designer. Edit this image to create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (square 1:1 aspect ratio).
@@ -366,7 +387,7 @@ Mood/Vibe: ${mood}
 ${textEnforcementRule}
 ${textIntegrationInstruction}
 ${fillCanvasRule}
-
+${userStyleDesc}
 === TEXT STYLE REPLICATION - THIS IS YOUR #1 PRIORITY ===
 LOOK AT THE SECOND REFERENCE IMAGE. This shows the EXACT text style you MUST use for the song title.
 
@@ -408,7 +429,7 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       }
 
       requestBody = {
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
@@ -421,6 +442,14 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       // Text generation with style reference - AI sees the style to match
       logStep("Using text style reference image for generation");
       
+      // Build user's text style description if provided
+      const userStyleDescription = userTextStylingInstructions 
+        ? `\n\n=== USER'S SELECTED TEXT STYLE DESCRIPTION ===
+The user selected this specific style: "${userTextStylingInstructions}"
+This description tells you what the reference image shows. Use BOTH the description AND the reference image to ensure accurate replication.
+===\n`
+        : "";
+
       const stylePrompt = `You are a world-class album cover designer. Create ULTRA PHOTOREALISTIC, PROFESSIONAL album cover art at EXACTLY 3000x3000 pixels resolution (MUST BE PERFECTLY SQUARE - 1:1 aspect ratio).
 
 USER REQUEST:
@@ -433,7 +462,7 @@ MUSIC CONTEXT:
 ${textEnforcementRule}
 ${textIntegrationInstruction}
 ${fillCanvasRule}
-
+${userStyleDescription}
 === TEXT STYLE REPLICATION - THIS IS YOUR #1 PRIORITY ===
 LOOK AT THE ATTACHED REFERENCE IMAGE. This shows the EXACT text style you MUST use for the song title.
 
@@ -479,7 +508,7 @@ QUALITY REQUIREMENTS:
 IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
@@ -516,7 +545,7 @@ CRITICAL REQUIREMENTS:
 IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
@@ -745,7 +774,7 @@ Output at maximum quality.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
+            model: "google/gemini-3-pro-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
@@ -849,7 +878,7 @@ Make this gallery-worthy, Grammy-worthy.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
+            model: "google/gemini-3-pro-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
@@ -939,7 +968,7 @@ The text style MUST be a FLAWLESS match to the reference.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
+            model: "google/gemini-3-pro-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
