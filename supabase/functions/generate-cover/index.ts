@@ -18,6 +18,59 @@ const logStep = (step: string, details?: any) => {
   console.log(`[GENERATE-COVER] ${step}${detailsStr}`);
 };
 
+const validateTextStyleMatch = async ({
+  lovableKey,
+  generatedImageUrl,
+  styleReferenceUrl,
+}: {
+  lovableKey: string;
+  generatedImageUrl: string;
+  styleReferenceUrl: string;
+}): Promise<boolean> => {
+  // Vision check (cheap) to confirm the selected text style actually appears
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a strict visual QA checker. Answer with exactly one word: MATCH or MISMATCH.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Compare Image A (style reference) vs Image B (generated cover). Does the TEXT STYLE (letterforms, texture, glow, stroke, material) of the title match the reference style? Ignore colors of the background artwork. Answer MATCH or MISMATCH.",
+            },
+            { type: "image_url", image_url: { url: styleReferenceUrl } },
+            { type: "image_url", image_url: { url: generatedImageUrl } },
+          ],
+        },
+      ],
+      max_tokens: 10,
+    }),
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    console.log("[GENERATE-COVER] Style validation failed", resp.status, t);
+    // If validation fails, don't block the user—treat as match.
+    return true;
+  }
+
+  const data = await resp.json();
+  const content = (data?.choices?.[0]?.message?.content ?? "").toString().trim().toUpperCase();
+  return content.includes("MATCH") && !content.includes("MISMATCH");
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -301,13 +354,103 @@ ${base}`;
       throw new Error("Failed to generate image after retries");
     };
 
-    // Generate the image
+    // Generate the image (and enforce text style when a reference is provided)
     let imageUrl: string;
+    let finalImageUrl: string;
+
+    const maxStyleRetries = textStyleReferenceImage ? 3 : 1;
+
     try {
-      imageUrl = await makeImageRequest(requestBody);
+      let lastValidationFailed = false;
+
+      for (let attempt = 1; attempt <= maxStyleRetries; attempt++) {
+        logStep("Generate flow", { attempt, maxStyleRetries, hasStyleRef: !!textStyleReferenceImage });
+
+        imageUrl = await makeImageRequest(requestBody);
+
+        // Upload base64 image to storage for better performance + stable URLs
+        finalImageUrl = imageUrl;
+        if (imageUrl.startsWith("data:image")) {
+          try {
+            const base64Data = imageUrl.split(",")[1];
+            const mimeMatch = imageUrl.match(/data:([^;]+);/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+            const extension = mimeType.split("/")[1] || "png";
+            const fileName = `${userId || "anon"}/${Date.now()}.${extension}`;
+
+            // Convert base64 to Uint8Array
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            const { error: uploadError } = await supabaseClient.storage
+              .from("covers")
+              .upload(fileName, bytes, { contentType: mimeType, upsert: true });
+
+            if (uploadError) {
+              logStep("Storage upload failed, returning base64", { error: uploadError.message });
+            } else {
+              const { data: publicUrl } = supabaseClient.storage.from("covers").getPublicUrl(fileName);
+              finalImageUrl = publicUrl.publicUrl;
+              logStep("Uploaded to storage", { url: finalImageUrl });
+            }
+          } catch (uploadErr) {
+            logStep("Storage upload error, returning base64", {
+              error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
+            });
+          }
+        }
+
+        // If a text style reference was selected, enforce it via vision validation (no credit deducted on mismatches)
+        if (textStyleReferenceImage) {
+          const isMatch = await validateTextStyleMatch({
+            lovableKey: LOVABLE_API_KEY,
+            generatedImageUrl: finalImageUrl,
+            styleReferenceUrl: textStyleReferenceImage,
+          });
+
+          logStep("Text style validation", { attempt, isMatch });
+
+          if (!isMatch) {
+            lastValidationFailed = true;
+            // Try again without charging the user credit
+            continue;
+          }
+        }
+
+        // Passed validation (or no style ref)
+        lastValidationFailed = false;
+        break;
+      }
+
+      if (textStyleReferenceImage) {
+        // If we exhausted retries but still failed match, return a clear error and do NOT charge credit.
+        const isFinalMatch = await validateTextStyleMatch({
+          lovableKey: LOVABLE_API_KEY,
+          generatedImageUrl: finalImageUrl!,
+          styleReferenceUrl: textStyleReferenceImage,
+        });
+        if (!isFinalMatch) {
+          throw new Error("TEXT_STYLE_NOT_APPLIED");
+        }
+      }
+
+      imageUrl = finalImageUrl!;
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Unknown error";
-      
+
+      if (errorMessage === "TEXT_STYLE_NOT_APPLIED") {
+        return new Response(
+          JSON.stringify({
+            error:
+              "The selected text style did not apply reliably. Please try again (you were not charged a credit).",
+          }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       if (errorMessage === "RATE_LIMIT") {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
@@ -322,7 +465,10 @@ ${base}`;
       }
       if (errorMessage === "CONTENT_MODERATED") {
         return new Response(
-          JSON.stringify({ error: "This prompt was flagged by content safety filters. Please try a different description." }),
+          JSON.stringify({
+            error:
+              "This prompt was flagged by content safety filters. Please try a different description.",
+          }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -332,7 +478,7 @@ ${base}`;
           { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       logStep("ERROR", { message: errorMessage });
       return new Response(
         JSON.stringify({ error: errorMessage }),
@@ -341,39 +487,6 @@ ${base}`;
     }
 
     logStep("Generation complete");
-
-    // Upload base64 image to storage for better performance
-    let finalImageUrl = imageUrl;
-    if (imageUrl.startsWith("data:image")) {
-      try {
-        const base64Data = imageUrl.split(",")[1];
-        const mimeMatch = imageUrl.match(/data:([^;]+);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
-        const extension = mimeType.split("/")[1] || "png";
-        const fileName = `${userId || "anon"}/${Date.now()}.${extension}`;
-        
-        // Convert base64 to Uint8Array
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage
-          .from("covers")
-          .upload(fileName, bytes, { contentType: mimeType, upsert: true });
-        
-        if (uploadError) {
-          logStep("Storage upload failed, returning base64", { error: uploadError.message });
-        } else {
-          const { data: publicUrl } = supabaseClient.storage.from("covers").getPublicUrl(fileName);
-          finalImageUrl = publicUrl.publicUrl;
-          logStep("Uploaded to storage", { url: finalImageUrl });
-        }
-      } catch (uploadErr) {
-        logStep("Storage upload error, returning base64", { error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr) });
-      }
-    }
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
@@ -389,7 +502,7 @@ ${base}`;
       }
 
       const currentCredits = creditsData?.credits ?? 0;
-      
+
       if (currentCredits < 1) {
         return new Response(
           JSON.stringify({ error: "No credits remaining. Please purchase more credits." }),
@@ -418,7 +531,7 @@ ${base}`;
     }
 
     return new Response(
-      JSON.stringify({ imageUrl: finalImageUrl }),
+      JSON.stringify({ imageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
