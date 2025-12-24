@@ -234,22 +234,66 @@ ${base}`;
         }
 
         const data = await response.json();
+        logStep("Full response structure", {
+          topLevelKeys: Object.keys(data ?? {}),
+          hasChoices: !!data?.choices,
+          choicesLength: data?.choices?.length,
+        });
+        
         const msg = data.choices?.[0]?.message;
-        const imageUrl = msg?.images?.[0]?.image_url?.url;
+        
+        // Log message structure for debugging
+        if (msg) {
+          logStep("Message structure", {
+            messageKeys: Object.keys(msg),
+            hasImages: !!msg.images,
+            imagesLength: msg.images?.length,
+            contentType: typeof msg.content,
+            contentPreview: typeof msg.content === "string" ? msg.content.slice(0, 500) : JSON.stringify(msg.content)?.slice(0, 500),
+          });
+        }
+        
+        // Try multiple locations for the image
+        let imageUrl = msg?.images?.[0]?.image_url?.url;
+        
+        // Fallback: check top-level data.images
+        if (!imageUrl && data.images?.[0]?.image_url?.url) {
+          imageUrl = data.images[0].image_url.url;
+          logStep("Found image in top-level data.images");
+        }
+        
+        // Fallback: check if content contains base64 image data
+        if (!imageUrl && typeof msg?.content === "string" && msg.content.startsWith("data:image")) {
+          imageUrl = msg.content;
+          logStep("Found base64 image in message.content");
+        }
         
         if (!imageUrl) {
-          logStep("No image in response", {
+          // Check for content moderation / refusal
+          const contentText = typeof msg?.content === "string" ? msg.content : "";
+          const isModerated = contentText.toLowerCase().includes("cannot") || 
+                              contentText.toLowerCase().includes("unable to generate") ||
+                              contentText.toLowerCase().includes("policy") ||
+                              contentText.toLowerCase().includes("harmful") ||
+                              contentText.toLowerCase().includes("inappropriate");
+          
+          logStep("No image found", {
             attempt,
-            messagePreview: typeof msg?.content === "string" ? msg.content.slice(0, 300) : msg?.content,
-            hasImagesField: !!msg?.images,
-            rawKeys: Object.keys(data ?? {}),
+            isModerated,
+            messageContent: contentText.slice(0, 500),
+            fullDataPreview: JSON.stringify(data).slice(0, 1000),
           });
+          
+          if (isModerated) {
+            throw new Error("CONTENT_MODERATED");
+          }
+          
           if (attempt === maxRetries) throw new Error("Failed to generate image. Please try again.");
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
 
-        logStep("Image generated successfully");
+        logStep("Image generated successfully", { urlPrefix: imageUrl.slice(0, 50) });
         return imageUrl;
       }
       throw new Error("Failed to generate image after retries");
@@ -272,6 +316,12 @@ ${base}`;
         return new Response(
           JSON.stringify({ error: "AI service credits exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (errorMessage === "CONTENT_MODERATED") {
+        return new Response(
+          JSON.stringify({ error: "This prompt was flagged by content safety filters. Please try a different description." }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (errorMessage.includes("timed out")) {
