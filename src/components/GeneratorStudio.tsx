@@ -44,7 +44,6 @@ const genres = [
 
 // Text/Typography style presets - Only 5 main categories + AI Select
 const textStyles = [
-  { id: "none", name: "AI Select", description: "AI selects the best typography based on your cover", prompt: "", example: "" },
   { id: "creative", name: "Creative", description: "Artistic, unique, expressive", prompt: "creative artistic unique expressive typography", example: "" },
   { id: "dark", name: "Dark", description: "Moody, shadow, gothic vibes", prompt: "dark moody gothic shadow text with dramatic lighting", example: "" },
   { id: "futuristic", name: "Futuristic", description: "Sci-fi, tech, cyber aesthetics", prompt: "futuristic sci-fi technology cyber text with holographic effects", example: "" },
@@ -141,7 +140,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [coverCount, setCoverCount] = useState<"1" | "2">("1");
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
-  const [textStyle, setTextStyle] = useState("none");
+  const [textStyle, setTextStyle] = useState("");
   const [textColor, setTextColor] = useState("ai");
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
@@ -529,7 +528,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </div>
                     </div>
                     <p className={`text-xs md:text-sm ${mutedTextClass}`}>
-                      AI trained on top-selling marketplace covers.
+                      Professional album artwork generation.
                     </p>
                   </div>
                 </div>
@@ -677,31 +676,29 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe */}
-                  <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                      Mood / Vibe
-                    </label>
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                        <SelectValue placeholder="Select mood..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {currentGenreData.moods.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Main Color + Accent Color */}
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* Mood / Vibe + Main Color + Accent Color on same row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Mood / Vibe
+                      </label>
+                      <Select value={mood} onValueChange={setMood}>
+                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Mood..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {currentGenreData.moods.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Main Color
                       </label>
                       <ColorPickerPopover
-                        label="Select Main Color"
+                        label="Main Color"
                         value={mainColor}
                         onChange={setMainColor}
                         themeMode={themeMode}
@@ -712,7 +709,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         Accent Color
                       </label>
                       <ColorPickerPopover
-                        label="Select Accent Color"
+                        label="Accent Color"
                         value={accentColor}
                         onChange={setAccentColor}
                         themeMode={themeMode}
@@ -774,7 +771,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                        : themeMode === "light"
                                          ? "bg-white text-gray-900 border-gray-200 hover:border-gray-400"
                                          : "bg-secondary text-foreground border-border hover:border-primary/50"
-                                   } ${textStyle !== "none" && textStyle !== ts.id ? "opacity-50" : ""}`}
+                                   } ${textStyle && textStyle !== ts.id ? "opacity-50" : ""}`}
                                 >
                                   <span className="text-sm font-medium whitespace-nowrap">
                                     {ts.name}
@@ -903,25 +900,36 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         Upload Inspiration ({inspirationImages.length}/5)
                       </label>
                     </div>
-                    {inspirationImages.length === 0 ? (
-                      <p className={`text-xs ${mutedTextClass}`}>
-                        Drag and drop or click Upload to add up to 5 inspiration images. AI will use these for visual reference but ignore any text.
-                      </p>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {inspirationImages.map((img, idx) => (
-                          <div key={idx} className="relative w-12 h-12 rounded overflow-hidden border border-border">
-                            <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
-                            <button
-                              onClick={() => removeInspirationImage(idx)}
-                              className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
+                    {/* Always show 5 slots */}
+                    <div className="flex items-center gap-2">
+                      {[0, 1, 2, 3, 4].map((idx) => {
+                        const img = inspirationImages[idx];
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`relative w-12 h-12 rounded border-2 border-dashed ${
+                              img 
+                                ? "border-transparent" 
+                                : themeMode === "light" ? "border-gray-300" : "border-border"
+                            }`}
+                          >
+                            {img ? (
+                              <>
+                                <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover rounded" />
+                                <button
+                                  onClick={() => removeInspirationImage(idx)}
+                                  className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md z-10"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className={`w-full h-full rounded ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`} />
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
