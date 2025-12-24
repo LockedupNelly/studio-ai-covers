@@ -367,30 +367,30 @@ ${textEnforcementRule}
 ${textIntegrationInstruction}
 ${fillCanvasRule}
 
-=== CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
-The SECOND reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
+=== TEXT STYLE REPLICATION - THIS IS YOUR #1 PRIORITY ===
+LOOK AT THE SECOND REFERENCE IMAGE. This shows the EXACT text style you MUST use for the song title.
 
-MANDATORY RULES - READ CAREFULLY:
-1. ONLY use the text style shown in the provided reference image - NO OTHER STYLES
-2. DO NOT mix, blend, or incorporate elements from any other text styles
-3. DO NOT add smoke effects unless the reference specifically shows smoke
-4. DO NOT add glow effects unless the reference specifically shows glow
-5. DO NOT add distortion unless the reference specifically shows distortion
-6. MATCH THE EXACT VISUAL TREATMENT: letterforms, colors, textures, effects - EXACTLY as shown
+STEP-BY-STEP REPLICATION PROCESS:
+1. ANALYZE the reference image: What is the EXACT font style? (serif, sans-serif, script, italic, bold, etc.)
+2. IDENTIFY the specific characteristics: Is it italic? Bold? Condensed? Extended? What is the letter spacing?
+3. NOTE the exact color: White? Black? Colored? Gradient?
+4. CHECK for effects: Does it have glow? Shadow? Texture? Or is it CLEAN with NO effects?
+5. REPLICATE these EXACT characteristics - do NOT add anything the reference doesn't show
 
-WHAT TO REPLICATE FROM THE REFERENCE:
-- The exact font style/weight
-- The exact color palette
-- The exact effects (only if present in reference)
-- The exact texture treatment
-- The exact artistic technique
+WHAT THE REFERENCE SHOWS, YOU COPY:
+- If reference shows BOLD ITALIC WHITE TEXT → use bold italic white text
+- If reference shows CLEAN SANS-SERIF → use clean sans-serif, NO added effects
+- If reference shows GLOWING NEON → use glowing neon effect
+- If reference has NO EFFECTS → your text has NO EFFECTS
 
-STRICT PROHIBITIONS:
-- NEVER add effects not present in the reference image
-- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt
-- NEVER use generic or cheap fonts
-- NEVER make the text look overlaid - it must be INTEGRATED
-- NEVER add cracks, distressed textures, grunge, chips, or "broken" lettering unless the reference text style clearly contains them
+FORBIDDEN ACTIONS:
+- DO NOT add glow if reference has no glow
+- DO NOT add texture if reference is clean
+- DO NOT use thin font if reference is bold
+- DO NOT use script if reference is sans-serif
+- DO NOT change the color scheme
+- DO NOT "enhance" or "improve" the style - MATCH IT EXACTLY
+- DO NOT add cracks, distressed textures, grunge, chips, or "broken" lettering unless clearly in reference
 
 ADDITIONAL REQUIREMENTS:
 1. Output resolution MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
@@ -434,32 +434,36 @@ ${textEnforcementRule}
 ${textIntegrationInstruction}
 ${fillCanvasRule}
 
-=== CRITICAL: TEXT STYLE REPLICATION (ABSOLUTE PRIORITY) ===
-The attached reference image shows the EXACT and ONLY text style you MUST replicate for the SONG TITLE.
+=== TEXT STYLE REPLICATION - THIS IS YOUR #1 PRIORITY ===
+LOOK AT THE ATTACHED REFERENCE IMAGE. This shows the EXACT text style you MUST use for the song title.
 
-MANDATORY RULES - READ CAREFULLY:
-1. ONLY use the text style shown in the provided reference image - NO OTHER STYLES
-2. DO NOT mix, blend, or incorporate elements from any other text styles
-3. DO NOT add smoke effects unless the reference SPECIFICALLY shows smoke
-4. DO NOT add glow effects unless the reference SPECIFICALLY shows glow
-5. DO NOT add distortion unless the reference SPECIFICALLY shows distortion
-6. DO NOT add any visual effects not clearly present in the reference
-7. MATCH THE EXACT VISUAL TREATMENT: letterforms, colors, textures, effects - EXACTLY as shown
+STEP-BY-STEP REPLICATION PROCESS:
+1. ANALYZE the reference image: What is the EXACT font style? (serif, sans-serif, script, italic, bold, etc.)
+2. IDENTIFY the specific characteristics: Is it italic? Bold? Condensed? Extended? What is the letter spacing?
+3. NOTE the exact color: White? Black? Colored? Gradient?
+4. CHECK for effects: Does it have glow? Shadow? Texture? Or is it CLEAN with NO effects?
+5. REPLICATE these EXACT characteristics - do NOT add anything the reference doesn't show
 
-WHAT TO REPLICATE FROM THE REFERENCE:
-- The exact font style and weight
-- The exact color palette used
-- The exact effects (ONLY if present in reference)
-- The exact texture treatment
-- The exact artistic technique shown
+WHAT THE REFERENCE SHOWS, YOU COPY:
+- If reference shows BOLD ITALIC WHITE TEXT → use bold italic white text
+- If reference shows CLEAN SANS-SERIF → use clean sans-serif, NO added effects
+- If reference shows GLOWING NEON → use glowing neon effect
+- If reference has NO EFFECTS → your text has NO EFFECTS
 
-STRICT PROHIBITIONS:
-- NEVER add effects not present in the reference image
-- NEVER write "Song Title" literally - use the ACTUAL song title from the prompt
-- NEVER use generic, cheap, or basic grunge/distressed fonts
-- NEVER make the text look overlaid or pasted - it must be INTEGRATED into the artwork
-- NEVER interpret the style - COPY it exactly
-- NEVER add cracks, distressed textures, grunge, chips, or "broken" lettering unless the reference text style clearly contains them
+CRITICAL: The reference image typography IS the design. 
+- Same font weight (thin/regular/bold/heavy)
+- Same font style (upright/italic/oblique)
+- Same font family type (serif/sans-serif/script/display)
+- Same color treatment
+- Same effects (or LACK of effects)
+
+FORBIDDEN ACTIONS:
+- DO NOT add glow if reference has no glow
+- DO NOT add texture if reference is clean
+- DO NOT use thin font if reference is bold
+- DO NOT use script if reference is sans-serif
+- DO NOT change the color scheme
+- DO NOT "enhance" or "improve" the style - MATCH IT EXACTLY
 
 QUALITY REQUIREMENTS:
 1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE)
