@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
 
@@ -22,7 +22,6 @@ const Auth = () => {
   
   const { signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Redirect if already logged in
   if (user) {
@@ -63,23 +62,18 @@ const Auth = () => {
         
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
-            toast({
-              title: "Login failed",
+            toast.error("Login failed", {
               description: "Invalid email or password. Please try again.",
-              variant: "destructive",
             });
           } else {
-            toast({
-              title: "Login failed",
+            toast.error("Login failed", {
               description: error.message,
-              variant: "destructive",
             });
           }
           return;
         }
         
-        toast({
-          title: "Welcome back!",
+        toast.success("Welcome back!", {
           description: "You've successfully signed in.",
         });
         navigate("/");
@@ -94,32 +88,25 @@ const Auth = () => {
         
         if (error) {
           if (error.message.includes("already registered")) {
-            toast({
-              title: "Account exists",
+            toast.error("Account exists", {
               description: "This email is already registered. Try signing in instead.",
-              variant: "destructive",
             });
           } else {
-            toast({
-              title: "Sign up failed",
+            toast.error("Sign up failed", {
               description: error.message,
-              variant: "destructive",
             });
           }
           return;
         }
         
-        toast({
-          title: "Account created!",
+        toast.success("Account created!", {
           description: "Welcome to Cover Art Maker.",
         });
         navigate("/");
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
