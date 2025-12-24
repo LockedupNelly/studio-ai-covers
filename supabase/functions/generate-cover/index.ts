@@ -354,62 +354,107 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       };
     }
 
-    const controller = new AbortController();
-    const timeoutMs = 55_000;
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    // Helper function to make AI request with retry logic
+    const makeAIRequest = async (body: any, maxRetries = 2): Promise<string> => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        logStep(`AI request attempt ${attempt}/${maxRetries}`);
+        
+        const controller = new AbortController();
+        const timeoutMs = 55_000;
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    let response: Response;
-    try {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        logStep("AI request timed out", { timeoutMs });
-        return new Response(
-          JSON.stringify({ error: "Generation timed out. Please try again." }),
-          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        let response: Response;
+        try {
+          response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+        } catch (e) {
+          clearTimeout(timeout);
+          if (e instanceof DOMException && e.name === "AbortError") {
+            logStep("AI request timed out", { attempt, timeoutMs });
+            if (attempt === maxRetries) {
+              throw new Error("Generation timed out. Please try again.");
+            }
+            continue;
+          }
+          throw e;
+        } finally {
+          clearTimeout(timeout);
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logStep("AI gateway error", { status: response.status, error: errorText });
+
+          if (response.status === 429) {
+            throw new Error("RATE_LIMIT");
+          }
+          if (response.status === 402) {
+            throw new Error("CREDITS_EXHAUSTED");
+          }
+          
+          if (attempt === maxRetries) {
+            throw new Error(`AI gateway error: ${response.status}`);
+          }
+          continue;
+        }
+
+        const data = await response.json();
+        logStep("AI response received", { attempt });
+
+        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (!imageUrl) {
+          const textContent = data.choices?.[0]?.message?.content;
+          logStep("No image in response", { attempt, hasText: !!textContent, textPreview: textContent?.slice(0, 100) });
+          
+          if (attempt === maxRetries) {
+            throw new Error("The AI could not generate an image. Please try again with a different prompt.");
+          }
+          // Wait a moment before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        return imageUrl;
       }
-      throw e;
-    } finally {
-      clearTimeout(timeout);
-    }
+      throw new Error("Failed to generate image after retries");
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      logStep("AI gateway error", { status: response.status, error: errorText });
-
-      if (response.status === 429) {
+    let imageUrl: string;
+    try {
+      imageUrl = await makeAIRequest(requestBody);
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : "Unknown error";
+      if (errorMessage === "RATE_LIMIT") {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (errorMessage === "CREDITS_EXHAUSTED") {
         return new Response(
           JSON.stringify({ error: "AI service credits exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    logStep("AI response received");
-
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    
-    if (!imageUrl) {
-      logStep("No image in response", { data: JSON.stringify(data) });
-      throw new Error("No image generated");
+      if (errorMessage.includes("timed out")) {
+        return new Response(
+          JSON.stringify({ error: "Generation timed out. Please try again." }),
+          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      logStep("ERROR", { message: errorMessage });
+      return new Response(
+        JSON.stringify({ error: errorMessage }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     logStep("Pass 1 complete - initial cover generated");
