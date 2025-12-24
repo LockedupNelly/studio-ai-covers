@@ -418,35 +418,48 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
     // Run a second AI call to improve how the text integrates with the artwork
     logStep("Starting Pass 2 - Text integration polish");
     
-    const textPolishPrompt = `You are a professional graphic designer reviewing an album cover. Your task is to improve how BOTH the song title AND artist name integrate with the artwork.
+    const textPolishPrompt = `You are a world-class graphic designer specializing in album cover typography. Your task is to make BOTH the song title AND artist name look SEAMLESSLY INTEGRATED with the artwork.
 
 Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
 Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
 
-=== YOUR MISSION ===
-Make BOTH the song title AND artist name look like they were DESIGNED WITH the artwork, not placed ON TOP.
-The artist name is just as important as the song title - it should NOT look like an afterthought.
+=== CRITICAL: TEXT PLACEMENT RULE ===
+The song title must appear ONLY ONCE in ONE location (typically top area).
+The artist name must appear ONLY ONCE in ONE location (typically below song title).
+REMOVE any duplicate text that appears elsewhere in the image.
+Each text element should be in exactly ONE position - no repeats, no echoes, no duplicates anywhere.
 
-=== IMPROVEMENTS TO MAKE FOR BOTH SONG TITLE AND ARTIST NAME ===
-1. Add subtle shadows behind text that match the scene's lighting direction
-2. Blend text edges naturally into the background where appropriate
-3. Ensure text colors complement and integrate with the artwork's palette
-4. Add subtle texture or environmental effects to the text (matching the scene - like slight dust, light leaks, atmospheric haze)
-5. Make sure text has proper depth - it should feel part of the scene, not floating above it
-6. If the scene has light sources, ensure text reacts to them subtly
+=== YOUR MISSION: SEAMLESS INTEGRATION ===
+Make BOTH text elements look like they BELONG to the artwork - as if they were PAINTED, BUILT, or GROWN into the scene.
 
-CRITICAL: The artist name must look EQUALLY designed-in as the song title.
-If the song title has glow effects, the artist name should have complementary effects.
-Both elements should feel cohesive and intentionally designed together.
+The text should feel:
+- ORGANIC - like it's part of the world, not placed on top
+- GROUNDED - connected to the surface/environment it's on
+- BLENDED - edges naturally fade or merge with surroundings
+- HARMONIOUS - colors and textures match the scene's aesthetic
+- DIMENSIONAL - has depth, shadows, and lighting that match the scene
+
+=== INTEGRATION TECHNIQUES TO APPLY ===
+1. ENVIRONMENTAL INTERACTION: Text should react to the scene - if there's fog, text has fog around it; if there's light, text catches that light
+2. SHADOW GROUNDING: Add shadows that anchor text to surfaces, matching the scene's light direction
+3. EDGE BLENDING: Soften or blend text edges into the background organically where appropriate
+4. TEXTURE MATCHING: Apply subtle textures that exist in the scene to the text (grit, dust, atmospheric haze)
+5. COLOR HARMONY: Text colors should feel like they were sampled from the artwork's palette
+6. DEPTH PLACEMENT: Text should feel like it exists AT a specific depth in the scene, not floating above everything
+7. LIGHTING RESPONSE: If the scene has dramatic lighting, text should have subtle highlights and shadows matching it
+
+=== ARTIST NAME EQUAL TREATMENT ===
+The artist name must receive the SAME level of integration care as the song title.
+It should NOT look like an afterthought or basic overlay.
+If the song title has glow/effects, the artist name should have complementary (not identical) design treatment.
 
 === STRICT RULES ===
+- REMOVE any duplicate/repeated text that appears in wrong locations
 - DO NOT change the background artwork or composition AT ALL
-- DO NOT change the position of the text
 - SPELLING IS SACRED - DO NOT alter ANY letters. Keep exact spelling.
-- DO NOT add new text elements
-- DO NOT crop or resize the image
-- Keep the EXACT same 3000x3000 pixel dimensions
-- The text must remain fully legible and visible
+- DO NOT add new text elements beyond what exists
+- DO NOT crop or resize - keep EXACT 3000x3000 pixel dimensions
+- Text must remain fully legible and visible
 - Output must extend edge-to-edge with NO borders
 
 === QUALITY ===
