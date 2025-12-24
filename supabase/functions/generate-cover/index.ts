@@ -24,6 +24,7 @@ interface AnalysisResult {
   noDuplicates: boolean;
   textWithinBounds: boolean;
   integrationGood: boolean;
+  noPlaceholderText: boolean;
   issues: string[];
 }
 
@@ -579,21 +580,22 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
     const runPreflightAnalysis = async (imageUrl: string): Promise<AnalysisResult> => {
       logStep("Running pre-flight analysis with gemini-2.5-flash-lite");
       
-      const analysisPrompt = `You are a quality control inspector for album covers. Analyze this image and check for issues.
+       const analysisPrompt = `You are a quality control inspector for album covers. Analyze this image and check for issues.
 
 Expected text on the cover:
 - Song title: "${actualSongTitle || 'N/A'}" (spelled: ${songTitleSpelling || 'N/A'}, ${songTitleCharCount} characters)
 - Artist name: "${actualArtistName || 'N/A'}" (spelled: ${artistNameSpelling || 'N/A'}, ${artistNameCharCount} characters)
 
-Check these 4 things carefully and respond with ONLY a JSON object (no markdown, no explanation):
+Check these 5 things carefully and respond with ONLY a JSON object (no markdown, no explanation):
 
 1. spellingCorrect: Is the song title spelled EXACTLY as "${actualSongTitle}"? Check each letter. Is the artist name spelled correctly?
 2. noDuplicates: Does the song title appear only ONCE? Does the artist name appear only ONCE? (No duplicate text anywhere)
 3. textWithinBounds: Is ALL text fully visible? Are any letters cut off at the edges?
 4. integrationGood: Does the text look naturally integrated with the artwork (not pasted on top)?
+5. noPlaceholderText: Ensure NONE of these appear anywhere: "SONG TITLE", "Song Title", "ARTIST NAME", "Artist Name", "TITLE", "TRACK".
 
 Respond with ONLY this JSON format:
-{"spellingCorrect": true/false, "noDuplicates": true/false, "textWithinBounds": true/false, "integrationGood": true/false, "issues": ["list of specific issues found"]}`;
+{"spellingCorrect": true/false, "noDuplicates": true/false, "textWithinBounds": true/false, "integrationGood": true/false, "noPlaceholderText": true/false, "issues": ["list of specific issues found"]}`;
 
       try {
         const controller = new AbortController();
@@ -624,8 +626,8 @@ Respond with ONLY this JSON format:
 
         if (!response.ok) {
           logStep("Pre-flight analysis request failed", { status: response.status });
-          // Return pessimistic result to trigger fixes
-          return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Analysis failed"] };
+           // Return pessimistic result to trigger fixes
+           return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, noPlaceholderText: false, issues: ["Analysis failed"] };
         }
 
         const data = await response.json();
@@ -643,21 +645,22 @@ Respond with ONLY this JSON format:
         try {
           const result = JSON.parse(jsonStr);
           logStep("Pre-flight analysis result", result);
-          return {
-            spellingCorrect: result.spellingCorrect ?? false,
-            noDuplicates: result.noDuplicates ?? false,
-            textWithinBounds: result.textWithinBounds ?? false,
-            integrationGood: result.integrationGood ?? false,
-            issues: result.issues || [],
-          };
+           return {
+             spellingCorrect: result.spellingCorrect ?? false,
+             noDuplicates: result.noDuplicates ?? false,
+             textWithinBounds: result.textWithinBounds ?? false,
+             integrationGood: result.integrationGood ?? false,
+             noPlaceholderText: result.noPlaceholderText ?? false,
+             issues: result.issues || [],
+           };
         } catch (parseError) {
-          logStep("Failed to parse analysis JSON, using pessimistic defaults", { error: String(parseError) });
-          return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Parse error"] };
+           logStep("Failed to parse analysis JSON, using pessimistic defaults", { error: String(parseError) });
+           return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, noPlaceholderText: false, issues: ["Parse error"] };
         }
       } catch (e) {
-        logStep("Pre-flight analysis error", { error: e instanceof Error ? e.message : String(e) });
-        // Return pessimistic result to trigger fixes
-        return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Analysis error"] };
+         logStep("Pre-flight analysis error", { error: e instanceof Error ? e.message : String(e) });
+         // Return pessimistic result to trigger fixes
+         return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, noPlaceholderText: false, issues: ["Analysis error"] };
       }
     };
 
@@ -680,9 +683,15 @@ A reference image showing the EXACT text style is included. When making ANY chan
 Song title MUST be EXACTLY: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'}, ${songTitleCharCount} chars)
 Artist name MUST be EXACTLY: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'}, ${artistNameCharCount} chars)
 ${textStyleInstruction}
-=== FIX THESE ISSUES ===
 
-1. SPELLING: Verify EVERY letter matches exactly. Fix any corrupted, wrong, or unclear letters.
+=== HARD BAN: PLACEHOLDER / TEMPLATE TEXT ===
+If you see ANY of these anywhere on the artwork, REMOVE them completely and replace with the correct real text:
+- "SONG TITLE" / "Song Title" / "SONG TITTLE"
+- "ARTIST" / "ARTIST NAME" / "Artist Name"
+- Any generic placeholders like "TITLE", "TRACK", "NAME"
+
+=== FIX THESE ISSUES ===
+1. SPELLING: If ANY letter is wrong, ERASE the entire word and rewrite it correctly. Verify EVERY letter.
 2. DUPLICATES: If text appears more than once, KEEP ONLY ONE instance and REMOVE all others completely.
 3. BOUNDARIES: ALL text must be FULLY visible with 100px+ margin from edges. Scale down or reposition if needed.
 
@@ -976,11 +985,11 @@ The text style MUST be a FLAWLESS match to the reference.`;
     }
 
     // ========== PRE-FLIGHT ANALYSIS ==========
-    const analysis = await runPreflightAnalysis(finalImageUrl);
-    
-    const hasTextIssues = !analysis.spellingCorrect || !analysis.noDuplicates || !analysis.textWithinBounds;
+    let analysis = await runPreflightAnalysis(finalImageUrl);
+
+    let hasTextIssues = !analysis.spellingCorrect || !analysis.noDuplicates || !analysis.textWithinBounds || !analysis.noPlaceholderText;
     const hasIntegrationIssues = !analysis.integrationGood;
-    
+
     logStep("Pre-flight analysis summary", {
       hasTextIssues,
       hasIntegrationIssues,
@@ -992,11 +1001,26 @@ The text style MUST be a FLAWLESS match to the reference.`;
     });
 
     // ========== CONDITIONAL FIX PASSES ==========
-    
+
     // Fix Pass A: Text Issues (spelling, duplicates, boundaries)
     if (hasTextIssues) {
-      finalImageUrl = await runTextFixPass(finalImageUrl);
-      passesRun++;
+      // Try up to 2 times, with a re-check after each attempt.
+      for (let i = 0; i < 2 && hasTextIssues; i++) {
+        finalImageUrl = await runTextFixPass(finalImageUrl);
+        passesRun++;
+
+        analysis = await runPreflightAnalysis(finalImageUrl);
+        hasTextIssues = !analysis.spellingCorrect || !analysis.noDuplicates || !analysis.textWithinBounds || !analysis.noPlaceholderText;
+
+        logStep("Post Text-Fix analysis", {
+          attempt: i + 1,
+          hasTextIssues,
+          spellingCorrect: analysis.spellingCorrect,
+          noDuplicates: analysis.noDuplicates,
+          textWithinBounds: analysis.textWithinBounds,
+          issues: analysis.issues,
+        });
+      }
     } else {
       logStep("Skipping Fix Pass A - no text issues detected");
     }
