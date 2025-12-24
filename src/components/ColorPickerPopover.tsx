@@ -10,39 +10,39 @@ interface ColorPickerPopoverProps {
   themeMode?: "light" | "dark";
 }
 
-// Color palette with shades
+// Color palette with shades - vibrant versions included
 const colorPalette = [
-  // Row 1 - Reds
+  // Row 1 - Reds (with vibrant)
   { id: "ai", name: "AI Select", color: "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)" },
-  { id: "red-light", name: "Light Red", color: "#f87171" },
+  { id: "red-vibrant", name: "Vibrant Red", color: "#ff0000" },
   { id: "red", name: "Red", color: "#ef4444" },
   { id: "red-dark", name: "Dark Red", color: "#991b1b" },
-  // Row 2 - Oranges
-  { id: "orange-light", name: "Light Orange", color: "#fb923c" },
+  // Row 2 - Oranges (with vibrant)
+  { id: "orange-vibrant", name: "Vibrant Orange", color: "#ff6600" },
   { id: "orange", name: "Orange", color: "#f97316" },
   { id: "orange-dark", name: "Dark Orange", color: "#c2410c" },
-  // Row 3 - Yellows
-  { id: "yellow-light", name: "Light Yellow", color: "#fde047" },
+  // Row 3 - Yellows (with vibrant)
+  { id: "yellow-vibrant", name: "Vibrant Yellow", color: "#ffee00" },
   { id: "yellow", name: "Yellow", color: "#eab308" },
   { id: "gold", name: "Gold", color: "#d4af37" },
-  // Row 4 - Greens
-  { id: "green-light", name: "Light Green", color: "#4ade80" },
+  // Row 4 - Greens (with vibrant)
+  { id: "green-vibrant", name: "Vibrant Green", color: "#00ff00" },
   { id: "green", name: "Green", color: "#22c55e" },
   { id: "green-dark", name: "Dark Green", color: "#166534" },
-  // Row 5 - Teals/Cyans
-  { id: "teal-light", name: "Light Teal", color: "#2dd4bf" },
+  // Row 5 - Teals/Cyans (with vibrant)
+  { id: "cyan-vibrant", name: "Vibrant Cyan", color: "#00ffff" },
   { id: "teal", name: "Teal", color: "#14b8a6" },
   { id: "cyan", name: "Cyan", color: "#06b6d4" },
-  // Row 6 - Blues
-  { id: "blue-light", name: "Light Blue", color: "#60a5fa" },
+  // Row 6 - Blues (with vibrant)
+  { id: "blue-vibrant", name: "Vibrant Blue", color: "#0066ff" },
   { id: "blue", name: "Blue", color: "#3b82f6" },
   { id: "blue-dark", name: "Dark Blue", color: "#1e40af" },
-  // Row 7 - Purples
-  { id: "purple-light", name: "Light Purple", color: "#a78bfa" },
+  // Row 7 - Purples (with vibrant)
+  { id: "purple-vibrant", name: "Vibrant Purple", color: "#9900ff" },
   { id: "purple", name: "Purple", color: "#8b5cf6" },
   { id: "purple-dark", name: "Dark Purple", color: "#581c87" },
-  // Row 8 - Pinks
-  { id: "pink-light", name: "Light Pink", color: "#f9a8d4" },
+  // Row 8 - Pinks (with vibrant)
+  { id: "pink-vibrant", name: "Vibrant Pink", color: "#ff00aa" },
   { id: "pink", name: "Pink", color: "#ec4899" },
   { id: "pink-dark", name: "Dark Pink", color: "#9d174d" },
   // Row 9 - Neutrals

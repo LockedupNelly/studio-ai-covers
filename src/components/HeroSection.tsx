@@ -12,7 +12,7 @@ export const HeroSection = () => {
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
           <Sparkles className="w-3 h-3 text-primary" />
           <span className="text-[10px] font-semibold tracking-widest text-primary uppercase">
-            AI Trained on Cover Art Models
+            Professional Grade AI
           </span>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
@@ -37,7 +37,7 @@ export const HeroSection = () => {
 
       {/* Sub-tagline */}
       <p className="text-sm text-foreground/60 text-center max-w-md mb-10">
-        The only AI model trained exclusively on professional album artwork. 
+        Professional-grade AI built for album cover creation. 
         That's why artists choose us.
       </p>
 

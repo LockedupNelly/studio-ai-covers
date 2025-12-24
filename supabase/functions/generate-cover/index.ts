@@ -115,12 +115,13 @@ Visual Style: ${style}
 Mood/Vibe: ${mood}
 
 CRITICAL REQUIREMENTS:
-1. Output resolution MUST be exactly 3000x3000 pixels
+1. Output resolution MUST be exactly 3000x3000 pixels - PERFECTLY SQUARE
 2. Preserve the likeness and key features of the person/subject in the original image
 3. The text (song title and artist name) must be DEEPLY INTEGRATED into the artwork - not just placed on top
-4. ALL text must be FULLY VISIBLE with at least 10% margin from all edges
+4. ALL text must be FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF AT ANY EDGE - maintain at least 15% margin from all edges
 5. PHOTOREALISTIC quality - this should look like a real professional album cover
 6. Spend extra effort perfecting the REALISM and DETAIL of all elements
+7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
 
 The final image should have a subtle 1-2px light grey border around the cover.` },
         { type: "image_url", image_url: { url: referenceImage } }
@@ -166,11 +167,13 @@ STRICT PROHIBITIONS:
 - NEVER add cracks, distressed textures, grunge, chips, or "broken" lettering unless the reference text style clearly contains them
 
 ADDITIONAL REQUIREMENTS:
-1. Output resolution MUST be exactly 3000x3000 pixels (SQUARE - not landscape, not portrait)
+1. Output resolution MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
 2. Preserve the likeness of the person/subject from the first image
 3. PHOTOREALISTIC quality throughout
 4. Create a COMPLEMENTARY but simpler style for the artist name
 5. Add a subtle 1-2px light grey border around the final cover
+6. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
+7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
 
 The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`
         };
@@ -237,6 +240,8 @@ QUALITY REQUIREMENTS:
 5. Text must be deeply integrated into the scene
 6. Create a COMPLEMENTARY but simpler style for the artist name
 7. Add a subtle 1-2px light grey border around the final cover
+8. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
+9. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
 
 The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
 
@@ -266,10 +271,11 @@ CRITICAL REQUIREMENTS:
 1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
 2. Text (song title and artist name) must be DEEPLY INTEGRATED into the artwork, not just overlaid
 3. Add a subtle 1-2px light grey border around the final cover
-4. ALL text must be FULLY VISIBLE with at least 10% margin from edges
+4. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
 5. PHOTOREALISTIC quality - this should look like a real professional album cover
 6. Spend extra effort perfecting the REALISM and DETAIL of all elements
 7. The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood?.toLowerCase() || 'dynamic'} atmosphere
+8. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
 
 The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
 
