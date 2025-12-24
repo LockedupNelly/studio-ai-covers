@@ -418,11 +418,21 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
     // Run a second AI call to fix duplicate text and ensure text stays within boundaries
     logStep("Starting Pass 2 - Text cleanup and boundary check");
     
-    const textCleanupPrompt = `You are a precision text cleanup specialist. Your task is to fix any text issues on this album cover.
+    const textStyleInstruction = textStyleReferenceImage 
+      ? `\n\n=== CRITICAL: PRESERVE TEXT STYLE FROM REFERENCE ===
+A reference image showing the EXACT text style is included. When making ANY changes to text:
+- MAINTAIN the exact font style, weight, and letterforms from the reference
+- MAINTAIN the exact effects (glow, blur, texture, shadow, etc.) from the reference
+- MAINTAIN the exact color palette from the reference
+- DO NOT substitute with a different style - the reference is ABSOLUTE
+`
+      : '';
+    
+    const textCleanupPrompt = `You are a precision text cleanup specialist. Your task is to fix any text issues on this album cover while PRESERVING the exact text style.
 
 Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
 Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
-
+${textStyleInstruction}
 === CRITICAL: DUPLICATE TEXT REMOVAL ===
 SCAN THE ENTIRE IMAGE carefully for any text that appears more than once.
 If you find the song title appearing in multiple locations: KEEP ONLY ONE instance (the primary/best positioned one) and COMPLETELY REMOVE all other instances.
@@ -438,21 +448,27 @@ NO letters should be cut off at any edge.
 === STRICT RULES ===
 - DO NOT change the background artwork or composition
 - SPELLING IS SACRED - DO NOT alter ANY letters. Keep exact spelling.
-- Keep the artistic style of the text intact
+- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Match the exact style from the reference image' : 'Keep the artistic style of the text intact'}
 - Keep 3000x3000 pixel dimensions
 - Output must extend edge-to-edge with NO borders (but text must have margins)
 
 Output at maximum quality.`;
+
+    // Build content array with optional text style reference
+    const cleanupContent: any[] = [
+      { type: "text", text: textCleanupPrompt },
+      { type: "image_url", image_url: { url: imageUrl } }
+    ];
+    if (textStyleReferenceImage) {
+      cleanupContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+    }
 
     const cleanupRequestBody = {
       model: "google/gemini-2.5-flash-image-preview",
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: textCleanupPrompt },
-            { type: "image_url", image_url: { url: imageUrl } }
-          ],
+          content: cleanupContent,
         },
       ],
       modalities: ["image", "text"],
@@ -521,24 +537,30 @@ Output at maximum quality.`;
     
     const integrationStyle = genreIntegrationStyles[genre] || "naturally integrated with scene textures and lighting";
     
+    const textStylePreserveInstruction = textStyleReferenceImage 
+      ? `\n\n=== ABSOLUTE PRIORITY: PRESERVE TEXT STYLE FROM REFERENCE ===
+A reference image showing the EXACT text style is included as the SECOND image.
+This style is NON-NEGOTIABLE. When integrating:
+- The font, letterforms, effects (blur, glow, texture) MUST match the reference EXACTLY
+- DO NOT substitute the style with genre-typical integration
+- Apply environmental effects (dust, weathering, lighting) ON TOP of the reference style, not instead of it
+- The reference style defines the "DNA" of the text - integration adds "environment" to it
+`
+      : '';
+    
     const textPolishPrompt = `You are a legendary album cover artist known for making text look INSEPARABLE from artwork. Your signature style: text that looks like it was CREATED WITH the scene, not placed on it.
 
 Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
 Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
 Genre: ${genre}
+${textStylePreserveInstruction}
+=== YOUR INTEGRATION APPROACH FOR ${genre.toUpperCase()} ===
+${textStyleReferenceImage 
+  ? `PRESERVE the exact text style from the reference image, then ENHANCE integration with: ${integrationStyle}`
+  : `The text should appear ${integrationStyle}.`
+}
 
-=== YOUR SIGNATURE INTEGRATION STYLE FOR ${genre.toUpperCase()} ===
-The text should appear ${integrationStyle}.
-
-=== PHYSICAL INTEGRATION TECHNIQUES ===
-Make the text look like it was:
-- SPRAY PAINTED by the same artist who created the background
-- CARVED or ETCHED into physical surfaces in the scene
-- EMBOSSED or DEBOSSED with realistic depth and shadow
-- GROWN organically from elements in the artwork
-- FORGED, BURNED, or MELTED into the materials present
-
-=== ENVIRONMENTAL FUSION ===
+=== ENVIRONMENTAL FUSION (Apply while preserving style) ===
 The text MUST:
 - Have SUBSURFACE SCATTERING if there's backlighting behind it
 - Show the SAME WEAR AND WEATHERING as the environment (dust, scratches, age)
@@ -547,35 +569,41 @@ The text MUST:
 - Catch the SAME LIGHT SOURCE as other objects in the scene
 - Cast REALISTIC SHADOWS that ground it to surfaces
 
-=== TEXTURE MATCHING ===
-- Sample and apply ACTUAL TEXTURES from the background to the text
-- If the scene has grain, the text has grain
+=== TEXTURE MATCHING (Layer on top of existing style) ===
+- If the scene has grain, add subtle grain to the text
 - If the scene has glow, the text catches that glow
-- If the scene has grit, the text has grit
-- The text should look like it's made of MATERIALS that exist in the scene
+- If the scene has grit, add environmental grit
+- These are ADDITIONS to the existing text style, not replacements
 
-=== ARTIST NAME EQUAL TREATMENT ===
+=== ARTIST NAME TREATMENT ===
 The artist name receives the SAME level of integration mastery.
 It should have a COMPLEMENTARY but distinct treatment that establishes hierarchy while feeling equally integrated.
 
 === STRICT RULES ===
 - DO NOT change the background artwork or composition
 - SPELLING IS SACRED - DO NOT alter ANY letters
+- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - The reference image defines the exact style to maintain' : 'Keep the established text style'}
 - Text should appear ONLY ONCE each (no duplicates)
 - Keep 3000x3000 pixel dimensions
 - Output must extend edge-to-edge with NO borders
 
 Output at maximum quality, print-ready, gallery-worthy.`;
 
+    // Build content array with optional text style reference
+    const polishContent: any[] = [
+      { type: "text", text: textPolishPrompt },
+      { type: "image_url", image_url: { url: cleanedImageUrl } }
+    ];
+    if (textStyleReferenceImage) {
+      polishContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+    }
+
     const polishRequestBody = {
       model: "google/gemini-2.5-flash-image-preview",
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: textPolishPrompt },
-            { type: "image_url", image_url: { url: cleanedImageUrl } }
-          ],
+          content: polishContent,
         },
       ],
       modalities: ["image", "text"],
@@ -627,7 +655,7 @@ Output at maximum quality, print-ready, gallery-worthy.`;
     // Run a fourth AI call specifically to verify and fix any text spelling issues
     logStep("Starting Pass 4 - Spelling verification");
     
-    const spellingVerifyPrompt = `You are a text quality control specialist. Your ONLY task is to verify the spelling of text on this album cover.
+    const spellingVerifyPrompt = `You are a text quality control specialist. Your ONLY task is to verify the spelling of text on this album cover while PRESERVING the exact text style.
 
 === TEXT THAT MUST APPEAR EXACTLY ===
 Song title: "${actualSongTitle || 'as shown'}"
@@ -637,14 +665,23 @@ Exact character count: ${songTitleCharCount} characters
 Artist name: "${actualArtistName || 'as shown'}"
 Spelled letter-by-letter: ${artistNameSpelling || 'N/A'}
 Exact character count: ${artistNameCharCount} characters
-
+${textStyleReferenceImage ? `
+=== CRITICAL: TEXT STYLE REFERENCE ===
+A reference image showing the EXACT text style is included as the SECOND image.
+When fixing ANY spelling issues, you MUST maintain the EXACT style from this reference:
+- Same font/letterforms
+- Same effects (blur, glow, shadow, texture)
+- Same color palette
+DO NOT deviate from this style under any circumstances.
+` : ''}
 === YOUR TASK ===
 1. Look at the text currently on the cover
 2. Check EVERY SINGLE LETTER against the correct spelling above
 3. If ANY letter is wrong, corrupted, unclear, or missing:
    - Regenerate ONLY the text with PERFECT spelling
    - Keep ALL design effects (shadows, glow, textures, integration)
-   - Keep the EXACT same positioning and styling
+   - ${textStyleReferenceImage ? 'Match the EXACT style from the reference image' : 'Keep the EXACT same styling'}
+   - Keep the EXACT same positioning
    - Do NOT change the background artwork at all
 4. If the spelling is already 100% correct, return the image UNCHANGED
 
@@ -659,7 +696,7 @@ Exact character count: ${artistNameCharCount} characters
 === STRICT RULES ===
 - DO NOT change the background artwork or composition
 - DO NOT change text positioning or sizing
-- DO NOT change the artistic style of the text
+- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Must match the reference image exactly' : 'DO NOT change the artistic style of the text'}
 - ONLY fix incorrect letters while preserving the design
 - Keep 3000x3000 pixel dimensions
 - Output must extend edge-to-edge with NO borders
@@ -669,15 +706,21 @@ Before outputting, verify one more time:
 Does the song title spell exactly "${actualSongTitle}" with ${songTitleCharCount} characters? (${songTitleSpelling})
 Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCount} characters? (${artistNameSpelling})`;
 
+    // Build content array with optional text style reference
+    const spellingContent: any[] = [
+      { type: "text", text: spellingVerifyPrompt },
+      { type: "image_url", image_url: { url: polishedImageUrl } }
+    ];
+    if (textStyleReferenceImage) {
+      spellingContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+    }
+
     const spellingRequestBody = {
       model: "google/gemini-2.5-flash-image-preview",
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: spellingVerifyPrompt },
-            { type: "image_url", image_url: { url: polishedImageUrl } }
-          ],
+          content: spellingContent,
         },
       ],
       modalities: ["image", "text"],
@@ -733,7 +776,14 @@ Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCo
 
 Song title: "${actualSongTitle || 'as shown'}"
 Artist name: "${actualArtistName || 'as shown'}"
-
+${textStyleReferenceImage ? `
+=== ABSOLUTE REQUIREMENT: TEXT STYLE REFERENCE ===
+A reference image showing the EXACT text style is included as the SECOND image.
+This is the "DNA" of the text styling. Your integration work must PRESERVE this style completely:
+- The font, letterforms, blur, glow, texture, and effects MUST remain exactly as shown in the reference
+- Your job is to make this style look INTEGRATED with the scene, NOT to change the style
+- Think of it as: the reference defines WHAT the text looks like, you define HOW it sits in the environment
+` : ''}
 === ART DIRECTOR ASSESSMENT ===
 Look at this album cover critically. The text may currently look:
 - Like a Photoshop layer placed on top
@@ -742,16 +792,15 @@ Look at this album cover critically. The text may currently look:
 - Missing proper interaction with the environment
 
 === YOUR ONE JOB ===
-Make this text look INSEPARABLE from the artwork. As if the same artist who painted/photographed the background also created the text using the same materials, lighting, and technique.
+Make this text look INSEPARABLE from the artwork${textStyleReferenceImage ? ' while maintaining the EXACT style from the reference image' : ''}. As if the same artist who painted/photographed the background also created the text using the same materials, lighting, and technique.
 
-=== SPECIFIC INTEGRATION FIXES ===
-1. MATERIAL MATCHING: The text should appear made of materials that exist in the scene
-2. ENVIRONMENTAL EFFECTS: Apply fog, dust, smoke, light leaks, lens effects that exist in the background to the text
-3. SURFACE INTERACTION: Text should sit ON or IN surfaces, not float above them
-4. LIGHTING CONSISTENCY: Same light source affects text as affects the scene - highlights, shadows, color temperature
-5. TEXTURE BLEEDING: Background textures should subtly bleed into or affect text edges
-6. ATMOSPHERIC DEPTH: Text should exist at a specific depth in the scene with appropriate focus/blur
-7. AGE/WEAR MATCHING: If the scene looks weathered, text should have complementary weathering
+=== SPECIFIC INTEGRATION FIXES (Apply while preserving style) ===
+1. ENVIRONMENTAL EFFECTS: Apply fog, dust, smoke, light leaks, lens effects that exist in the background to the text
+2. SURFACE INTERACTION: Text should sit ON or IN surfaces, not float above them
+3. LIGHTING CONSISTENCY: Same light source affects text as affects the scene - highlights, shadows, color temperature
+4. TEXTURE BLEEDING: Background textures should subtly bleed into or affect text edges
+5. ATMOSPHERIC DEPTH: Text should exist at a specific depth in the scene with appropriate focus/blur
+6. AGE/WEAR MATCHING: If the scene looks weathered, text should have complementary weathering
 
 === PROFESSIONAL STANDARDS ===
 This cover should look like it cost $50,000 to design.
@@ -762,21 +811,27 @@ A viewer should never consciously notice where the artwork ends and the text beg
 - DO NOT change the background artwork
 - DO NOT change the spelling (it has been verified)
 - DO NOT change the position of text
-- ONLY enhance how text INTEGRATES visually with the scene
+- ${textStyleReferenceImage ? 'DO NOT change the text style - it must match the reference image' : 'ONLY enhance how text INTEGRATES visually with the scene'}
 - Keep 3000x3000 pixel dimensions
 - Output must extend edge-to-edge with NO borders
 
 Make this gallery-worthy. Make this Grammy-worthy.`;
+
+    // Build content array with optional text style reference
+    const artDirectorContent: any[] = [
+      { type: "text", text: artDirectorPrompt },
+      { type: "image_url", image_url: { url: spellingFixedImageUrl } }
+    ];
+    if (textStyleReferenceImage) {
+      artDirectorContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+    }
 
     const artDirectorRequestBody = {
       model: "google/gemini-2.5-flash-image-preview",
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: artDirectorPrompt },
-            { type: "image_url", image_url: { url: spellingFixedImageUrl } }
-          ],
+          content: artDirectorContent,
         },
       ],
       modalities: ["image", "text"],
