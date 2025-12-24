@@ -52,22 +52,25 @@ const textStyles = [
   { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 ];
 
-// Progress stages for generation - three-pass system (initial + text polish + spelling verification)
+// Progress stages for generation - five-pass system
 const progressStages = [
-  { label: "Compiling info...", progress: 3 },
-  { label: "Analyzing preferences...", progress: 6 },
-  { label: "Preparing assets...", progress: 10 },
-  { label: "Initializing generation...", progress: 15 },
-  { label: "Generating artwork...", progress: 22 },
-  { label: "Rendering scene...", progress: 30 },
-  { label: "Creating composition...", progress: 38 },
-  { label: "Polishing text integration...", progress: 46 },
-  { label: "Blending text with artwork...", progress: 54 },
-  { label: "Adding depth & shadows...", progress: 62 },
-  { label: "Verifying text spelling...", progress: 70 },
-  { label: "Checking each letter...", progress: 78 },
-  { label: "Finalizing text...", progress: 86 },
-  { label: "Almost ready...", progress: 94 },
+  { label: "Compiling info...", progress: 2 },
+  { label: "Analyzing preferences...", progress: 5 },
+  { label: "Preparing assets...", progress: 8 },
+  { label: "Initializing generation...", progress: 12 },
+  { label: "Generating artwork...", progress: 18 },
+  { label: "Rendering scene...", progress: 25 },
+  { label: "Pass 2: Cleaning up text...", progress: 32 },
+  { label: "Removing duplicates...", progress: 38 },
+  { label: "Pass 3: Integrating text...", progress: 45 },
+  { label: "Blending with artwork...", progress: 52 },
+  { label: "Adding depth & texture...", progress: 58 },
+  { label: "Pass 4: Verifying spelling...", progress: 65 },
+  { label: "Checking each letter...", progress: 70 },
+  { label: "Pass 5: Art director review...", progress: 78 },
+  { label: "Final integration polish...", progress: 85 },
+  { label: "Gallery-quality check...", progress: 92 },
+  { label: "Almost ready...", progress: 96 },
 ];
 
 // Genre-based visual style presets

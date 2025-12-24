@@ -414,56 +414,158 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
 
     logStep("Pass 1 complete - initial cover generated");
 
-    // === PASS 2: TEXT INTEGRATION POLISH ===
-    // Run a second AI call to improve how the text integrates with the artwork
-    logStep("Starting Pass 2 - Text integration polish");
+    // === PASS 2: TEXT CLEANUP & BOUNDARY CHECK ===
+    // Run a second AI call to fix duplicate text and ensure text stays within boundaries
+    logStep("Starting Pass 2 - Text cleanup and boundary check");
     
-    const textPolishPrompt = `You are a world-class graphic designer specializing in album cover typography. Your task is to make BOTH the song title AND artist name look SEAMLESSLY INTEGRATED with the artwork.
+    const textCleanupPrompt = `You are a precision text cleanup specialist. Your task is to fix any text issues on this album cover.
 
 Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
 Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
 
-=== CRITICAL: TEXT PLACEMENT RULE ===
-The song title must appear ONLY ONCE in ONE location (typically top area).
-The artist name must appear ONLY ONCE in ONE location (typically below song title).
-REMOVE any duplicate text that appears elsewhere in the image.
-Each text element should be in exactly ONE position - no repeats, no echoes, no duplicates anywhere.
+=== CRITICAL: DUPLICATE TEXT REMOVAL ===
+SCAN THE ENTIRE IMAGE carefully for any text that appears more than once.
+If you find the song title appearing in multiple locations: KEEP ONLY ONE instance (the primary/best positioned one) and COMPLETELY REMOVE all other instances.
+If you find the artist name appearing in multiple locations: KEEP ONLY ONE instance and COMPLETELY REMOVE all other instances.
+No echoes, no reflections, no duplicate text anywhere in the image.
 
-=== YOUR MISSION: SEAMLESS INTEGRATION ===
-Make BOTH text elements look like they BELONG to the artwork - as if they were PAINTED, BUILT, or GROWN into the scene.
-
-The text should feel:
-- ORGANIC - like it's part of the world, not placed on top
-- GROUNDED - connected to the surface/environment it's on
-- BLENDED - edges naturally fade or merge with surroundings
-- HARMONIOUS - colors and textures match the scene's aesthetic
-- DIMENSIONAL - has depth, shadows, and lighting that match the scene
-
-=== INTEGRATION TECHNIQUES TO APPLY ===
-1. ENVIRONMENTAL INTERACTION: Text should react to the scene - if there's fog, text has fog around it; if there's light, text catches that light
-2. SHADOW GROUNDING: Add shadows that anchor text to surfaces, matching the scene's light direction
-3. EDGE BLENDING: Soften or blend text edges into the background organically where appropriate
-4. TEXTURE MATCHING: Apply subtle textures that exist in the scene to the text (grit, dust, atmospheric haze)
-5. COLOR HARMONY: Text colors should feel like they were sampled from the artwork's palette
-6. DEPTH PLACEMENT: Text should feel like it exists AT a specific depth in the scene, not floating above everything
-7. LIGHTING RESPONSE: If the scene has dramatic lighting, text should have subtle highlights and shadows matching it
-
-=== ARTIST NAME EQUAL TREATMENT ===
-The artist name must receive the SAME level of integration care as the song title.
-It should NOT look like an afterthought or basic overlay.
-If the song title has glow/effects, the artist name should have complementary (not identical) design treatment.
+=== CRITICAL: TEXT BOUNDARY SAFETY ===
+ALL text MUST fit COMPLETELY within the image boundaries.
+Leave at least 100px margin from all edges.
+If text is too long or positioned too close to an edge, SCALE IT DOWN or REPOSITION IT rather than letting it extend off-canvas or get cut off.
+NO letters should be cut off at any edge.
 
 === STRICT RULES ===
-- REMOVE any duplicate/repeated text that appears in wrong locations
-- DO NOT change the background artwork or composition AT ALL
+- DO NOT change the background artwork or composition
 - SPELLING IS SACRED - DO NOT alter ANY letters. Keep exact spelling.
-- DO NOT add new text elements beyond what exists
-- DO NOT crop or resize - keep EXACT 3000x3000 pixel dimensions
-- Text must remain fully legible and visible
+- Keep the artistic style of the text intact
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders (but text must have margins)
+
+Output at maximum quality.`;
+
+    const cleanupRequestBody = {
+      model: "google/gemini-2.5-flash-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: textCleanupPrompt },
+            { type: "image_url", image_url: { url: imageUrl } }
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    };
+
+    const cleanupController = new AbortController();
+    const cleanupTimeoutMs = 40_000;
+    const cleanupTimeout = setTimeout(() => cleanupController.abort(), cleanupTimeoutMs);
+
+    let cleanedImageUrl = imageUrl; // Fallback to original if cleanup fails
+
+    try {
+      const cleanupResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cleanupRequestBody),
+        signal: cleanupController.signal,
+      });
+
+      clearTimeout(cleanupTimeout);
+
+      if (cleanupResponse.ok) {
+        const cleanupData = await cleanupResponse.json();
+        const cleanedUrl = cleanupData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (cleanedUrl) {
+          cleanedImageUrl = cleanedUrl;
+          logStep("Pass 2 complete - text cleanup successful");
+        } else {
+          logStep("Pass 2 - No cleaned image returned, using original");
+        }
+      } else {
+        const cleanupError = await cleanupResponse.text();
+        logStep("Pass 2 failed, using original image", { status: cleanupResponse.status, error: cleanupError });
+      }
+    } catch (cleanupError) {
+      clearTimeout(cleanupTimeout);
+      if (cleanupError instanceof DOMException && cleanupError.name === "AbortError") {
+        logStep("Pass 2 timed out, using original image");
+      } else {
+        logStep("Pass 2 error, using original image", { error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
+      }
+    }
+
+    // === PASS 3: TEXT INTEGRATION POLISH (Genre-Aware) ===
+    // Run a third AI call to deeply integrate text with artwork using genre-specific techniques
+    logStep("Starting Pass 3 - Text integration polish");
+    
+    // Genre-specific integration styles
+    const genreIntegrationStyles: Record<string, string> = {
+      "Hip-Hop / Rap": "SPRAY PAINTED on concrete, STENCILED graffiti, worn street art texture, urban grit and weathering",
+      "Pop": "GLOSSY reflective surface, HOLOGRAPHIC sheen, modern gradient glass, polished and vibrant",
+      "EDM": "NEON GLOW tubes, HOLOGRAPHIC digital artifacts, laser-etched light, electric plasma",
+      "R&B": "EMBOSSED on velvet, GOLD FOIL luxury, soft ambient glow, intimate candlelit warmth",
+      "Rock": "FORGED IN FIRE, CHISELED stone, battle-worn metal, dramatic lightning scars",
+      "Alternative": "GROWN from organic matter, DISSOLVED into mist, surreal melting, dreamlike distortion",
+      "Indie": "HAND-PAINTED on weathered wood, POLAROID fade, vintage film grain, authentic imperfection",
+      "Metal": "FORGED IN HELLFIRE, CARVED in obsidian, molten lava cracks, demonic energy",
+      "Country": "BURNED INTO weathered barn wood, RUSTIC rope texture, golden hour dust, Americana patina",
+      "Jazz": "SMOKY CLUB atmosphere, ART DECO gold leaf, sophisticated noir shadow, timeless elegance",
+      "Classical": "EMBOSSED on aged parchment, GILDED ornamental, baroque flourish, refined marble"
+    };
+    
+    const integrationStyle = genreIntegrationStyles[genre] || "naturally integrated with scene textures and lighting";
+    
+    const textPolishPrompt = `You are a legendary album cover artist known for making text look INSEPARABLE from artwork. Your signature style: text that looks like it was CREATED WITH the scene, not placed on it.
+
+Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
+Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
+Genre: ${genre}
+
+=== YOUR SIGNATURE INTEGRATION STYLE FOR ${genre.toUpperCase()} ===
+The text should appear ${integrationStyle}.
+
+=== PHYSICAL INTEGRATION TECHNIQUES ===
+Make the text look like it was:
+- SPRAY PAINTED by the same artist who created the background
+- CARVED or ETCHED into physical surfaces in the scene
+- EMBOSSED or DEBOSSED with realistic depth and shadow
+- GROWN organically from elements in the artwork
+- FORGED, BURNED, or MELTED into the materials present
+
+=== ENVIRONMENTAL FUSION ===
+The text MUST:
+- Have SUBSURFACE SCATTERING if there's backlighting behind it
+- Show the SAME WEAR AND WEATHERING as the environment (dust, scratches, age)
+- Have edges that DISSOLVE INTO THE ATMOSPHERE, not hard digital borders
+- React to FOG, SMOKE, or ATMOSPHERIC HAZE if present
+- Catch the SAME LIGHT SOURCE as other objects in the scene
+- Cast REALISTIC SHADOWS that ground it to surfaces
+
+=== TEXTURE MATCHING ===
+- Sample and apply ACTUAL TEXTURES from the background to the text
+- If the scene has grain, the text has grain
+- If the scene has glow, the text catches that glow
+- If the scene has grit, the text has grit
+- The text should look like it's made of MATERIALS that exist in the scene
+
+=== ARTIST NAME EQUAL TREATMENT ===
+The artist name receives the SAME level of integration mastery.
+It should have a COMPLEMENTARY but distinct treatment that establishes hierarchy while feeling equally integrated.
+
+=== STRICT RULES ===
+- DO NOT change the background artwork or composition
+- SPELLING IS SACRED - DO NOT alter ANY letters
+- Text should appear ONLY ONCE each (no duplicates)
+- Keep 3000x3000 pixel dimensions
 - Output must extend edge-to-edge with NO borders
 
-=== QUALITY ===
-Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
+Output at maximum quality, print-ready, gallery-worthy.`;
 
     const polishRequestBody = {
       model: "google/gemini-2.5-flash-image-preview",
@@ -472,7 +574,7 @@ Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
           role: "user",
           content: [
             { type: "text", text: textPolishPrompt },
-            { type: "image_url", image_url: { url: imageUrl } }
+            { type: "image_url", image_url: { url: cleanedImageUrl } }
           ],
         },
       ],
@@ -483,7 +585,7 @@ Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
     const polishTimeoutMs = 45_000;
     const polishTimeout = setTimeout(() => polishController.abort(), polishTimeoutMs);
 
-    let polishedImageUrl = imageUrl; // Fallback to original if polish fails
+    let polishedImageUrl = cleanedImageUrl; // Fallback to cleaned if polish fails
 
     try {
       const polishResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -504,26 +606,26 @@ Output at maximum quality, 3000x3000 pixels, ultra-crisp, print-ready.`;
         
         if (polishedUrl) {
           polishedImageUrl = polishedUrl;
-          logStep("Pass 2 complete - text integration polished successfully");
+          logStep("Pass 3 complete - text integration polished successfully");
         } else {
-          logStep("Pass 2 - No polished image returned, using original");
+          logStep("Pass 3 - No polished image returned, using cleaned version");
         }
       } else {
         const polishError = await polishResponse.text();
-        logStep("Pass 2 failed, using original image", { status: polishResponse.status, error: polishError });
+        logStep("Pass 3 failed, using cleaned image", { status: polishResponse.status, error: polishError });
       }
     } catch (polishError) {
       clearTimeout(polishTimeout);
       if (polishError instanceof DOMException && polishError.name === "AbortError") {
-        logStep("Pass 2 timed out, using original image");
+        logStep("Pass 3 timed out, using cleaned image");
       } else {
-        logStep("Pass 2 error, using original image", { error: polishError instanceof Error ? polishError.message : String(polishError) });
+        logStep("Pass 3 error, using cleaned image", { error: polishError instanceof Error ? polishError.message : String(polishError) });
       }
     }
 
-    // === PASS 3: SPELLING VERIFICATION ===
-    // Run a third AI call specifically to verify and fix any text spelling issues
-    logStep("Starting Pass 3 - Spelling verification");
+    // === PASS 4: SPELLING VERIFICATION ===
+    // Run a fourth AI call specifically to verify and fix any text spelling issues
+    logStep("Starting Pass 4 - Spelling verification");
     
     const spellingVerifyPrompt = `You are a text quality control specialist. Your ONLY task is to verify the spelling of text on this album cover.
 
@@ -585,7 +687,7 @@ Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCo
     const spellingTimeoutMs = 40_000;
     const spellingTimeout = setTimeout(() => spellingController.abort(), spellingTimeoutMs);
 
-    let finalImageUrl = polishedImageUrl; // Fallback to polished if spelling check fails
+    let spellingFixedImageUrl = polishedImageUrl; // Fallback to polished if spelling check fails
 
     try {
       const spellingResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -605,27 +707,128 @@ Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCo
         const spellingFixedUrl = spellingData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
         
         if (spellingFixedUrl) {
-          finalImageUrl = spellingFixedUrl;
-          logStep("Pass 3 complete - spelling verified/fixed successfully");
+          spellingFixedImageUrl = spellingFixedUrl;
+          logStep("Pass 4 complete - spelling verified/fixed successfully");
         } else {
-          logStep("Pass 3 - No image returned, using polished version");
+          logStep("Pass 4 - No image returned, using polished version");
         }
       } else {
         const spellingError = await spellingResponse.text();
-        logStep("Pass 3 failed, using polished image", { status: spellingResponse.status, error: spellingError });
+        logStep("Pass 4 failed, using polished image", { status: spellingResponse.status, error: spellingError });
       }
     } catch (spellingError) {
       clearTimeout(spellingTimeout);
       if (spellingError instanceof DOMException && spellingError.name === "AbortError") {
-        logStep("Pass 3 timed out, using polished image");
+        logStep("Pass 4 timed out, using polished image");
       } else {
-        logStep("Pass 3 error, using polished image", { error: spellingError instanceof Error ? spellingError.message : String(spellingError) });
+        logStep("Pass 4 error, using polished image", { error: spellingError instanceof Error ? spellingError.message : String(spellingError) });
       }
     }
 
-    logStep("Cover generation complete", { 
-      usedPolishedVersion: polishedImageUrl !== imageUrl,
-      usedSpellingFixedVersion: finalImageUrl !== polishedImageUrl
+    // === PASS 5: ART DIRECTOR FINAL REVIEW ===
+    // Run a fifth AI call with an "art director" persona focused purely on integration quality
+    logStep("Starting Pass 5 - Art director final review");
+    
+    const artDirectorPrompt = `You are a senior art director at a Grammy-winning album design studio. You have been brought in for ONE purpose: to ensure the text on this cover looks like it was CREATED WITH the artwork, not placed on it.
+
+Song title: "${actualSongTitle || 'as shown'}"
+Artist name: "${actualArtistName || 'as shown'}"
+
+=== ART DIRECTOR ASSESSMENT ===
+Look at this album cover critically. The text may currently look:
+- Like a Photoshop layer placed on top
+- Digital and sterile compared to the organic artwork
+- Lacking the same texture, weathering, or atmosphere as the scene
+- Missing proper interaction with the environment
+
+=== YOUR ONE JOB ===
+Make this text look INSEPARABLE from the artwork. As if the same artist who painted/photographed the background also created the text using the same materials, lighting, and technique.
+
+=== SPECIFIC INTEGRATION FIXES ===
+1. MATERIAL MATCHING: The text should appear made of materials that exist in the scene
+2. ENVIRONMENTAL EFFECTS: Apply fog, dust, smoke, light leaks, lens effects that exist in the background to the text
+3. SURFACE INTERACTION: Text should sit ON or IN surfaces, not float above them
+4. LIGHTING CONSISTENCY: Same light source affects text as affects the scene - highlights, shadows, color temperature
+5. TEXTURE BLEEDING: Background textures should subtly bleed into or affect text edges
+6. ATMOSPHERIC DEPTH: Text should exist at a specific depth in the scene with appropriate focus/blur
+7. AGE/WEAR MATCHING: If the scene looks weathered, text should have complementary weathering
+
+=== PROFESSIONAL STANDARDS ===
+This cover should look like it cost $50,000 to design.
+Every detail should scream "intentional" and "masterfully crafted."
+A viewer should never consciously notice where the artwork ends and the text begins - they should feel unified.
+
+=== STRICT RULES ===
+- DO NOT change the background artwork
+- DO NOT change the spelling (it has been verified)
+- DO NOT change the position of text
+- ONLY enhance how text INTEGRATES visually with the scene
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders
+
+Make this gallery-worthy. Make this Grammy-worthy.`;
+
+    const artDirectorRequestBody = {
+      model: "google/gemini-2.5-flash-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: artDirectorPrompt },
+            { type: "image_url", image_url: { url: spellingFixedImageUrl } }
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    };
+
+    const artDirectorController = new AbortController();
+    const artDirectorTimeoutMs = 45_000;
+    const artDirectorTimeout = setTimeout(() => artDirectorController.abort(), artDirectorTimeoutMs);
+
+    let finalImageUrl = spellingFixedImageUrl; // Fallback to spelling-fixed if art director fails
+
+    try {
+      const artDirectorResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(artDirectorRequestBody),
+        signal: artDirectorController.signal,
+      });
+
+      clearTimeout(artDirectorTimeout);
+
+      if (artDirectorResponse.ok) {
+        const artDirectorData = await artDirectorResponse.json();
+        const artDirectorUrl = artDirectorData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (artDirectorUrl) {
+          finalImageUrl = artDirectorUrl;
+          logStep("Pass 5 complete - art director review successful");
+        } else {
+          logStep("Pass 5 - No image returned, using spelling-fixed version");
+        }
+      } else {
+        const artDirectorError = await artDirectorResponse.text();
+        logStep("Pass 5 failed, using spelling-fixed image", { status: artDirectorResponse.status, error: artDirectorError });
+      }
+    } catch (artDirectorError) {
+      clearTimeout(artDirectorTimeout);
+      if (artDirectorError instanceof DOMException && artDirectorError.name === "AbortError") {
+        logStep("Pass 5 timed out, using spelling-fixed image");
+      } else {
+        logStep("Pass 5 error, using spelling-fixed image", { error: artDirectorError instanceof Error ? artDirectorError.message : String(artDirectorError) });
+      }
+    }
+
+    logStep("Cover generation complete (5-pass system)", { 
+      usedCleanedVersion: cleanedImageUrl !== imageUrl,
+      usedPolishedVersion: polishedImageUrl !== cleanedImageUrl,
+      usedSpellingFixedVersion: spellingFixedImageUrl !== polishedImageUrl,
+      usedArtDirectorVersion: finalImageUrl !== spellingFixedImageUrl
     });
 
     // Deduct 1 credit only after we have a generated image (prevents accidental credit loss).
