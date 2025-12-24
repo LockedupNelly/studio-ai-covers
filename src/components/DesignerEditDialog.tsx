@@ -74,7 +74,7 @@ export const DesignerEditDialog = ({
         <DialogHeader>
           <DialogTitle className="font-display tracking-wide flex items-center gap-2">
             <Edit3 className="w-5 h-5 text-primary" />
-            REQUEST DESIGNER EDITS
+            SEND FOR FREE PROFESSIONAL EDITS
           </DialogTitle>
         </DialogHeader>
 

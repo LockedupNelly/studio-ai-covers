@@ -112,10 +112,12 @@ const Profile = () => {
   };
 
   const fetchGenerations = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from("generations")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
