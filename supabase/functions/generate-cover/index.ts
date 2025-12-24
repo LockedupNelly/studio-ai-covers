@@ -429,7 +429,7 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       }
 
       requestBody = {
-        model: "google/gemini-3-pro-image-preview",
+        model: "google/gemini-2.5-flash-image-preview",
         messages: [
           {
             role: "user",
@@ -508,7 +508,7 @@ QUALITY REQUIREMENTS:
 IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
-        model: "google/gemini-3-pro-image-preview",
+        model: "google/gemini-2.5-flash-image-preview",
         messages: [
           {
             role: "user",
@@ -545,7 +545,7 @@ CRITICAL REQUIREMENTS:
 IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
-        model: "google/gemini-3-pro-image-preview",
+        model: "google/gemini-2.5-flash-image-preview",
         messages: [
           {
             role: "user",
@@ -774,7 +774,7 @@ Output at maximum quality.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-pro-image-preview",
+            model: "google/gemini-2.5-flash-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
@@ -878,7 +878,7 @@ Make this gallery-worthy, Grammy-worthy.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-pro-image-preview",
+            model: "google/gemini-2.5-flash-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
@@ -968,7 +968,7 @@ The text style MUST be a FLAWLESS match to the reference.`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-pro-image-preview",
+            model: "google/gemini-2.5-flash-image-preview",
             messages: [{ role: "user", content }],
             modalities: ["image", "text"],
           }),
