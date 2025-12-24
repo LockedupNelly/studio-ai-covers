@@ -36,10 +36,18 @@ export const HeroSection = () => {
       </p>
 
       {/* Sub-tagline */}
-      <p className="text-sm text-foreground/60 text-center max-w-md mb-10">
+      <p className="text-sm text-foreground/60 text-center max-w-md mb-4">
         Professional-grade AI built for album cover creation. 
         That's why artists choose us.
       </p>
+
+      {/* Free credit callout */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 mb-10">
+        <Sparkles className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold text-primary">
+          Sign up free and get 1 credit to create your first cover
+        </span>
+      </div>
 
       {/* Feature Badges */}
       <div className="flex flex-wrap items-center justify-center gap-4">

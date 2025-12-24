@@ -115,15 +115,17 @@ ${textStyleInstructions ? `- Style: ${textStyleInstructions}` : ''}
 ${hasStyleRef ? '- Match the text style from the reference image EXACTLY' : '- Use modern, premium typography (2024 style)'}
 - Place text in clear space for readability, 15% margin from edges` : '';
 
-      const base = `Create album cover art. 3000x3000px, edge-to-edge, no borders.
+      const base = `Create album cover art. CRITICAL: Output must be EXACTLY 1:1 square aspect ratio (1024x1024). The artwork MUST fill the entire canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars on any side.
 
 SCENE: ${description}
 GENRE: ${genre} | STYLE: ${style} | MOOD: ${mood}
 ${textBlock}
 
 Requirements:
+- SQUARE 1:1 aspect ratio, artwork fills 100% of canvas
+- NO empty space, NO padding, NO borders, NO letterboxing
 - Photorealistic, gallery-quality
-- Fill entire canvas - NO empty space, NO borders
+- Artwork extends to all four edges with no margins
 - Text integrated naturally into the scene`;
 
       if (hasRefImage) {
@@ -340,6 +342,39 @@ ${base}`;
 
     logStep("Generation complete");
 
+    // Upload base64 image to storage for better performance
+    let finalImageUrl = imageUrl;
+    if (imageUrl.startsWith("data:image")) {
+      try {
+        const base64Data = imageUrl.split(",")[1];
+        const mimeMatch = imageUrl.match(/data:([^;]+);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+        const extension = mimeType.split("/")[1] || "png";
+        const fileName = `${userId || "anon"}/${Date.now()}.${extension}`;
+        
+        // Convert base64 to Uint8Array
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from("covers")
+          .upload(fileName, bytes, { contentType: mimeType, upsert: true });
+        
+        if (uploadError) {
+          logStep("Storage upload failed, returning base64", { error: uploadError.message });
+        } else {
+          const { data: publicUrl } = supabaseClient.storage.from("covers").getPublicUrl(fileName);
+          finalImageUrl = publicUrl.publicUrl;
+          logStep("Uploaded to storage", { url: finalImageUrl });
+        }
+      } catch (uploadErr) {
+        logStep("Storage upload error, returning base64", { error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr) });
+      }
+    }
+
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
       const { data: creditsData, error: creditsError } = await supabaseClient
@@ -383,7 +418,7 @@ ${base}`;
     }
 
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({ imageUrl: finalImageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
