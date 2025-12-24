@@ -272,19 +272,29 @@ Respond with ONLY this JSON format (no markdown, no explanation):
     const { enhancedDescription, textIntegrationPlan } = await enhanceUserPrompt(prompt);
     
     // Build text integration instruction if we have a plan
+    // Typography rules only apply when NO text style reference is provided
+    const typographyRules = textStyleReferenceImage 
+      ? `
+TEXT STYLE: A reference image defines the EXACT text style to use. REPLICATE IT FLAWLESSLY.
+The song title MUST match the reference style exactly - font, effects, colors, everything.
+Artist name should COMPLEMENT the reference style.`
+      : `
+TYPOGRAPHY (no style reference provided):
+- Use MODERN 2024-2025 premium typography (think Apple, high-end fashion, Spotify editorial)
+- NEVER use dated effects: bevels, embossing, reflections/mirrors, 3D extrusion, chrome gradients, WordArt effects
+- Artist name must be CLEAN and SIMPLE - elegant typography, no fancy effects
+- Song title can be more stylized but must remain LEGIBLE`;
+
     const textIntegrationInstruction = textIntegrationPlan 
       ? `
 
 === CRITICAL TEXT PLACEMENT & STYLING (FOLLOW EXACTLY) ===
 ${textIntegrationPlan}
 
-MANDATORY TYPOGRAPHY RULES:
+MANDATORY RULES:
 - READABILITY IS #1 PRIORITY - text must be instantly readable at a glance
-- Use MODERN 2024-2025 premium typography (think Apple, high-end fashion, Spotify editorial)
-- NEVER use dated effects: bevels, embossing, reflections/mirrors, 3D extrusion, chrome gradients, WordArt effects
 - Place text in CLEAR SPACE with good contrast - NOT on top of busy/dark objects
-- Artist name must be CLEAN and SIMPLE - no fancy effects, just elegant typography
-- Song title can be more stylized but must remain LEGIBLE
+${typographyRules}
 ===`
       : "";
 
