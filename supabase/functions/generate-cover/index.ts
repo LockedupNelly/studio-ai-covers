@@ -168,7 +168,7 @@ Render all textures, lighting, and details at maximum fidelity as if for a galle
       const descriptionMatch = userPrompt.match(/Description:\s*(.+?)(?:\s*$|\s*Song Title:)/is);
       const coreIdea = descriptionMatch ? descriptionMatch[1].trim() : userPrompt;
       
-      const enhancementPrompt = `You are a creative director for album cover art. Take this basic concept and expand it into a rich, detailed visual description.
+      const enhancementPrompt = `You are a creative director for premium album cover art. Take this basic concept and expand it into a rich, detailed visual description.
 
 USER'S CORE IDEA: "${coreIdea}"
 GENRE: ${genre}
@@ -178,18 +178,32 @@ MOOD: ${mood}
 Your task:
 1. EXPAND the visual description with specific, vivid details (lighting, textures, atmosphere, composition, colors)
 2. Stay TRUE to the user's core idea - don't add new major concepts, just enrich what they described
-3. Write ONE detailed paragraph for the TEXT INTEGRATION PLAN - exactly HOW the song title "${actualSongTitle}" and artist name "${actualArtistName}" should be physically integrated into this specific scene
+3. Write ONE detailed paragraph for the TEXT PLACEMENT & STYLING PLAN for the song title "${actualSongTitle}" and artist name "${actualArtistName}"
 
-For the text integration plan, be VERY SPECIFIC about:
-- What physical surface or element the text should appear ON or IN (e.g., "carved into the piano wood", "formed by the candle flames", "embossed on the velvet curtain")
-- How the text should interact with the lighting (e.g., "catching warm candlelight glow", "casting soft shadows on the floor")
-- What textures or effects make it feel PART of the artwork (e.g., "same wood grain texture as the piano", "slightly worn gilded letters")
-- The text should look like it was CREATED WITH the scene, not added afterward
+=== CRITICAL TEXT RULES ===
+READABILITY IS THE #1 PRIORITY. The text must be EASY TO READ at a glance.
+
+TYPOGRAPHY REQUIREMENTS:
+- Use MODERN, PREMIUM typography that looks like 2024-2025 design (think Apple, high-end fashion, Spotify editorial)
+- NEVER use dated effects like: bevels, embossing, drop shadows, reflections/mirror effects, 3D extrusion, chrome/metallic gradients, WordArt-style effects
+- Clean, sophisticated fonts - elegant serifs OR bold modern sans-serifs
+- The artist name should be SIMPLE and LEGIBLE - clean typography, no effects
+
+TEXT PLACEMENT:
+- Place text in CLEAR SPACE where it's easily readable - NOT on top of busy/dark objects
+- Text should COMPLEMENT the scene, not be hidden within it
+- Use contrast: light text on dark areas, dark text on light areas
+- Good positions: top area against sky/atmosphere, bottom area against floor/ground, or floating in negative space
+- NEVER place text directly ON the main subject where it becomes illegible
+
+INTEGRATION APPROACH:
+- The text should feel like it BELONGS in the scene through matching color temperature, subtle atmospheric effects (light haze, ambient glow)
+- NOT through being carved/embedded into objects which destroys readability
 
 Respond with ONLY this JSON format (no markdown, no explanation):
 {
   "enhancedDescription": "Your expanded visual description here (2-3 sentences with vivid details)",
-  "textIntegrationPlan": "Detailed paragraph on how to physically integrate the text into this specific scene so it looks like part of the artwork"
+  "textIntegrationPlan": "Describe WHERE to place text for readability, WHAT modern typography style to use, and HOW to make it feel cohesive with the scene through color/atmosphere (not by embedding in objects)"
 }`;
 
       try {
@@ -261,11 +275,16 @@ Respond with ONLY this JSON format (no markdown, no explanation):
     const textIntegrationInstruction = textIntegrationPlan 
       ? `
 
-=== CRITICAL TEXT INTEGRATION PLAN (FOLLOW EXACTLY) ===
+=== CRITICAL TEXT PLACEMENT & STYLING (FOLLOW EXACTLY) ===
 ${textIntegrationPlan}
 
-The text MUST look like it was CREATED WITH the artwork, not pasted on top.
-DO NOT just overlay white text. The text must be PHYSICALLY PART of the scene.
+MANDATORY TYPOGRAPHY RULES:
+- READABILITY IS #1 PRIORITY - text must be instantly readable at a glance
+- Use MODERN 2024-2025 premium typography (think Apple, high-end fashion, Spotify editorial)
+- NEVER use dated effects: bevels, embossing, reflections/mirrors, 3D extrusion, chrome gradients, WordArt effects
+- Place text in CLEAR SPACE with good contrast - NOT on top of busy/dark objects
+- Artist name must be CLEAN and SIMPLE - no fancy effects, just elegant typography
+- Song title can be more stylized but must remain LEGIBLE
 ===`
       : "";
 
