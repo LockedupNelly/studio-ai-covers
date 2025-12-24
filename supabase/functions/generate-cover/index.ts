@@ -187,7 +187,7 @@ ${base}`;
         model: "google/gemini-2.5-flash-image-preview",
         messages: [{
           role: "user",
-          content: promptText
+          content: [{ type: "text", text: promptText }]
         }],
         modalities: ["image", "text"]
       };
@@ -199,7 +199,7 @@ ${base}`;
         logStep(`Generation attempt ${attempt}/${maxRetries}`);
         
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 55_000);
+        const timeout = setTimeout(() => controller.abort(), 120_000);
 
         let response: Response;
         try {
@@ -234,10 +234,16 @@ ${base}`;
         }
 
         const data = await response.json();
-        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        const msg = data.choices?.[0]?.message;
+        const imageUrl = msg?.images?.[0]?.image_url?.url;
         
         if (!imageUrl) {
-          logStep("No image in response", { attempt });
+          logStep("No image in response", {
+            attempt,
+            messagePreview: typeof msg?.content === "string" ? msg.content.slice(0, 300) : msg?.content,
+            hasImagesField: !!msg?.images,
+            rawKeys: Object.keys(data ?? {}),
+          });
           if (attempt === maxRetries) throw new Error("Failed to generate image. Please try again.");
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
