@@ -26,8 +26,8 @@ const validateTextStyleMatch = async ({
   lovableKey: string;
   generatedImageUrl: string;
   styleReferenceUrl: string;
-}): Promise<boolean> => {
-  // Vision check (cheap) to confirm the selected text style actually appears
+}): Promise<"MATCH" | "MISMATCH" | "UNAVAILABLE"> => {
+  // Vision check to confirm the selected text style actually appears
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -61,14 +61,19 @@ const validateTextStyleMatch = async ({
 
   if (!resp.ok) {
     const t = await resp.text();
-    console.log("[GENERATE-COVER] Style validation failed", resp.status, t);
-    // Strict mode: if we cannot validate, treat as mismatch so we NEVER charge for unvalidated typography.
-    return false;
+    console.log("[GENERATE-COVER] Style validation unavailable", resp.status, t);
+    return "UNAVAILABLE";
   }
 
   const data = await resp.json();
-  const content = (data?.choices?.[0]?.message?.content ?? "").toString().trim().toUpperCase();
-  return content.includes("MATCH") && !content.includes("MISMATCH");
+  const content = (data?.choices?.[0]?.message?.content ?? "")
+    .toString()
+    .trim()
+    .toUpperCase();
+
+  if (content.includes("MISMATCH")) return "MISMATCH";
+  if (content.includes("MATCH")) return "MATCH";
+  return "UNAVAILABLE";
 };
 
 serve(async (req) => {
@@ -359,9 +364,10 @@ ${base}`;
     let finalImageUrl: string;
 
     const maxStyleRetries = textStyleReferenceImage ? 3 : 1;
+    let skipCreditCharge = false;
 
     try {
-      let lastValidationFailed = false;
+      let lastValidationResult: "MATCH" | "MISMATCH" | "UNAVAILABLE" | null = null;
 
       for (let attempt = 1; attempt <= maxStyleRetries; attempt++) {
         logStep("Generate flow", { attempt, maxStyleRetries, hasStyleRef: !!textStyleReferenceImage });
@@ -403,36 +409,35 @@ ${base}`;
           }
         }
 
-        // If a text style reference was selected, enforce it via vision validation (no credit deducted on mismatches)
+        // If a text style reference was selected, enforce it via vision validation.
+        // If validation is temporarily unavailable, return the image but do NOT charge credits.
         if (textStyleReferenceImage) {
-          const isMatch = await validateTextStyleMatch({
+          const validation = await validateTextStyleMatch({
             lovableKey: LOVABLE_API_KEY,
             generatedImageUrl: finalImageUrl,
             styleReferenceUrl: textStyleReferenceImage,
           });
 
-          logStep("Text style validation", { attempt, isMatch });
+          lastValidationResult = validation;
+          logStep("Text style validation", { attempt, validation });
 
-          if (!isMatch) {
-            lastValidationFailed = true;
-            // Try again without charging the user credit
+          if (validation === "MISMATCH") {
             continue;
+          }
+
+          if (validation === "UNAVAILABLE") {
+            skipCreditCharge = true;
+            break;
           }
         }
 
         // Passed validation (or no style ref)
-        lastValidationFailed = false;
         break;
       }
 
       if (textStyleReferenceImage) {
         // If we exhausted retries but still failed match, return a clear error and do NOT charge credit.
-        const isFinalMatch = await validateTextStyleMatch({
-          lovableKey: LOVABLE_API_KEY,
-          generatedImageUrl: finalImageUrl!,
-          styleReferenceUrl: textStyleReferenceImage,
-        });
-        if (!isFinalMatch) {
+        if (lastValidationResult === "MISMATCH") {
           throw new Error("TEXT_STYLE_NOT_APPLIED");
         }
       }
@@ -489,7 +494,7 @@ ${base}`;
     logStep("Generation complete");
 
     // Deduct credit after successful generation
-    if (userId && !hasUnlimitedAccess) {
+    if (userId && !hasUnlimitedAccess && !skipCreditCharge) {
       const { data: creditsData, error: creditsError } = await supabaseClient
         .from("user_credits")
         .select("credits")
