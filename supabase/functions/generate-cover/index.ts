@@ -62,8 +62,8 @@ const validateTextStyleMatch = async ({
   if (!resp.ok) {
     const t = await resp.text();
     console.log("[GENERATE-COVER] Style validation failed", resp.status, t);
-    // If validation fails, don't block the user—treat as match.
-    return true;
+    // Strict mode: if we cannot validate, treat as mismatch so we NEVER charge for unvalidated typography.
+    return false;
   }
 
   const data = await resp.json();
