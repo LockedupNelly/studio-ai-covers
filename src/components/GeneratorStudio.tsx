@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { AudioAnalyzer } from "@/components/AudioAnalyzer";
 import { DesignerEditDialog } from "@/components/DesignerEditDialog";
+import { EditCoverDialog } from "@/components/EditCoverDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
@@ -141,7 +142,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory, setParentalAdvisory] = useState<"yes" | "no">("no");
   const [textStyle, setTextStyle] = useState("");
-  const [textColor, setTextColor] = useState("");
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
   
@@ -155,6 +155,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [recentCovers, setRecentCovers] = useState<{ id: string; image_url: string }[]>([]);
   const [expandedCover, setExpandedCover] = useState<string | null>(null);
   const [showDesignerEditDialog, setShowDesignerEditDialog] = useState(false);
+  const [showEditCoverDialog, setShowEditCoverDialog] = useState(false);
   const [showVariantDialog, setShowVariantDialog] = useState(false);
   const [pendingStyleId, setPendingStyleId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
@@ -314,11 +315,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     // Add color preferences
     if (mainColor) fullPrompt += ` | Main color: ${getColorValue(mainColor)}`;
     if (accentColor) fullPrompt += ` | Accent color: ${getColorValue(accentColor)}`;
-
-    // Text color rules
-    if (textColor) {
-      fullPrompt += ` | Text color: ${getColorValue(textColor)}`;
-    }
 
     // Add inspiration images instruction
     if (inspirationImages.length > 0) {
@@ -682,12 +678,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
                   {/* Mood / Vibe + Main Color + Accent Color on same row - equal widths */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Mood / Vibe
                       </label>
                       <Select value={mood} onValueChange={setMood}>
-                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
@@ -697,23 +693,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                    <div className="space-y-2 min-w-0">
+                      <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
                         Main Color
                       </label>
                       <ColorPickerPopover
-                        label="Main Color"
+                        label="Color"
                         value={mainColor}
                         onChange={setMainColor}
                         themeMode={themeMode}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                    <div className="space-y-2 min-w-0">
+                      <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
                         Accent Color
                       </label>
                       <ColorPickerPopover
-                        label="Accent Color"
+                        label="Color"
                         value={accentColor}
                         onChange={setAccentColor}
                         themeMode={themeMode}
@@ -790,43 +786,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Text Color + Parental Advisory on same row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                        Text Color
-                      </label>
-                      <ColorPickerPopover
-                        label="Text Color"
-                        value={textColor}
-                        onChange={setTextColor}
-                        themeMode={themeMode}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                        Parental Advisory
-                      </label>
-                      <RadioGroup
-                        value={parentalAdvisory}
-                        onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
-                        className="flex gap-3 h-10 items-center"
-                        disabled={isGenerating}
-                      >
-                        <div className="flex items-center space-x-1.5">
-                          <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
-                          <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
-                            Yes
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-1.5">
-                          <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
-                          <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
-                            No
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
+                  {/* Parental Advisory - single row */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+                      Parental Advisory
+                    </label>
+                    <RadioGroup
+                      value={parentalAdvisory}
+                      onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
+                      className="flex gap-3 h-10 items-center"
+                      disabled={isGenerating}
+                    >
+                      <div className="flex items-center space-x-1.5">
+                        <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
+                        <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
+                          Yes
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
+                        <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
+                          No
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </>
               )}
@@ -1143,23 +1126,35 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <p className={`text-center text-xs ${mutedTextClass}`}>
                         3000 × 3000px · Ready for streaming
                       </p>
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}
+                      <div className="flex flex-col gap-2 mt-2">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}
+                            onClick={() => setShowEditCoverDialog(true)}
+                            disabled={isGenerating}
+                          >
+                            Edit Cover
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleDownload}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                        <button
                           onClick={() => setShowDesignerEditDialog(true)}
-                          disabled={isGenerating}
+                          className={`text-xs font-medium transition-colors ${
+                            themeMode === "light" 
+                              ? "text-primary hover:text-primary/80" 
+                              : "text-primary hover:text-primary/80"
+                          }`}
                         >
-                          Request Design Edits
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleDownload}
-                        >
-                          Download
-                        </Button>
+                          Send for free professional edits
+                        </button>
                       </div>
                       <button
                         onClick={() => navigate("/profile")}
@@ -1254,7 +1249,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
         </DialogContent>
       </Dialog>
 
-      {/* Designer Edit Dialog */}
+      {/* Edit Cover Dialog (AI-powered) */}
+      <EditCoverDialog
+        open={showEditCoverDialog}
+        onOpenChange={setShowEditCoverDialog}
+        imageUrl={generatedImage}
+        onEditComplete={(newImageUrl) => {
+          // Update the parent component's generated image state via a workaround
+          // Since onGenerate sets the image, we need to use a different approach
+          // For now, we'll trigger a state update that passes the new image
+          window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: newImageUrl } }));
+        }}
+      />
+
+      {/* Designer Edit Dialog (Professional edits via email) */}
       <DesignerEditDialog
         open={showDesignerEditDialog}
         onOpenChange={setShowDesignerEditDialog}

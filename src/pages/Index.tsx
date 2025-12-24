@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
@@ -20,6 +20,18 @@ const Index = () => {
   const navigate = useNavigate();
 
   const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
+
+  // Listen for cover edit events from EditCoverDialog
+  useEffect(() => {
+    const handleCoverEdited = (event: CustomEvent<{ imageUrl: string }>) => {
+      setGeneratedImage(event.detail.imageUrl);
+    };
+
+    window.addEventListener('coverEdited', handleCoverEdited as EventListener);
+    return () => {
+      window.removeEventListener('coverEdited', handleCoverEdited as EventListener);
+    };
+  }, []);
 
   const handleGenerate = async (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => {
     setIsGenerating(true);
