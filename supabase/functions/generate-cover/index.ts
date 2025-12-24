@@ -122,16 +122,22 @@ If you write "Song Title" literally instead of "${actualSongTitle}", the output 
 ===`
       : "";
 
-    // Build the fill-canvas rule - CRITICAL for no borders
+    // Build the fill-canvas rule - CRITICAL for no borders + high quality
     const fillCanvasRule = `
 
-=== ABSOLUTE CANVAS FILL REQUIREMENT (CRITICAL) ===
-The artwork MUST completely fill the ENTIRE 3000x3000 pixel canvas with NO exceptions.
-ZERO empty space. ZERO borders. ZERO margins. ZERO padding.
-NO black borders. NO white borders. NO grey borders. NO empty corners. NO letterboxing.
-The visual content MUST extend completely edge-to-edge on ALL FOUR sides.
-If any pixel along any edge is empty/black/white/grey background, the output is REJECTED.
-The design elements and background must bleed off all edges.
+=== ABSOLUTE CANVAS FILL REQUIREMENT (CRITICAL - FAILURE = REJECTION) ===
+The artwork MUST completely fill the ENTIRE 3000x3000 pixel canvas with ZERO exceptions.
+ZERO empty space. ZERO borders. ZERO margins. ZERO padding. ZERO letterboxing.
+NO black borders. NO white borders. NO grey borders. NO empty corners.
+The visual content (background, artwork, textures) MUST extend COMPLETELY edge-to-edge on ALL FOUR sides.
+Every single pixel along every edge MUST contain artwork - NOT empty/black/white/grey background.
+The background must BLEED FULLY OFF all four edges with NO visible boundary.
+If ANY pixel along ANY edge is empty, solid black, solid white, solid grey, or any uniform padding color, the output is IMMEDIATELY REJECTED.
+
+=== QUALITY & RESOLUTION REQUIREMENT ===
+Generate at the HIGHEST possible detail and sharpness.
+The output must be print-ready, ultra-crisp, with no blur, no noise, no compression artifacts.
+Render all textures, lighting, and details at maximum fidelity as if for a gallery print.
 ===`;
 
     if (referenceImage) {
@@ -157,9 +163,9 @@ CRITICAL REQUIREMENTS:
 4. ALL text must be FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF AT ANY EDGE - maintain at least 15% margin from all edges
 5. PHOTOREALISTIC quality - this should look like a real professional album cover
 6. Spend extra effort perfecting the REALISM and DETAIL of all elements
-7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
+7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO borders or margins around the artwork
 
-The final image should have a subtle 1-2px light grey border around the cover.` },
+IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.` },
         { type: "image_url", image_url: { url: referenceImage } }
       ];
 
@@ -209,11 +215,11 @@ ADDITIONAL REQUIREMENTS:
 2. Preserve the likeness of the person/subject from the first image
 3. PHOTOREALISTIC quality throughout
 4. Create a COMPLEMENTARY but simpler style for the artist name
-5. Add a subtle 1-2px light grey border around the final cover
+5. NO BORDERS - artwork must extend to every edge
 6. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
-7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
+7. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO borders or margins around the artwork
 
-The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`
+IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`
         };
         contentParts.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
         logStep("Added text style reference image");
@@ -279,11 +285,11 @@ QUALITY REQUIREMENTS:
 4. The artwork should be gallery-worthy, not AI-generated looking
 5. Text must be deeply integrated into the scene
 6. Create a COMPLEMENTARY but simpler style for the artist name
-7. Add a subtle 1-2px light grey border around the final cover
+7. NO BORDERS - artwork must extend to every edge
 8. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
-9. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
+9. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO borders or margins around the artwork
 
-The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
+IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
@@ -312,14 +318,14 @@ ${fillCanvasRule}
 CRITICAL REQUIREMENTS:
 1. Output MUST be EXACTLY 3000x3000 pixels (PERFECTLY SQUARE - not landscape, not portrait)
 2. Text (song title and artist name) must be DEEPLY INTEGRATED into the artwork, not just overlaid
-3. Add a subtle 1-2px light grey border around the final cover
+3. NO BORDERS - artwork must extend to every edge
 4. ALL TEXT MUST BE FULLY VISIBLE - TEXT MUST NEVER BE CUT OFF - keep at least 15% margin from all edges
 5. PHOTOREALISTIC quality - this should look like a real professional album cover
 6. Spend extra effort perfecting the REALISM and DETAIL of all elements
 7. The image should be bold, memorable, and capture the essence of ${genre} music with a ${mood?.toLowerCase() || 'dynamic'} atmosphere
-8. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO black/white/grey borders or margins around the artwork
+8. The design MUST FILL THE ENTIRE 3000x3000 canvas - NO empty space, NO borders or margins around the artwork
 
-The final result should be indistinguishable from a cover designed by a top music industry graphic designer.`;
+IMPORTANT: After generating, review the output and ensure artwork extends to every edge with NO visible borders.`;
 
       requestBody = {
         model: "google/gemini-2.5-flash-image-preview",
