@@ -18,6 +18,15 @@ const logStep = (step: string, details?: any) => {
   console.log(`[GENERATE-COVER] ${step}${detailsStr}`);
 };
 
+// Pre-flight analysis result type
+interface AnalysisResult {
+  spellingCorrect: boolean;
+  noDuplicates: boolean;
+  textWithinBounds: boolean;
+  integrationGood: boolean;
+  issues: string[];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -83,8 +92,6 @@ serve(async (req) => {
           }
         }
 
-        // Credits are deducted AFTER a successful generation.
-        // This prevents users from losing credits when the AI request fails or times out.
         if (!hasUnlimitedAccess) {
           logStep("Credits will be deducted after generation (not upfront)");
         }
@@ -96,9 +103,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    logStep("Generating cover art");
-
-    let requestBody: any;
+    logStep("Generating cover art with hybrid system");
 
     // Extract song title and artist name from the prompt for strict enforcement
     const songTitleMatch = prompt.match(/Song Title:\s*([^|]+)/i);
@@ -154,6 +159,8 @@ Generate at the HIGHEST possible detail and sharpness.
 The output must be print-ready, ultra-crisp, with no blur, no noise, no compression artifacts.
 Render all textures, lighting, and details at maximum fidelity as if for a gallery print.
 ===`;
+
+    let requestBody: any;
 
     if (referenceImage) {
       // Image editing mode - use the reference image (user uploaded photo)
@@ -354,10 +361,10 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       };
     }
 
-    // Helper function to make AI request with retry logic
-    const makeAIRequest = async (body: any, maxRetries = 2): Promise<string> => {
+    // Helper function to make AI image request with retry logic
+    const makeImageRequest = async (body: any, maxRetries = 2): Promise<string> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        logStep(`AI request attempt ${attempt}/${maxRetries}`);
+        logStep(`Image request attempt ${attempt}/${maxRetries}`);
         
         const controller = new AbortController();
         const timeoutMs = 55_000;
@@ -377,7 +384,7 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
         } catch (e) {
           clearTimeout(timeout);
           if (e instanceof DOMException && e.name === "AbortError") {
-            logStep("AI request timed out", { attempt, timeoutMs });
+            logStep("Image request timed out", { attempt, timeoutMs });
             if (attempt === maxRetries) {
               throw new Error("Generation timed out. Please try again.");
             }
@@ -417,7 +424,6 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
           if (attempt === maxRetries) {
             throw new Error("The AI could not generate an image. Please try again with a different prompt.");
           }
-          // Wait a moment before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
@@ -427,9 +433,278 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
       throw new Error("Failed to generate image after retries");
     };
 
+    // Helper function for pre-flight analysis using cheap text model
+    const runPreflightAnalysis = async (imageUrl: string): Promise<AnalysisResult> => {
+      logStep("Running pre-flight analysis with gemini-2.5-flash-lite");
+      
+      const analysisPrompt = `You are a quality control inspector for album covers. Analyze this image and check for issues.
+
+Expected text on the cover:
+- Song title: "${actualSongTitle || 'N/A'}" (spelled: ${songTitleSpelling || 'N/A'}, ${songTitleCharCount} characters)
+- Artist name: "${actualArtistName || 'N/A'}" (spelled: ${artistNameSpelling || 'N/A'}, ${artistNameCharCount} characters)
+
+Check these 4 things carefully and respond with ONLY a JSON object (no markdown, no explanation):
+
+1. spellingCorrect: Is the song title spelled EXACTLY as "${actualSongTitle}"? Check each letter. Is the artist name spelled correctly?
+2. noDuplicates: Does the song title appear only ONCE? Does the artist name appear only ONCE? (No duplicate text anywhere)
+3. textWithinBounds: Is ALL text fully visible? Are any letters cut off at the edges?
+4. integrationGood: Does the text look naturally integrated with the artwork (not pasted on top)?
+
+Respond with ONLY this JSON format:
+{"spellingCorrect": true/false, "noDuplicates": true/false, "textWithinBounds": true/false, "integrationGood": true/false, "issues": ["list of specific issues found"]}`;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15_000);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: analysisPrompt },
+                  { type: "image_url", image_url: { url: imageUrl } }
+                ],
+              },
+            ],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          logStep("Pre-flight analysis request failed", { status: response.status });
+          // Return pessimistic result to trigger fixes
+          return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Analysis failed"] };
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        
+        logStep("Pre-flight raw response", { content: content.slice(0, 500) });
+
+        // Parse JSON from response (handle markdown code blocks)
+        let jsonStr = content;
+        if (content.includes("```")) {
+          const match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+          jsonStr = match ? match[1].trim() : content;
+        }
+
+        try {
+          const result = JSON.parse(jsonStr);
+          logStep("Pre-flight analysis result", result);
+          return {
+            spellingCorrect: result.spellingCorrect ?? false,
+            noDuplicates: result.noDuplicates ?? false,
+            textWithinBounds: result.textWithinBounds ?? false,
+            integrationGood: result.integrationGood ?? false,
+            issues: result.issues || [],
+          };
+        } catch (parseError) {
+          logStep("Failed to parse analysis JSON, using pessimistic defaults", { error: String(parseError) });
+          return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Parse error"] };
+        }
+      } catch (e) {
+        logStep("Pre-flight analysis error", { error: e instanceof Error ? e.message : String(e) });
+        // Return pessimistic result to trigger fixes
+        return { spellingCorrect: false, noDuplicates: false, textWithinBounds: false, integrationGood: false, issues: ["Analysis error"] };
+      }
+    };
+
+    // Helper function for Fix Pass A: Text Issues (spelling, duplicates, boundaries)
+    const runTextFixPass = async (imageUrl: string): Promise<string> => {
+      logStep("Running Fix Pass A - Text issues (spelling, duplicates, boundaries)");
+      
+      const textStyleInstruction = textStyleReferenceImage 
+        ? `\n\n=== CRITICAL: PRESERVE TEXT STYLE FROM REFERENCE ===
+A reference image showing the EXACT text style is included. When making ANY changes to text:
+- MAINTAIN the exact font style, weight, and letterforms from the reference
+- MAINTAIN the exact effects (glow, blur, texture, shadow, etc.) from the reference
+- MAINTAIN the exact color palette from the reference
+- DO NOT substitute with a different style - the reference is ABSOLUTE
+`
+        : '';
+      
+      const fixPrompt = `You are a precision text specialist. Fix ALL text issues on this album cover while PRESERVING the exact visual style.
+
+Song title MUST be EXACTLY: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'}, ${songTitleCharCount} chars)
+Artist name MUST be EXACTLY: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'}, ${artistNameCharCount} chars)
+${textStyleInstruction}
+=== FIX THESE ISSUES ===
+
+1. SPELLING: Verify EVERY letter matches exactly. Fix any corrupted, wrong, or unclear letters.
+2. DUPLICATES: If text appears more than once, KEEP ONLY ONE instance and REMOVE all others completely.
+3. BOUNDARIES: ALL text must be FULLY visible with 100px+ margin from edges. Scale down or reposition if needed.
+
+=== STRICT RULES ===
+- DO NOT change the background artwork or composition
+- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Match the exact style from the reference image' : 'Keep the artistic style of the text intact'}
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders (but text must have margins)
+
+Output at maximum quality.`;
+
+      const content: any[] = [
+        { type: "text", text: fixPrompt },
+        { type: "image_url", image_url: { url: imageUrl } }
+      ];
+      if (textStyleReferenceImage) {
+        content.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 45_000);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [{ role: "user", content }],
+            modalities: ["image", "text"],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const data = await response.json();
+          const fixedUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (fixedUrl) {
+            logStep("Fix Pass A complete - text issues fixed");
+            return fixedUrl;
+          }
+        }
+        logStep("Fix Pass A failed, using original");
+        return imageUrl;
+      } catch (e) {
+        logStep("Fix Pass A error", { error: e instanceof Error ? e.message : String(e) });
+        return imageUrl;
+      }
+    };
+
+    // Helper function for Fix Pass B: Integration Polish
+    const runIntegrationFixPass = async (imageUrl: string): Promise<string> => {
+      logStep("Running Fix Pass B - Integration polish");
+      
+      // Genre-specific integration styles
+      const genreIntegrationStyles: Record<string, string> = {
+        "Hip-Hop / Rap": "SPRAY PAINTED on concrete, STENCILED graffiti, worn street art texture, urban grit and weathering",
+        "Pop": "GLOSSY reflective surface, HOLOGRAPHIC sheen, modern gradient glass, polished and vibrant",
+        "EDM": "NEON GLOW tubes, HOLOGRAPHIC digital artifacts, laser-etched light, electric plasma",
+        "R&B": "EMBOSSED on velvet, GOLD FOIL luxury, soft ambient glow, intimate candlelit warmth",
+        "Rock": "FORGED IN FIRE, CHISELED stone, battle-worn metal, dramatic lightning scars",
+        "Alternative": "GROWN from organic matter, DISSOLVED into mist, surreal melting, dreamlike distortion",
+        "Indie": "HAND-PAINTED on weathered wood, POLAROID fade, vintage film grain, authentic imperfection",
+        "Metal": "FORGED IN HELLFIRE, CARVED in obsidian, molten lava cracks, demonic energy",
+        "Country": "BURNED INTO weathered barn wood, RUSTIC rope texture, golden hour dust, Americana patina",
+        "Jazz": "SMOKY CLUB atmosphere, ART DECO gold leaf, sophisticated noir shadow, timeless elegance",
+        "Classical": "EMBOSSED on aged parchment, GILDED ornamental, baroque flourish, refined marble"
+      };
+      
+      const integrationStyle = genreIntegrationStyles[genre] || "naturally integrated with scene textures and lighting";
+      
+      const textStylePreserveInstruction = textStyleReferenceImage 
+        ? `\n\n=== ABSOLUTE PRIORITY: PRESERVE TEXT STYLE FROM REFERENCE ===
+A reference image showing the EXACT text style is included as the SECOND image.
+This style is NON-NEGOTIABLE. When integrating:
+- The font, letterforms, effects (blur, glow, texture) MUST match the reference EXACTLY
+- DO NOT substitute the style with genre-typical integration
+- Apply environmental effects (dust, weathering, lighting) ON TOP of the reference style, not instead of it
+`
+        : '';
+      
+      const polishPrompt = `You are a legendary album cover artist. Make the text look INSEPARABLE from the artwork - as if created together.
+
+Song title: "${actualSongTitle || 'as shown'}"
+Artist name: "${actualArtistName || 'as shown'}"
+Genre: ${genre}
+${textStylePreserveInstruction}
+=== INTEGRATION APPROACH FOR ${genre.toUpperCase()} ===
+${textStyleReferenceImage 
+  ? `PRESERVE the exact text style from the reference image, then ENHANCE integration with: ${integrationStyle}`
+  : `The text should appear ${integrationStyle}.`
+}
+
+=== ENVIRONMENTAL FUSION ===
+- SUBSURFACE SCATTERING if there's backlighting
+- SAME WEAR AND WEATHERING as the environment
+- Edges that DISSOLVE INTO THE ATMOSPHERE
+- React to FOG, SMOKE, or ATMOSPHERIC HAZE
+- Catch the SAME LIGHT SOURCE as other objects
+- Cast REALISTIC SHADOWS
+
+=== STRICT RULES ===
+- DO NOT change the background artwork
+- SPELLING IS SACRED - DO NOT alter ANY letters
+- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Must match the reference image exactly' : 'Keep the established text style'}
+- Keep 3000x3000 pixel dimensions
+- Output must extend edge-to-edge with NO borders
+
+Make this gallery-worthy, Grammy-worthy.`;
+
+      const content: any[] = [
+        { type: "text", text: polishPrompt },
+        { type: "image_url", image_url: { url: imageUrl } }
+      ];
+      if (textStyleReferenceImage) {
+        content.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 45_000);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [{ role: "user", content }],
+            modalities: ["image", "text"],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const data = await response.json();
+          const polishedUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (polishedUrl) {
+            logStep("Fix Pass B complete - integration polished");
+            return polishedUrl;
+          }
+        }
+        logStep("Fix Pass B failed, using original");
+        return imageUrl;
+      } catch (e) {
+        logStep("Fix Pass B error", { error: e instanceof Error ? e.message : String(e) });
+        return imageUrl;
+      }
+    };
+
+    // ========== MAIN GENERATION FLOW ==========
+    
     let imageUrl: string;
     try {
-      imageUrl = await makeAIRequest(requestBody);
+      imageUrl = await makeImageRequest(requestBody);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Unknown error";
       if (errorMessage === "RATE_LIMIT") {
@@ -459,479 +734,51 @@ IMPORTANT: After generating, review the output and ensure artwork extends to eve
 
     logStep("Pass 1 complete - initial cover generated");
 
-    // === PASS 2: TEXT CLEANUP & BOUNDARY CHECK ===
-    // Run a second AI call to fix duplicate text and ensure text stays within boundaries
-    logStep("Starting Pass 2 - Text cleanup and boundary check");
+    // ========== PRE-FLIGHT ANALYSIS ==========
+    const analysis = await runPreflightAnalysis(imageUrl);
     
-    const textStyleInstruction = textStyleReferenceImage 
-      ? `\n\n=== CRITICAL: PRESERVE TEXT STYLE FROM REFERENCE ===
-A reference image showing the EXACT text style is included. When making ANY changes to text:
-- MAINTAIN the exact font style, weight, and letterforms from the reference
-- MAINTAIN the exact effects (glow, blur, texture, shadow, etc.) from the reference
-- MAINTAIN the exact color palette from the reference
-- DO NOT substitute with a different style - the reference is ABSOLUTE
-`
-      : '';
+    const hasTextIssues = !analysis.spellingCorrect || !analysis.noDuplicates || !analysis.textWithinBounds;
+    const hasIntegrationIssues = !analysis.integrationGood;
     
-    const textCleanupPrompt = `You are a precision text cleanup specialist. Your task is to fix any text issues on this album cover while PRESERVING the exact text style.
-
-Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
-Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
-${textStyleInstruction}
-=== CRITICAL: DUPLICATE TEXT REMOVAL ===
-SCAN THE ENTIRE IMAGE carefully for any text that appears more than once.
-If you find the song title appearing in multiple locations: KEEP ONLY ONE instance (the primary/best positioned one) and COMPLETELY REMOVE all other instances.
-If you find the artist name appearing in multiple locations: KEEP ONLY ONE instance and COMPLETELY REMOVE all other instances.
-No echoes, no reflections, no duplicate text anywhere in the image.
-
-=== CRITICAL: TEXT BOUNDARY SAFETY ===
-ALL text MUST fit COMPLETELY within the image boundaries.
-Leave at least 100px margin from all edges.
-If text is too long or positioned too close to an edge, SCALE IT DOWN or REPOSITION IT rather than letting it extend off-canvas or get cut off.
-NO letters should be cut off at any edge.
-
-=== STRICT RULES ===
-- DO NOT change the background artwork or composition
-- SPELLING IS SACRED - DO NOT alter ANY letters. Keep exact spelling.
-- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Match the exact style from the reference image' : 'Keep the artistic style of the text intact'}
-- Keep 3000x3000 pixel dimensions
-- Output must extend edge-to-edge with NO borders (but text must have margins)
-
-Output at maximum quality.`;
-
-    // Build content array with optional text style reference
-    const cleanupContent: any[] = [
-      { type: "text", text: textCleanupPrompt },
-      { type: "image_url", image_url: { url: imageUrl } }
-    ];
-    if (textStyleReferenceImage) {
-      cleanupContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
-    }
-
-    const cleanupRequestBody = {
-      model: "google/gemini-2.5-flash-image-preview",
-      messages: [
-        {
-          role: "user",
-          content: cleanupContent,
-        },
-      ],
-      modalities: ["image", "text"],
-    };
-
-    const cleanupController = new AbortController();
-    const cleanupTimeoutMs = 40_000;
-    const cleanupTimeout = setTimeout(() => cleanupController.abort(), cleanupTimeoutMs);
-
-    let cleanedImageUrl = imageUrl; // Fallback to original if cleanup fails
-
-    try {
-      const cleanupResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(cleanupRequestBody),
-        signal: cleanupController.signal,
-      });
-
-      clearTimeout(cleanupTimeout);
-
-      if (cleanupResponse.ok) {
-        const cleanupData = await cleanupResponse.json();
-        const cleanedUrl = cleanupData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        
-        if (cleanedUrl) {
-          cleanedImageUrl = cleanedUrl;
-          logStep("Pass 2 complete - text cleanup successful");
-        } else {
-          logStep("Pass 2 - No cleaned image returned, using original");
-        }
-      } else {
-        const cleanupError = await cleanupResponse.text();
-        logStep("Pass 2 failed, using original image", { status: cleanupResponse.status, error: cleanupError });
-      }
-    } catch (cleanupError) {
-      clearTimeout(cleanupTimeout);
-      if (cleanupError instanceof DOMException && cleanupError.name === "AbortError") {
-        logStep("Pass 2 timed out, using original image");
-      } else {
-        logStep("Pass 2 error, using original image", { error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-      }
-    }
-
-    // === PASS 3: TEXT INTEGRATION POLISH (Genre-Aware) ===
-    // Run a third AI call to deeply integrate text with artwork using genre-specific techniques
-    logStep("Starting Pass 3 - Text integration polish");
-    
-    // Genre-specific integration styles
-    const genreIntegrationStyles: Record<string, string> = {
-      "Hip-Hop / Rap": "SPRAY PAINTED on concrete, STENCILED graffiti, worn street art texture, urban grit and weathering",
-      "Pop": "GLOSSY reflective surface, HOLOGRAPHIC sheen, modern gradient glass, polished and vibrant",
-      "EDM": "NEON GLOW tubes, HOLOGRAPHIC digital artifacts, laser-etched light, electric plasma",
-      "R&B": "EMBOSSED on velvet, GOLD FOIL luxury, soft ambient glow, intimate candlelit warmth",
-      "Rock": "FORGED IN FIRE, CHISELED stone, battle-worn metal, dramatic lightning scars",
-      "Alternative": "GROWN from organic matter, DISSOLVED into mist, surreal melting, dreamlike distortion",
-      "Indie": "HAND-PAINTED on weathered wood, POLAROID fade, vintage film grain, authentic imperfection",
-      "Metal": "FORGED IN HELLFIRE, CARVED in obsidian, molten lava cracks, demonic energy",
-      "Country": "BURNED INTO weathered barn wood, RUSTIC rope texture, golden hour dust, Americana patina",
-      "Jazz": "SMOKY CLUB atmosphere, ART DECO gold leaf, sophisticated noir shadow, timeless elegance",
-      "Classical": "EMBOSSED on aged parchment, GILDED ornamental, baroque flourish, refined marble"
-    };
-    
-    const integrationStyle = genreIntegrationStyles[genre] || "naturally integrated with scene textures and lighting";
-    
-    const textStylePreserveInstruction = textStyleReferenceImage 
-      ? `\n\n=== ABSOLUTE PRIORITY: PRESERVE TEXT STYLE FROM REFERENCE ===
-A reference image showing the EXACT text style is included as the SECOND image.
-This style is NON-NEGOTIABLE. When integrating:
-- The font, letterforms, effects (blur, glow, texture) MUST match the reference EXACTLY
-- DO NOT substitute the style with genre-typical integration
-- Apply environmental effects (dust, weathering, lighting) ON TOP of the reference style, not instead of it
-- The reference style defines the "DNA" of the text - integration adds "environment" to it
-`
-      : '';
-    
-    const textPolishPrompt = `You are a legendary album cover artist known for making text look INSEPARABLE from artwork. Your signature style: text that looks like it was CREATED WITH the scene, not placed on it.
-
-Song title: "${actualSongTitle || 'as shown'}" (spelled: ${songTitleSpelling || 'as shown'})
-Artist name: "${actualArtistName || 'as shown'}" (spelled: ${artistNameSpelling || 'as shown'})
-Genre: ${genre}
-${textStylePreserveInstruction}
-=== YOUR INTEGRATION APPROACH FOR ${genre.toUpperCase()} ===
-${textStyleReferenceImage 
-  ? `PRESERVE the exact text style from the reference image, then ENHANCE integration with: ${integrationStyle}`
-  : `The text should appear ${integrationStyle}.`
-}
-
-=== ENVIRONMENTAL FUSION (Apply while preserving style) ===
-The text MUST:
-- Have SUBSURFACE SCATTERING if there's backlighting behind it
-- Show the SAME WEAR AND WEATHERING as the environment (dust, scratches, age)
-- Have edges that DISSOLVE INTO THE ATMOSPHERE, not hard digital borders
-- React to FOG, SMOKE, or ATMOSPHERIC HAZE if present
-- Catch the SAME LIGHT SOURCE as other objects in the scene
-- Cast REALISTIC SHADOWS that ground it to surfaces
-
-=== TEXTURE MATCHING (Layer on top of existing style) ===
-- If the scene has grain, add subtle grain to the text
-- If the scene has glow, the text catches that glow
-- If the scene has grit, add environmental grit
-- These are ADDITIONS to the existing text style, not replacements
-
-=== ARTIST NAME TREATMENT ===
-The artist name receives the SAME level of integration mastery.
-It should have a COMPLEMENTARY but distinct treatment that establishes hierarchy while feeling equally integrated.
-
-=== STRICT RULES ===
-- DO NOT change the background artwork or composition
-- SPELLING IS SACRED - DO NOT alter ANY letters
-- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - The reference image defines the exact style to maintain' : 'Keep the established text style'}
-- Text should appear ONLY ONCE each (no duplicates)
-- Keep 3000x3000 pixel dimensions
-- Output must extend edge-to-edge with NO borders
-
-Output at maximum quality, print-ready, gallery-worthy.`;
-
-    // Build content array with optional text style reference
-    const polishContent: any[] = [
-      { type: "text", text: textPolishPrompt },
-      { type: "image_url", image_url: { url: cleanedImageUrl } }
-    ];
-    if (textStyleReferenceImage) {
-      polishContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
-    }
-
-    const polishRequestBody = {
-      model: "google/gemini-2.5-flash-image-preview",
-      messages: [
-        {
-          role: "user",
-          content: polishContent,
-        },
-      ],
-      modalities: ["image", "text"],
-    };
-
-    const polishController = new AbortController();
-    const polishTimeoutMs = 45_000;
-    const polishTimeout = setTimeout(() => polishController.abort(), polishTimeoutMs);
-
-    let polishedImageUrl = cleanedImageUrl; // Fallback to cleaned if polish fails
-
-    try {
-      const polishResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(polishRequestBody),
-        signal: polishController.signal,
-      });
-
-      clearTimeout(polishTimeout);
-
-      if (polishResponse.ok) {
-        const polishData = await polishResponse.json();
-        const polishedUrl = polishData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        
-        if (polishedUrl) {
-          polishedImageUrl = polishedUrl;
-          logStep("Pass 3 complete - text integration polished successfully");
-        } else {
-          logStep("Pass 3 - No polished image returned, using cleaned version");
-        }
-      } else {
-        const polishError = await polishResponse.text();
-        logStep("Pass 3 failed, using cleaned image", { status: polishResponse.status, error: polishError });
-      }
-    } catch (polishError) {
-      clearTimeout(polishTimeout);
-      if (polishError instanceof DOMException && polishError.name === "AbortError") {
-        logStep("Pass 3 timed out, using cleaned image");
-      } else {
-        logStep("Pass 3 error, using cleaned image", { error: polishError instanceof Error ? polishError.message : String(polishError) });
-      }
-    }
-
-    // === PASS 4: SPELLING VERIFICATION ===
-    // Run a fourth AI call specifically to verify and fix any text spelling issues
-    logStep("Starting Pass 4 - Spelling verification");
-    
-    const spellingVerifyPrompt = `You are a text quality control specialist. Your ONLY task is to verify the spelling of text on this album cover while PRESERVING the exact text style.
-
-=== TEXT THAT MUST APPEAR EXACTLY ===
-Song title: "${actualSongTitle || 'as shown'}"
-Spelled letter-by-letter: ${songTitleSpelling || 'N/A'}
-Exact character count: ${songTitleCharCount} characters
-
-Artist name: "${actualArtistName || 'as shown'}"
-Spelled letter-by-letter: ${artistNameSpelling || 'N/A'}
-Exact character count: ${artistNameCharCount} characters
-${textStyleReferenceImage ? `
-=== CRITICAL: TEXT STYLE REFERENCE ===
-A reference image showing the EXACT text style is included as the SECOND image.
-When fixing ANY spelling issues, you MUST maintain the EXACT style from this reference:
-- Same font/letterforms
-- Same effects (blur, glow, shadow, texture)
-- Same color palette
-DO NOT deviate from this style under any circumstances.
-` : ''}
-=== YOUR TASK ===
-1. Look at the text currently on the cover
-2. Check EVERY SINGLE LETTER against the correct spelling above
-3. If ANY letter is wrong, corrupted, unclear, or missing:
-   - Regenerate ONLY the text with PERFECT spelling
-   - Keep ALL design effects (shadows, glow, textures, integration)
-   - ${textStyleReferenceImage ? 'Match the EXACT style from the reference image' : 'Keep the EXACT same styling'}
-   - Keep the EXACT same positioning
-   - Do NOT change the background artwork at all
-4. If the spelling is already 100% correct, return the image UNCHANGED
-
-=== COMMON ISSUES TO FIX ===
-- "H" that looks like "S" or "N"
-- "E" that looks like "F" or "B"
-- Letters that are merged, overlapping incorrectly, or distorted
-- Missing letters
-- Extra letters that shouldn't be there
-- Any character that doesn't match the exact spelling above
-
-=== STRICT RULES ===
-- DO NOT change the background artwork or composition
-- DO NOT change text positioning or sizing
-- ${textStyleReferenceImage ? 'TEXT STYLE IS SACRED - Must match the reference image exactly' : 'DO NOT change the artistic style of the text'}
-- ONLY fix incorrect letters while preserving the design
-- Keep 3000x3000 pixel dimensions
-- Output must extend edge-to-edge with NO borders
-
-=== FINAL CHECK ===
-Before outputting, verify one more time:
-Does the song title spell exactly "${actualSongTitle}" with ${songTitleCharCount} characters? (${songTitleSpelling})
-Does the artist name spell exactly "${actualArtistName}" with ${artistNameCharCount} characters? (${artistNameSpelling})`;
-
-    // Build content array with optional text style reference
-    const spellingContent: any[] = [
-      { type: "text", text: spellingVerifyPrompt },
-      { type: "image_url", image_url: { url: polishedImageUrl } }
-    ];
-    if (textStyleReferenceImage) {
-      spellingContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
-    }
-
-    const spellingRequestBody = {
-      model: "google/gemini-2.5-flash-image-preview",
-      messages: [
-        {
-          role: "user",
-          content: spellingContent,
-        },
-      ],
-      modalities: ["image", "text"],
-    };
-
-    const spellingController = new AbortController();
-    const spellingTimeoutMs = 40_000;
-    const spellingTimeout = setTimeout(() => spellingController.abort(), spellingTimeoutMs);
-
-    let spellingFixedImageUrl = polishedImageUrl; // Fallback to polished if spelling check fails
-
-    try {
-      const spellingResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(spellingRequestBody),
-        signal: spellingController.signal,
-      });
-
-      clearTimeout(spellingTimeout);
-
-      if (spellingResponse.ok) {
-        const spellingData = await spellingResponse.json();
-        const spellingFixedUrl = spellingData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        
-        if (spellingFixedUrl) {
-          spellingFixedImageUrl = spellingFixedUrl;
-          logStep("Pass 4 complete - spelling verified/fixed successfully");
-        } else {
-          logStep("Pass 4 - No image returned, using polished version");
-        }
-      } else {
-        const spellingError = await spellingResponse.text();
-        logStep("Pass 4 failed, using polished image", { status: spellingResponse.status, error: spellingError });
-      }
-    } catch (spellingError) {
-      clearTimeout(spellingTimeout);
-      if (spellingError instanceof DOMException && spellingError.name === "AbortError") {
-        logStep("Pass 4 timed out, using polished image");
-      } else {
-        logStep("Pass 4 error, using polished image", { error: spellingError instanceof Error ? spellingError.message : String(spellingError) });
-      }
-    }
-
-    // === PASS 5: ART DIRECTOR FINAL REVIEW ===
-    // Run a fifth AI call with an "art director" persona focused purely on integration quality
-    logStep("Starting Pass 5 - Art director final review");
-    
-    const artDirectorPrompt = `You are a senior art director at a Grammy-winning album design studio. You have been brought in for ONE purpose: to ensure the text on this cover looks like it was CREATED WITH the artwork, not placed on it.
-
-Song title: "${actualSongTitle || 'as shown'}"
-Artist name: "${actualArtistName || 'as shown'}"
-${textStyleReferenceImage ? `
-=== ABSOLUTE REQUIREMENT: TEXT STYLE REFERENCE ===
-A reference image showing the EXACT text style is included as the SECOND image.
-This is the "DNA" of the text styling. Your integration work must PRESERVE this style completely:
-- The font, letterforms, blur, glow, texture, and effects MUST remain exactly as shown in the reference
-- Your job is to make this style look INTEGRATED with the scene, NOT to change the style
-- Think of it as: the reference defines WHAT the text looks like, you define HOW it sits in the environment
-` : ''}
-=== ART DIRECTOR ASSESSMENT ===
-Look at this album cover critically. The text may currently look:
-- Like a Photoshop layer placed on top
-- Digital and sterile compared to the organic artwork
-- Lacking the same texture, weathering, or atmosphere as the scene
-- Missing proper interaction with the environment
-
-=== YOUR ONE JOB ===
-Make this text look INSEPARABLE from the artwork${textStyleReferenceImage ? ' while maintaining the EXACT style from the reference image' : ''}. As if the same artist who painted/photographed the background also created the text using the same materials, lighting, and technique.
-
-=== SPECIFIC INTEGRATION FIXES (Apply while preserving style) ===
-1. ENVIRONMENTAL EFFECTS: Apply fog, dust, smoke, light leaks, lens effects that exist in the background to the text
-2. SURFACE INTERACTION: Text should sit ON or IN surfaces, not float above them
-3. LIGHTING CONSISTENCY: Same light source affects text as affects the scene - highlights, shadows, color temperature
-4. TEXTURE BLEEDING: Background textures should subtly bleed into or affect text edges
-5. ATMOSPHERIC DEPTH: Text should exist at a specific depth in the scene with appropriate focus/blur
-6. AGE/WEAR MATCHING: If the scene looks weathered, text should have complementary weathering
-
-=== PROFESSIONAL STANDARDS ===
-This cover should look like it cost $50,000 to design.
-Every detail should scream "intentional" and "masterfully crafted."
-A viewer should never consciously notice where the artwork ends and the text begins - they should feel unified.
-
-=== STRICT RULES ===
-- DO NOT change the background artwork
-- DO NOT change the spelling (it has been verified)
-- DO NOT change the position of text
-- ${textStyleReferenceImage ? 'DO NOT change the text style - it must match the reference image' : 'ONLY enhance how text INTEGRATES visually with the scene'}
-- Keep 3000x3000 pixel dimensions
-- Output must extend edge-to-edge with NO borders
-
-Make this gallery-worthy. Make this Grammy-worthy.`;
-
-    // Build content array with optional text style reference
-    const artDirectorContent: any[] = [
-      { type: "text", text: artDirectorPrompt },
-      { type: "image_url", image_url: { url: spellingFixedImageUrl } }
-    ];
-    if (textStyleReferenceImage) {
-      artDirectorContent.push({ type: "image_url", image_url: { url: textStyleReferenceImage } });
-    }
-
-    const artDirectorRequestBody = {
-      model: "google/gemini-2.5-flash-image-preview",
-      messages: [
-        {
-          role: "user",
-          content: artDirectorContent,
-        },
-      ],
-      modalities: ["image", "text"],
-    };
-
-    const artDirectorController = new AbortController();
-    const artDirectorTimeoutMs = 45_000;
-    const artDirectorTimeout = setTimeout(() => artDirectorController.abort(), artDirectorTimeoutMs);
-
-    let finalImageUrl = spellingFixedImageUrl; // Fallback to spelling-fixed if art director fails
-
-    try {
-      const artDirectorResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(artDirectorRequestBody),
-        signal: artDirectorController.signal,
-      });
-
-      clearTimeout(artDirectorTimeout);
-
-      if (artDirectorResponse.ok) {
-        const artDirectorData = await artDirectorResponse.json();
-        const artDirectorUrl = artDirectorData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        
-        if (artDirectorUrl) {
-          finalImageUrl = artDirectorUrl;
-          logStep("Pass 5 complete - art director review successful");
-        } else {
-          logStep("Pass 5 - No image returned, using spelling-fixed version");
-        }
-      } else {
-        const artDirectorError = await artDirectorResponse.text();
-        logStep("Pass 5 failed, using spelling-fixed image", { status: artDirectorResponse.status, error: artDirectorError });
-      }
-    } catch (artDirectorError) {
-      clearTimeout(artDirectorTimeout);
-      if (artDirectorError instanceof DOMException && artDirectorError.name === "AbortError") {
-        logStep("Pass 5 timed out, using spelling-fixed image");
-      } else {
-        logStep("Pass 5 error, using spelling-fixed image", { error: artDirectorError instanceof Error ? artDirectorError.message : String(artDirectorError) });
-      }
-    }
-
-    logStep("Cover generation complete (5-pass system)", { 
-      usedCleanedVersion: cleanedImageUrl !== imageUrl,
-      usedPolishedVersion: polishedImageUrl !== cleanedImageUrl,
-      usedSpellingFixedVersion: spellingFixedImageUrl !== polishedImageUrl,
-      usedArtDirectorVersion: finalImageUrl !== spellingFixedImageUrl
+    logStep("Pre-flight analysis summary", {
+      hasTextIssues,
+      hasIntegrationIssues,
+      spellingCorrect: analysis.spellingCorrect,
+      noDuplicates: analysis.noDuplicates,
+      textWithinBounds: analysis.textWithinBounds,
+      integrationGood: analysis.integrationGood,
+      issues: analysis.issues,
     });
 
-    // Deduct 1 credit only after we have a generated image (prevents accidental credit loss).
+    let finalImageUrl = imageUrl;
+    let passesRun = 1; // Initial generation counts as 1
+
+    // ========== CONDITIONAL FIX PASSES ==========
+    
+    // Fix Pass A: Text Issues (spelling, duplicates, boundaries)
+    if (hasTextIssues) {
+      finalImageUrl = await runTextFixPass(finalImageUrl);
+      passesRun++;
+    } else {
+      logStep("Skipping Fix Pass A - no text issues detected");
+    }
+
+    // Fix Pass B: Integration Polish
+    if (hasIntegrationIssues) {
+      finalImageUrl = await runIntegrationFixPass(finalImageUrl);
+      passesRun++;
+    } else {
+      logStep("Skipping Fix Pass B - integration looks good");
+    }
+
+    logStep("Hybrid generation complete", { 
+      totalPasses: passesRun,
+      skippedTextFix: !hasTextIssues,
+      skippedIntegrationFix: !hasIntegrationIssues,
+      estimatedCost: `~$${(0.001 + (passesRun * 0.039)).toFixed(3)}`,
+    });
+
+    // Deduct 1 credit only after we have a generated image
     if (userId && !hasUnlimitedAccess) {
       const { data: creditsData, error: creditsError } = await supabaseClient
         .from("user_credits")
@@ -968,7 +815,7 @@ Make this gallery-worthy. Make this Grammy-worthy.`;
         user_id: userId,
         amount: -1,
         type: "generation",
-        description: `Generated ${genre} cover art`,
+        description: `Generated ${genre} cover art (${passesRun} passes)`,
       });
 
       logStep("Credit deducted (post-generation)", { newBalance: currentCredits - 1 });
