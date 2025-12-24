@@ -32,28 +32,43 @@ const Index = () => {
     };
   }, []);
 
-  const handleGenerate = async (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => {
+  const handleGenerate = async (
+    prompt: string,
+    genre: string,
+    style: string,
+    mood: string,
+    referenceImage?: string,
+    textStyleReferenceImage?: string
+  ) => {
     setIsGenerating(true);
     setLastGenParams({ prompt, genre, style, mood });
-    
+
+    const extractInvokeErrorMessage = async (err: unknown): Promise<string> => {
+      const anyErr: any = err as any;
+
+      // supabase-js FunctionsHttpError shape
+      const body = anyErr?.context?.body;
+      if (body != null) {
+        try {
+          const raw = typeof body === "string" ? body : JSON.stringify(body);
+          const parsed = JSON.parse(raw);
+          if (typeof parsed?.error === "string" && parsed.error.trim()) return parsed.error;
+        } catch {
+          // ignore
+        }
+      }
+
+      if (anyErr?.message) return String(anyErr.message);
+      return "Please try again";
+    };
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-cover", {
         body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
       });
 
-      // Supabase returns non-2xx as `error` with a generic message; extract the real backend error payload.
       if (error) {
-        const ctx: any = error as any;
-        const body = ctx?.context?.body;
-        if (body) {
-          try {
-            const parsed = typeof body === "string" ? JSON.parse(body) : body;
-            if (parsed?.error) throw new Error(parsed.error);
-          } catch {
-            // fall through to generic error
-          }
-        }
-        throw error;
+        throw new Error(await extractInvokeErrorMessage(error));
       }
 
       if (data?.error) {
