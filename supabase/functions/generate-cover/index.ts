@@ -27,53 +27,58 @@ const validateTextStyleMatch = async ({
   generatedImageUrl: string;
   styleReferenceUrl: string;
 }): Promise<"MATCH" | "MISMATCH" | "UNAVAILABLE"> => {
-  // Vision check to confirm the selected text style actually appears
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a strict visual QA checker. Answer with exactly one word: MATCH or MISMATCH.",
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text:
-                "Compare Image A (style reference) vs Image B (generated cover). Does the TEXT STYLE (letterforms, texture, glow, stroke, material) of the title match the reference style? Ignore colors of the background artwork. Answer MATCH or MISMATCH.",
-            },
-            { type: "image_url", image_url: { url: styleReferenceUrl } },
-            { type: "image_url", image_url: { url: generatedImageUrl } },
-          ],
-        },
-      ],
-      max_tokens: 10,
-    }),
-  });
+  // More lenient vision check - focus on typography characteristics, allow partial matches
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a lenient visual QA checker for album cover typography. You should answer MATCH if the generated cover shows a similar typography STYLE (e.g., neon glow, grunge, retro, etc.) to the reference - it does NOT need to be pixel-perfect. Only answer MISMATCH if the typography style is completely different (e.g., reference shows neon glow but generated shows plain sans-serif). Answer with exactly one word: MATCH or MISMATCH.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  "Compare Image A (style reference) vs Image B (generated cover). Does the TEXT/TYPOGRAPHY in the generated cover capture the GENERAL STYLE CHARACTERISTICS (e.g., glow effects, texture, 3D effects, retro feel, grunge look) of the reference? Be lenient - if the style is in the same family/category, answer MATCH. Only answer MISMATCH if completely different style families. Ignore background artwork differences.",
+              },
+              { type: "image_url", image_url: { url: styleReferenceUrl } },
+              { type: "image_url", image_url: { url: generatedImageUrl } },
+            ],
+          },
+        ],
+        max_tokens: 10,
+      }),
+    });
 
-  if (!resp.ok) {
-    const t = await resp.text();
-    console.log("[GENERATE-COVER] Style validation unavailable", resp.status, t);
+    if (!resp.ok) {
+      const t = await resp.text();
+      logStep("Style validation unavailable", { status: resp.status, error: t });
+      return "UNAVAILABLE";
+    }
+
+    const data = await resp.json();
+    const content = (data?.choices?.[0]?.message?.content ?? "")
+      .toString()
+      .trim()
+      .toUpperCase();
+
+    if (content.includes("MISMATCH")) return "MISMATCH";
+    if (content.includes("MATCH")) return "MATCH";
+    return "UNAVAILABLE";
+  } catch (e) {
+    logStep("Style validation error", { error: e instanceof Error ? e.message : String(e) });
     return "UNAVAILABLE";
   }
-
-  const data = await resp.json();
-  const content = (data?.choices?.[0]?.message?.content ?? "")
-    .toString()
-    .trim()
-    .toUpperCase();
-
-  if (content.includes("MISMATCH")) return "MISMATCH";
-  if (content.includes("MATCH")) return "MATCH";
-  return "UNAVAILABLE";
 };
 
 serve(async (req) => {
@@ -435,11 +440,11 @@ ${base}`;
         break;
       }
 
-      if (textStyleReferenceImage) {
-        // If we exhausted retries but still failed match, return a clear error and do NOT charge credit.
-        if (lastValidationResult === "MISMATCH") {
-          throw new Error("TEXT_STYLE_NOT_APPLIED");
-        }
+      // If style validation failed after all retries, still return the image but with a warning
+      // and skip credit charge so user isn't penalized
+      if (textStyleReferenceImage && lastValidationResult === "MISMATCH") {
+        skipCreditCharge = true;
+        logStep("Style mismatch after retries - returning image with warning, no charge");
       }
 
       imageUrl = finalImageUrl!;
@@ -535,8 +540,14 @@ ${base}`;
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
+    // Include warning if style didn't match but we're still returning the image
+    const responsePayload: { imageUrl: string; warning?: string } = { imageUrl };
+    if (textStyleReferenceImage && skipCreditCharge) {
+      responsePayload.warning = "TEXT_STYLE_MISMATCH";
+    }
+    
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

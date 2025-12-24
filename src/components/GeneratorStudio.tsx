@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Sparkles, ImagePlus, Image, Maximize2, X, Plus } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Sparkles, ImagePlus, Image, Maximize2, X, Plus, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -123,7 +123,7 @@ const genreStyles: Record<string, { styles: string[]; moods: string[]; descripti
 
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
-  const { hasUnlimitedGenerations } = useCredits();
+  const { hasUnlimitedGenerations, refetch: refetchCredits } = useCredits();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
@@ -155,6 +155,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [pendingStyleId, setPendingStyleId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
   const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
@@ -342,8 +343,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       fullPrompt += ` | VARIATION RULE: Generate TWO distinct covers. Cover A can be cinematic/muted. Cover B MUST be vibrant and high-saturation, with ${getColorValue(mainColor)} as the dominant color family.`;
     }
 
-    // Always generate at 3000x3000
-    fullPrompt += " | Generate at exactly 3000x3000 pixels resolution (2K quality).";
+    // Resolution is handled by backend (1024x1024), user can enhance to 2K after
 
     onGenerate(fullPrompt, genre, style === "None" ? "" : style, mood === "None" ? "" : mood, refImage, textStyleRefImage);
   };
@@ -394,7 +394,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
     fullPrompt += " | CRITICAL: The text must be deeply integrated into the cover design.";
-    fullPrompt += " | Generate at exactly 3000x3000 pixels resolution.";
     
     onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, undefined, textStyleRefImage);
   };
@@ -1108,9 +1107,53 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         )}
                       </div>
                       <p className={`text-center text-xs ${mutedTextClass}`}>
-                        3000 × 3000px · Ready for streaming
+                        1024 × 1024px · Ready for streaming
                       </p>
                       <div className="flex flex-col gap-2 mt-2">
+                        {/* Enhance to 2K button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            if (!generatedImage) return;
+                            setIsEnhancing(true);
+                            try {
+                              const { data, error } = await supabase.functions.invoke("enhance-cover", {
+                                body: { imageUrl: generatedImage },
+                              });
+                              if (error) throw error;
+                              if (data?.error) throw new Error(data.error);
+                              if (data?.imageUrl) {
+                                // Dispatch event to update parent state
+                                window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.imageUrl } }));
+                                toast.success("Cover enhanced to 2K!", {
+                                  description: "Your cover is now 2048×2048 resolution.",
+                                });
+                                refetchCredits();
+                              }
+                            } catch (err) {
+                              toast.error("Enhancement failed", {
+                                description: err instanceof Error ? err.message : "Please try again",
+                              });
+                            } finally {
+                              setIsEnhancing(false);
+                            }
+                          }}
+                          disabled={isEnhancing || isGenerating}
+                          className={`w-full ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                        >
+                          {isEnhancing ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin mr-1" />
+                              Enhancing...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="w-4 h-4 mr-1" />
+                              Enhance to 2K (1 credit)
+                            </>
+                          )}
+                        </Button>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
