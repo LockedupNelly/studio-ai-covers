@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -16,7 +16,6 @@ const Index = () => {
   const { credits, refetch: refetchCredits } = useCredits();
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
@@ -47,10 +46,8 @@ const Index = () => {
       if (data?.error) {
         // Handle credit-related errors
         if (data.error.includes("No credits")) {
-          toast({
-            title: "No credits remaining",
+          toast.error("No credits remaining", {
             description: "Purchase more credits to continue generating.",
-            variant: "destructive",
           });
           navigate("/purchase-credits");
           return;
@@ -80,17 +77,14 @@ const Index = () => {
           }
         }
 
-        toast({
-          title: "Cover art generated!",
+        toast.success("Cover art generated!", {
           description: `${genre} cover with ${style} style is ready.`,
         });
       }
     } catch (error) {
       console.error("Generation error:", error);
-      toast({
-        title: "Generation failed",
+      toast.error("Generation failed", {
         description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);

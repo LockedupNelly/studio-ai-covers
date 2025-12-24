@@ -1,11 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const AnimatedDotsBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Intersection Observer to pause animation when off-screen
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -28,7 +36,9 @@ export const AnimatedDotsBackground = () => {
     }
 
     const dots: Dot[] = [];
-    const dotCount = Math.floor((canvas.width * canvas.height) / 8000);
+    // Reduce dot count on mobile
+    const isMobile = window.innerWidth < 768;
+    const dotCount = Math.floor((canvas.width * canvas.height) / (isMobile ? 12000 : 8000));
 
     for (let i = 0; i < dotCount; i++) {
       dots.push({
@@ -44,6 +54,11 @@ export const AnimatedDotsBackground = () => {
     let animationId: number;
 
     const animate = () => {
+      if (!isVisible) {
+        animationId = requestAnimationFrame(animate);
+        return;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       dots.forEach((dot) => {
@@ -64,8 +79,9 @@ export const AnimatedDotsBackground = () => {
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationId);
+      observer.disconnect();
     };
-  }, []);
+  }, [isVisible]);
 
   return (
     <canvas

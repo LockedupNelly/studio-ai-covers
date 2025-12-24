@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -59,17 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        toast({
-          title: "Sign in failed",
+        toast.error("Sign in failed", {
           description: error.message,
-          variant: "destructive",
         });
       }
     } catch (error) {
-      toast({
-        title: "Sign in failed",
+      toast.error("Sign in failed", {
         description: "An unexpected error occurred",
-        variant: "destructive",
       });
     }
   };
@@ -79,17 +74,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.signOut();
       // "Auth session missing" means user is already signed out - treat as success
       if (error && !error.message.includes('session missing')) {
-        toast({
-          title: "Sign out failed",
+        toast.error("Sign out failed", {
           description: error.message,
-          variant: "destructive",
         });
       } else {
         // Clear local state regardless
         setUser(null);
         setSession(null);
-        toast({
-          title: "Signed out",
+        toast.success("Signed out", {
           description: "Come back soon!",
         });
       }
@@ -97,8 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Still clear local state on error
       setUser(null);
       setSession(null);
-      toast({
-        title: "Signed out",
+      toast.success("Signed out", {
         description: "Come back soon!",
       });
     }

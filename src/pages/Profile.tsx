@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Trash2, ArrowLeft, Image as ImageIcon, Search, Filter, UserPlus, Copy, Check, Gift } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Generation {
@@ -24,7 +24,6 @@ interface Generation {
 const Profile = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,10 +132,8 @@ const Profile = () => {
       setGenerations(data || []);
     } catch (error) {
       console.error("Error fetching generations:", error);
-      toast({
-        title: "Error loading history",
+      toast.error("Error loading history", {
         description: "Could not load your generation history",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -153,16 +150,13 @@ const Profile = () => {
       if (error) throw error;
 
       setGenerations((prev) => prev.filter((g) => g.id !== id));
-      toast({
-        title: "Deleted",
+      toast.success("Deleted", {
         description: "Cover art removed from history",
       });
     } catch (error) {
       console.error("Error deleting:", error);
-      toast({
-        title: "Delete failed",
+      toast.error("Delete failed", {
         description: "Could not delete this generation",
-        variant: "destructive",
       });
     }
   };
@@ -191,8 +185,7 @@ const Profile = () => {
       const link = `${window.location.origin}/?ref=${referralCode}`;
       navigator.clipboard.writeText(link);
       setCopied(true);
-      toast({
-        title: "Link copied!",
+      toast.success("Link copied!", {
         description: "Share this link with your friends",
       });
       setTimeout(() => setCopied(false), 2000);
