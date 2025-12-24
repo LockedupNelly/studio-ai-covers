@@ -10,10 +10,9 @@ interface ColorPickerPopoverProps {
   themeMode?: "light" | "dark";
 }
 
-// Color palette with shades - vibrant versions included
+// Color palette with shades - vibrant versions included (AI Select removed)
 const colorPalette = [
   // Row 1 - Reds (with vibrant)
-  { id: "ai", name: "AI Select", color: "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)" },
   { id: "red-vibrant", name: "Vibrant Red", color: "#ff0000" },
   { id: "red", name: "Red", color: "#ef4444" },
   { id: "red-dark", name: "Dark Red", color: "#991b1b" },
@@ -58,8 +57,8 @@ const colorPalette = [
 export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" }: ColorPickerPopoverProps) => {
   const [open, setOpen] = useState(false);
   
-  const selectedColor = colorPalette.find(c => c.id === value) || colorPalette[0];
-  const isAiSelect = value === "ai" || !value;
+  const selectedColor = colorPalette.find(c => c.id === value);
+  const hasSelection = !!value && !!selectedColor;
   
   const handleSelect = (colorId: string) => {
     onChange(colorId);
@@ -77,19 +76,18 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               : "bg-secondary border-border text-foreground hover:bg-secondary/80"
           }`}
         >
-          {isAiSelect ? (
+          {hasSelection ? (
             <div
-              className="w-5 h-5 rounded-full border border-border"
-              style={{ background: "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)" }}
+              className="w-5 h-5 rounded-full border border-border flex-shrink-0"
+              style={{ backgroundColor: selectedColor.color }}
             />
           ) : (
             <div
-              className="w-5 h-5 rounded-full border border-border"
-              style={{ backgroundColor: selectedColor.color }}
+              className="w-5 h-5 rounded-full border border-border flex-shrink-0 bg-gradient-to-br from-red-500 via-yellow-500 to-blue-500"
             />
           )}
-          <span className="text-sm">
-            {isAiSelect ? label : selectedColor.name}
+          <span className="text-sm truncate">
+            {hasSelection ? selectedColor.name : label}
           </span>
         </Button>
       </PopoverTrigger>
@@ -102,26 +100,19 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               className={`relative w-8 h-8 rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
               } ${color.id === "white" ? "border border-border" : ""}`}
-              style={{
-                background: color.id === "ai"
-                  ? "linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 0% 75%) 100%)"
-                  : color.color
-              }}
+              style={{ backgroundColor: color.color }}
               title={color.name}
             >
               {value === color.id && (
                 <Check className={`absolute inset-0 m-auto w-4 h-4 ${
-                  ["white", "yellow-light", "yellow", "gold"].includes(color.id) ? "text-gray-800" : "text-white"
+                  ["white", "yellow-vibrant", "yellow", "gold", "cyan-vibrant", "green-vibrant"].includes(color.id) ? "text-gray-800" : "text-white"
                 }`} />
-              )}
-              {color.id === "ai" && value !== "ai" && (
-                <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">AI</span>
               )}
             </button>
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          {selectedColor.name === "AI Select" ? "AI will choose based on design" : `Selected: ${selectedColor.name}`}
+          {hasSelection ? `Selected: ${selectedColor.name}` : "Select a color"}
         </p>
       </PopoverContent>
     </Popover>
