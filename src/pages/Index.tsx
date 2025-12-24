@@ -41,10 +41,22 @@ const Index = () => {
         body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
       });
 
-      if (error) throw error;
+      // Supabase returns non-2xx as `error` with a generic message; extract the real backend error payload.
+      if (error) {
+        const ctx: any = error as any;
+        const body = ctx?.context?.body;
+        if (body) {
+          try {
+            const parsed = typeof body === "string" ? JSON.parse(body) : body;
+            if (parsed?.error) throw new Error(parsed.error);
+          } catch {
+            // fall through to generic error
+          }
+        }
+        throw error;
+      }
 
       if (data?.error) {
-        // Handle credit-related errors
         if (data.error.includes("No credits")) {
           toast.error("No credits remaining", {
             description: "Purchase more credits to continue generating.",
