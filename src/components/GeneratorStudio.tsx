@@ -92,20 +92,6 @@ const moodOptions = [
   "Nostalgic"
 ];
 
-// Genre descriptions
-const genreDescriptions: Record<string, string> = {
-  "Hip-Hop / Rap": "Gritty textures, torn paper, xerox aesthetics",
-  "Pop": "Clean, colorful, eye-catching visuals",
-  "EDM": "Vibrant neon, glow effects, futuristic feel",
-  "R&B": "Smooth gradients, elegant, intimate vibes",
-  "Rock": "Raw textures, bold contrasts, vintage feel",
-  "Alternative": "Artistic, unconventional, thought-provoking",
-  "Indie": "Vintage warmth, authentic, handcrafted feel",
-  "Metal": "Dark imagery, intense, powerful visuals",
-  "Country": "Light, scenic, calming natural aesthetics",
-  "Jazz": "Classic, sophisticated, timeless elegance",
-  "Classical": "Elegant, refined, artistic compositions"
-};
 
 
 export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
@@ -144,7 +130,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
-  const currentGenreDescription = useMemo(() => genreDescriptions[genre] || "", [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
   // Progress animation during generation - tied to actual generation state

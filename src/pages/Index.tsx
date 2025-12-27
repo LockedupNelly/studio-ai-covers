@@ -12,13 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits } = useCredits();
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
-
-  const [lastGenParams, setLastGenParams] = useState<{prompt: string; genre: string; style: string; mood: string} | null>(null);
 
   // Listen for cover edit events from EditCoverDialog
   useEffect(() => {
@@ -41,7 +39,6 @@ const Index = () => {
     textStyleReferenceImage?: string
   ) => {
     setIsGenerating(true);
-    setLastGenParams({ prompt, genre, style, mood });
 
     const extractInvokeErrorMessage = async (err: unknown): Promise<string> => {
       const anyErr: any = err as any;

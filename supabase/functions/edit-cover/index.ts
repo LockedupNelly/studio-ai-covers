@@ -41,7 +41,7 @@ serve(async (req) => {
 ${instructions}
 
 CRITICAL REQUIREMENTS:
-1. Maintain the original 3000x3000 pixel square resolution
+1. Maintain the original square aspect ratio (1:1)
 2. Keep the overall composition and style similar
 3. Make ONLY the changes requested - do not alter other elements
 4. The artwork must completely fill the canvas - NO empty borders
