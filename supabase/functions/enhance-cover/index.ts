@@ -119,20 +119,30 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    logStep("Enhancing image to 3000x3000 using Nano Banana");
+    logStep("Enhancing image using Gemini image-to-image");
 
-    // Use Nano Banana (Gemini image generation) to upscale to 3000x3000
-    const enhancePrompt = `Create a high-resolution 3000x3000 pixel album cover that is an exact enhanced version of this image.
-CRITICAL INSTRUCTIONS:
-- Maintain the EXACT same composition, layout, colors, text placement, and design elements
-- Do NOT add any new elements, change colors, or modify the design in any way
-- Simply enhance the resolution, sharpness, clarity and detail
-- The output must be a perfect 1:1 square at 3000x3000 pixels
-- Keep ALL text exactly as it appears in the original
-- This is for Spotify upload so quality must be professional grade`;
+    // Use Gemini to recreate the image at higher quality
+    // The key is to be VERY specific about preserving the exact image
+    const enhancePrompt = `You are an image enhancement AI. Your ONLY task is to reproduce this EXACT same image with enhanced quality and sharpness.
+
+CRITICAL REQUIREMENTS:
+1. The output must be IDENTICAL to the input image in terms of:
+   - Exact same composition and layout
+   - Exact same colors and color palette
+   - Exact same text (same words, same fonts, same positions)
+   - Exact same subjects and elements
+   - Exact same art style
+2. ONLY improve: sharpness, clarity, detail, and reduce any compression artifacts
+3. DO NOT add, remove, or modify ANY visual elements
+4. DO NOT change the artistic style
+5. DO NOT reinterpret or reimagine the image
+6. The image must be a 1:1 square format
+7. This is for professional music streaming platforms - quality must be pristine
+
+Output a faithful, high-quality reproduction of the exact same image.`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 180_000); // 3 minutes for larger image
+    const timeout = setTimeout(() => controller.abort(), 180_000);
 
     let response: Response;
     try {
@@ -244,7 +254,7 @@ CRITICAL INSTRUCTIONS:
           user_id: userId,
           amount: -1,
           type: "enhancement",
-          description: "Enhanced cover to 3000x3000 resolution for Spotify",
+          description: "Enhanced cover for streaming platforms",
         });
         logStep("Credit deducted", { newBalance: currentCredits - 1 });
       }

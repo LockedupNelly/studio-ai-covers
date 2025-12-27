@@ -1067,7 +1067,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </TooltipProvider>
                       </div>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                    <div className="flex-1 flex flex-col items-center justify-start gap-2">
                       <div className={`relative aspect-square rounded-lg overflow-hidden w-full border-2 ${
                         themeMode === "light" ? "border-gray-300" : "border-gray-500"
                       }`}>

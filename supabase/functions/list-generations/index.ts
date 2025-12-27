@@ -7,16 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 };
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-);
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -31,31 +31,38 @@ serve(async (req) => {
 
     const { data: userData, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !userData?.user) {
+      console.log("[LIST-GENERATIONS] Auth failed", userErr?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { limit, offset } = await req.json().catch(() => ({ limit: 100, offset: 0 }));
+    const userId = userData.user.id;
+    console.log("[LIST-GENERATIONS] Fetching for user", userId);
 
-    const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
+    const { limit, offset } = await req.json().catch(() => ({ limit: 50, offset: 0 }));
+
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 50);
     const safeOffset = Math.max(Number(offset) || 0, 0);
 
+    // Use the index: idx_generations_user_created (user_id, created_at DESC)
     const { data, error } = await supabase
       .from("generations")
       .select("id, prompt, genre, style, mood, image_url, created_at")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .range(safeOffset, safeOffset + safeLimit - 1);
 
     if (error) {
-      console.error("[LIST-GENERATIONS] DB error", error);
-      return new Response(JSON.stringify({ error: "Failed to load generations" }), {
+      console.error("[LIST-GENERATIONS] DB error", error.code, error.message);
+      return new Response(JSON.stringify({ error: "Failed to load generations", details: error.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("[LIST-GENERATIONS] Returned", data?.length ?? 0, "items");
 
     return new Response(JSON.stringify({ generations: data ?? [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
