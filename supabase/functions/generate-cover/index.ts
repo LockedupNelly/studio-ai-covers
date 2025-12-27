@@ -244,6 +244,30 @@ Prioritize:
 
 Focus on the exact moment of maximum intensity, not before or after.
 
+===== EVENT INTENSITY LAYER (ALWAYS APPLY) =====
+The image must depict an active, high-energy moment, not a static scene.
+
+Force the environment to react to the subject:
+- Motion causes sparks, debris, rain distortion, smoke, or crowd reaction
+- Surfaces show stress, friction, wear, heat, or damage
+- Lighting responds to action (flares, explosions, lightning, reflections)
+- Perspective exaggerates speed, scale, or impact
+
+The scene should feel unstable, dynamic, and alive.
+Avoid calm or frozen compositions unless the mood explicitly requires stillness.
+
+===== PHYSICAL CONSEQUENCE BIAS =====
+Every major action should leave visible consequences on the environment
+(scratches, sparks, cracks, debris, distortion, heat, water displacement).
+
+===== SCALE AND DENSITY RULE =====
+Fill the frame with meaningful detail.
+Avoid large empty areas unless required for composition.
+Crowds, structures, weather, and effects should reinforce scale and intensity.
+${['Hip-Hop', 'Rap', 'EDM', 'Rock', 'Metal'].includes(genre) ? `
+===== FORCED PERSPECTIVE (SPEED/POWER GENRES) =====
+Use aggressive perspective, low angles, motion compression, and depth exaggeration to amplify speed, power, and dominance.
+` : ''}
 ===== NEGATIVE CONSTRAINTS =====
 Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures, over-smoothing, washed-out contrast, or text floating unnaturally.
 
@@ -268,7 +292,7 @@ ${description}
 - EXACT 1:1 square aspect ratio (1024x1024)
 - Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
 - Ultra high resolution, maximum detail and texture
-- Professional streaming platform quality (Spotify, Apple Music, etc.)`; 
+- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
     };
 
     const promptText = buildPrompt();
