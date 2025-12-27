@@ -195,21 +195,40 @@ serve(async (req) => {
       const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
       const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
 
-      // ========== TYPOGRAPHY SECTION ==========
+      // ========== TEXT INTEGRATION CONTRACT ==========
       let typographySection = '';
       if (songTitle) {
         typographySection = `
 
-TYPOGRAPHY RULES (ONLY IF TEXT IS PRESENT - CRITICAL SPELLING):
+===== TEXT INTEGRATION CONTRACT (MANDATORY IF TEXT EXISTS) =====
+Text must be treated as a physical object inside the scene, not an overlay.
+
+TEXT CONTENT (SPELL EXACTLY):
 - Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
 - Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
-${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : '- Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering'}
-- Typography must be integrated naturally into the environment
-- Avoid flat, poster-style text overlays
-- Text should feel like it exists inside the world, not added afterward
-- Maintain legibility while preserving realism and atmosphere
-- SPELL THE TEXT EXACTLY AS PROVIDED — do not change, add, or omit any characters
-- Each text element appears ONCE only — no duplication`;
+${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : ''}
+- Each text element appears ONCE only — no duplication
+
+FORBIDDEN:
+- Flat overlay text
+- Poster-style typography
+- Text floating in empty space
+- Clean, stamped, or UI-like lettering
+- Text unaffected by lighting, weather, or perspective
+
+REQUIRED:
+- Text must exist as part of the environment
+- Text must interact with light, shadow, depth, weather, and motion
+- Text must inherit the material properties of the scene
+- Text must show wear, texture, imperfections, and perspective distortion
+- Text must be partially affected by atmosphere (rain, sparks, fog, smoke)
+- Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering
+
+If the text cannot be naturally integrated into the environment, restructure the scene so that it can be.
+
+===== TEXT CAMERA RULE =====
+Camera angle, depth of field, and framing must acknowledge the text as part of the scene.
+Text should share perspective distortion and focus falloff with surrounding elements.`;
       }
 
       // ========== BUILD COMPLETE ART-DIRECTED PROMPT ==========
