@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,9 +17,9 @@ serve(async (req) => {
   }
 
   try {
-    const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-    if (!REPLICATE_API_KEY) {
-      logStep("ERROR: REPLICATE_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      logStep("ERROR: LOVABLE_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Upscaling service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -63,48 +62,85 @@ serve(async (req) => {
       );
     }
 
-    logStep("Starting upscale", { imageUrl: imageUrl.substring(0, 100) });
+    logStep("Starting upscale with Lovable AI", { imageUrl: imageUrl.substring(0, 100) });
 
-    const replicate = new Replicate({ auth: REPLICATE_API_KEY });
+    // Use Lovable AI gateway with Gemini image model for upscaling
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Upscale this image to 4x higher resolution. Enhance details, sharpen edges, reduce noise, and improve overall clarity while maintaining the original artistic style and composition. Output a high-quality, print-ready version."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
+          }
+        ],
+        modalities: ["image", "text"]
+      })
+    });
 
-    // Use Real-ESRGAN for true upscaling (4x by default)
-    logStep("Calling Replicate Real-ESRGAN model");
-    const output = await replicate.run(
-      "nightmareai/real-esrgan:f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa",
-      {
-        input: {
-          image: imageUrl,
-          scale: 4,
-          face_enhance: false,
-        },
+    if (!response.ok) {
+      const errorText = await response.text();
+      logStep("ERROR: Lovable AI request failed", { status: response.status, error: errorText });
+      return new Response(
+        JSON.stringify({ error: "Upscaling failed - AI service error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const data = await response.json();
+    logStep("Lovable AI response received", { hasChoices: !!data.choices });
+
+    const upscaledImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    if (!upscaledImageUrl) {
+      logStep("ERROR: No upscaled image in response");
+      return new Response(
+        JSON.stringify({ error: "Upscaling failed - no output image" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Upscale successful, uploading to storage");
+
+    // Convert base64 to blob and upload to Supabase Storage
+    let imageBlob: Blob;
+    if (upscaledImageUrl.startsWith("data:")) {
+      const base64Data = upscaledImageUrl.split(",")[1];
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
-    );
-
-    logStep("Replicate response received", { output: typeof output });
-
-    if (!output) {
-      logStep("ERROR: No output from Replicate");
-      return new Response(
-        JSON.stringify({ error: "Upscaling failed - no output" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      imageBlob = new Blob([bytes], { type: "image/png" });
+    } else {
+      // If it's a URL, fetch it
+      const imageResponse = await fetch(upscaledImageUrl);
+      if (!imageResponse.ok) {
+        logStep("ERROR: Failed to fetch upscaled image");
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch upscaled image" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      imageBlob = await imageResponse.blob();
     }
 
-    const upscaledUrl = output as string;
-    logStep("Upscale successful", { upscaledUrl: upscaledUrl.substring(0, 100) });
-
-    // Fetch the upscaled image and upload to Supabase Storage
-    logStep("Fetching upscaled image for storage");
-    const imageResponse = await fetch(upscaledUrl);
-    if (!imageResponse.ok) {
-      logStep("ERROR: Failed to fetch upscaled image");
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch upscaled image" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const imageBlob = await imageResponse.blob();
     const fileName = `${userId}/upscaled-${Date.now()}.png`;
 
     logStep("Uploading to Supabase Storage", { fileName });
@@ -117,9 +153,9 @@ serve(async (req) => {
 
     if (uploadError) {
       logStep("ERROR: Upload failed", { error: uploadError.message });
-      // Return Replicate URL as fallback
+      // Return the base64 URL as fallback
       return new Response(
-        JSON.stringify({ upscaledUrl }),
+        JSON.stringify({ upscaledUrl: upscaledImageUrl }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -140,28 +176,14 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
 
-    // Replicate commonly returns 402 when the account has no credit.
-    // Surface this accurately so the client can show a meaningful message.
-    const isReplicateInsufficientCredit =
-      typeof errorMessage === "string" &&
-      (errorMessage.includes("status 402") ||
-        errorMessage.includes("Insufficient credit") ||
-        errorMessage.includes("Payment Required"));
-
-    const status = isReplicateInsufficientCredit ? 402 : 500;
-    const clientError = isReplicateInsufficientCredit
-      ? "Upscaling failed: upscaling provider has insufficient credit"
-      : (errorMessage || "Upscaling failed");
-
-    logStep("ERROR: Unexpected error", { error: errorMessage, stack: errorStack, status });
+    logStep("ERROR: Unexpected error", { error: errorMessage, stack: errorStack });
 
     return new Response(
       JSON.stringify({
-        error: clientError,
+        error: errorMessage || "Upscaling failed",
         details: errorMessage,
-        code: isReplicateInsufficientCredit ? "REPLICATE_INSUFFICIENT_CREDIT" : "UPSCALE_FAILED",
       }),
-      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
