@@ -62,63 +62,49 @@ const progressStages = [
   { label: "Almost ready...", progress: 90 },
 ];
 
-// Genre-based visual style presets
-const genreStyles: Record<string, { styles: string[]; moods: string[]; description: string }> = {
-  "Hip-Hop / Rap": {
-    styles: ["None", "Grunge Collage", "Dark Texture", "Street Art", "Vintage Film"],
-    moods: ["None", "Aggressive", "Dark", "Mysterious", "Raw"],
-    description: "Gritty textures, torn paper, xerox aesthetics"
-  },
-  "Pop": {
-    styles: ["None", "Bright & Bold", "Minimalist", "Gradient Glow", "Retro Pop"],
-    moods: ["None", "Euphoric", "Uplifting", "Playful", "Vibrant"],
-    description: "Clean, colorful, eye-catching visuals"
-  },
-  "EDM": {
-    styles: ["None", "Neon Glow", "Cyberpunk", "Abstract Waves", "Laser Grid"],
-    moods: ["None", "Euphoric", "Electric", "Intense", "Hypnotic"],
-    description: "Vibrant neon, glow effects, futuristic feel"
-  },
-  "R&B": {
-    styles: ["None", "Smooth Gradient", "Luxury Minimal", "Soft Focus", "Night Aesthetic"],
-    moods: ["None", "Romantic", "Sensual", "Chill", "Intimate"],
-    description: "Smooth gradients, elegant, intimate vibes"
-  },
-  "Rock": {
-    styles: ["None", "Grunge", "Distressed", "High Contrast", "Vintage Band"],
-    moods: ["None", "Aggressive", "Raw", "Rebellious", "Powerful"],
-    description: "Raw textures, bold contrasts, vintage feel"
-  },
-  "Alternative": {
-    styles: ["None", "Abstract Art", "Surreal", "Experimental", "Mixed Media"],
-    moods: ["None", "Melancholic", "Mysterious", "Ethereal", "Introspective"],
-    description: "Artistic, unconventional, thought-provoking"
-  },
-  "Indie": {
-    styles: ["None", "Film Grain", "Polaroid", "Hand-drawn", "Lo-fi"],
-    moods: ["None", "Nostalgic", "Dreamy", "Warm", "Authentic"],
-    description: "Vintage warmth, authentic, handcrafted feel"
-  },
-  "Metal": {
-    styles: ["None", "Dark Gothic", "Skull Art", "Fire & Flames", "Brutal"],
-    moods: ["None", "Aggressive", "Dark", "Intense", "Chaotic"],
-    description: "Dark imagery, intense, powerful visuals"
-  },
-  "Country": {
-    styles: ["None", "Natural Scenery", "Rustic Wood", "Golden Hour", "Americana"],
-    moods: ["None", "Warm", "Nostalgic", "Peaceful", "Down-to-earth"],
-    description: "Light, scenic, calming natural aesthetics"
-  },
-  "Jazz": {
-    styles: ["None", "Smoky Club", "Art Deco", "Classic Noir", "Sophisticated"],
-    moods: ["None", "Smooth", "Sophisticated", "Mysterious", "Timeless"],
-    description: "Classic, sophisticated, timeless elegance"
-  },
-  "Classical": {
-    styles: ["None", "Elegant", "Baroque", "Orchestral", "Minimalist"],
-    moods: ["None", "Grand", "Peaceful", "Dramatic", "Refined"],
-    description: "Elegant, refined, artistic compositions"
-  }
+// Fixed Visual Style options (same for all genres)
+const visualStyles = [
+  "None",
+  "Realism",
+  "3D Render",
+  "Illustration",
+  "Anime",
+  "Fine Art",
+  "Abstract",
+  "Minimalist",
+  "Cinematic",
+  "Retro",
+  "Other"
+];
+
+// Mood options (same for all genres)
+const moodOptions = [
+  "None",
+  "Aggressive",
+  "Dark",
+  "Mysterious",
+  "Euphoric",
+  "Uplifting",
+  "Melancholic",
+  "Romantic",
+  "Peaceful",
+  "Intense",
+  "Nostalgic"
+];
+
+// Genre descriptions
+const genreDescriptions: Record<string, string> = {
+  "Hip-Hop / Rap": "Gritty textures, torn paper, xerox aesthetics",
+  "Pop": "Clean, colorful, eye-catching visuals",
+  "EDM": "Vibrant neon, glow effects, futuristic feel",
+  "R&B": "Smooth gradients, elegant, intimate vibes",
+  "Rock": "Raw textures, bold contrasts, vintage feel",
+  "Alternative": "Artistic, unconventional, thought-provoking",
+  "Indie": "Vintage warmth, authentic, handcrafted feel",
+  "Metal": "Dark imagery, intense, powerful visuals",
+  "Country": "Light, scenic, calming natural aesthetics",
+  "Jazz": "Classic, sophisticated, timeless elegance",
+  "Classical": "Elegant, refined, artistic compositions"
 };
 
 
@@ -130,8 +116,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [songTitle, setSongTitle] = useState("");
   const [artistName, setArtistName] = useState("");
   const [genre, setGenre] = useState("Hip-Hop / Rap");
-  const [style, setStyle] = useState("None");
-  const [mood, setMood] = useState("None");
+  const [style, setStyle] = useState("");
+  const [mood, setMood] = useState("");
+  const [customStyle, setCustomStyle] = useState("");
   const [studioMode, setStudioMode] = useState<"basic" | "advanced">("basic");
   const [coverCount, setCoverCount] = useState<"1" | "2">("1");
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
@@ -157,7 +144,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
-  const currentGenreData = useMemo(() => genreStyles[genre], [genre]);
+  const currentGenreDescription = useMemo(() => genreDescriptions[genre] || "", [genre]);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
   // Progress animation during generation - tied to actual generation state
@@ -239,14 +226,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     loadRecent();
   }, [user]);
 
-  // Update style and mood when genre changes
+  // Update genre (style and mood are now fixed/independent)
   const handleGenreChange = (newGenre: string) => {
     setGenre(newGenre);
-    const genreData = genreStyles[newGenre];
-    if (genreData) {
-      setStyle(genreData.styles[0]);
-      setMood(genreData.moods[0]);
-    }
   };
 
   const handleInspirationUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,21 +327,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
     // Resolution is handled by backend (1024x1024), user can enhance to 2K after
 
-    onGenerate(fullPrompt, genre, style === "None" ? "" : style, mood === "None" ? "" : mood, refImage, textStyleRefImage);
+    const finalStyle = style === "Other" ? customStyle : (style === "None" || !style ? "" : style);
+    const finalMood = mood === "None" || !mood ? "" : mood;
+    onGenerate(fullPrompt, genre, finalStyle, finalMood, refImage, textStyleRefImage);
   };
 
   const handleGenerateFromSuggestion = (suggestion: { prompt: string; mood: string; style: string }, suggestedGenre: string) => {
     // Update the state with suggestion values
     if (genres.includes(suggestedGenre)) {
       setGenre(suggestedGenre);
-      const genreData = genreStyles[suggestedGenre];
-      if (genreData) {
-        if (genreData.styles.includes(suggestion.style)) {
-          setStyle(suggestion.style);
-        } else {
-          setStyle(genreData.styles[0]);
-        }
-      }
+    }
+    // Set style if it's in our fixed options
+    if (visualStyles.includes(suggestion.style)) {
+      setStyle(suggestion.style);
     }
     setMood(suggestion.mood);
     
@@ -449,14 +429,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     
     if (genres.includes(result.suggestedGenre)) {
       setGenre(result.suggestedGenre);
-      const genreData = genreStyles[result.suggestedGenre];
-      if (genreData) {
-        if (genreData.styles.includes(result.suggestedStyle)) {
-          setStyle(result.suggestedStyle);
-        } else {
-          setStyle(genreData.styles[0]);
-        }
-      }
+    }
+    // Set style if it's in our fixed options
+    if (visualStyles.includes(result.suggestedStyle)) {
+      setStyle(result.suggestedStyle);
     }
   };
 
@@ -653,11 +629,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
-                          {currentGenreData.styles.map((s) => (
+                          {visualStyles.map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {style === "Other" && (
+                        <Input
+                          placeholder="Describe your style..."
+                          value={customStyle}
+                          onChange={(e) => setCustomStyle(e.target.value)}
+                          className={`h-9 mt-2 ${inputBgClass}`}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -672,7 +656,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
-                          {currentGenreData.moods.map((m) => (
+                          {moodOptions.map((m) => (
                             <SelectItem key={m} value={m}>{m}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1110,7 +1094,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         1024 × 1024px · Ready for streaming
                       </p>
                       <div className="flex flex-col gap-2 mt-2">
-                        {/* Enhance to 2K button */}
+                        {/* Enhance to 3K button */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1124,10 +1108,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               if (error) throw error;
                               if (data?.error) throw new Error(data.error);
                               if (data?.imageUrl) {
-                                // Dispatch event to update parent state
                                 window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.imageUrl } }));
-                                toast.success("Cover enhanced to 2K!", {
-                                  description: "Your cover is now 2048×2048 resolution.",
+                                toast.success("Cover enhanced to 3000×3000!", {
+                                  description: "Ready for Spotify upload.",
                                 });
                                 refetchCredits();
                               }
@@ -1150,7 +1133,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           ) : (
                             <>
                               <Zap className="w-4 h-4 mr-1" />
-                              Enhance to 2K (1 credit)
+                              Enhance to 3K for Spotify (1 credit)
                             </>
                           )}
                         </Button>
@@ -1172,27 +1155,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             Download
                           </Button>
                         </div>
-                        <button
-                          onClick={() => setShowDesignerEditDialog(true)}
-                          className={`text-xs font-medium transition-colors ${
-                            themeMode === "light" 
-                              ? "text-primary hover:text-primary/80" 
-                              : "text-primary hover:text-primary/80"
-                          }`}
-                        >
-                          Send for free professional edits
-                        </button>
+                        {/* Professional Edits + View Past Creations on same line */}
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => setShowDesignerEditDialog(true)}
+                            className={`text-xs font-medium transition-colors ${
+                              themeMode === "light" 
+                                ? "text-primary hover:text-primary/80" 
+                                : "text-primary hover:text-primary/80"
+                            }`}
+                          >
+                            Send for free professional edits
+                          </button>
+                          <button
+                            onClick={() => navigate("/profile")}
+                            className={`text-xs font-medium transition-colors underline ${
+                              themeMode === "light" 
+                                ? "text-gray-600 hover:text-gray-900" 
+                                : "text-foreground/60 hover:text-foreground"
+                            }`}
+                          >
+                            View Past Creations
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => navigate("/profile")}
-                        className={`mt-3 text-xs font-medium transition-colors underline ${
-                          themeMode === "light" 
-                            ? "text-gray-600 hover:text-gray-900" 
-                            : "text-foreground/60 hover:text-foreground"
-                        }`}
-                      >
-                        View Past Generations
-                      </button>
                     </div>
                   </>
                 ) : (
@@ -1227,7 +1213,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </div>
                     )}
 
-                    {/* View Past Generations link */}
+                    {/* View Past Creations link */}
                     {recentCovers.length > 0 && !isGenerating && (
                       <div className="pt-4 text-center">
                         <button
@@ -1238,7 +1224,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               : "text-foreground/60 hover:text-foreground"
                           }`}
                         >
-                          View Past Generations
+                          View Past Creations
                         </button>
                       </div>
                     )}

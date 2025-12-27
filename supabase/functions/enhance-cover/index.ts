@@ -119,17 +119,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    logStep("Enhancing image to 2K");
+    logStep("Enhancing image to 3000x3000 using Nano Banana");
 
-    // Use AI to upscale/enhance the image
-    const enhancePrompt = `Upscale and enhance this album cover image to high resolution (2048x2048). 
-Maintain the EXACT same composition, colors, text, and design. 
-Do NOT add any new elements or change anything. 
-Simply enhance the quality, sharpness, and detail while preserving everything exactly as is.
-Output must be a 1:1 square image.`;
+    // Use Nano Banana (Gemini image generation) to upscale to 3000x3000
+    const enhancePrompt = `Create a high-resolution 3000x3000 pixel album cover that is an exact enhanced version of this image.
+CRITICAL INSTRUCTIONS:
+- Maintain the EXACT same composition, layout, colors, text placement, and design elements
+- Do NOT add any new elements, change colors, or modify the design in any way
+- Simply enhance the resolution, sharpness, clarity and detail
+- The output must be a perfect 1:1 square at 3000x3000 pixels
+- Keep ALL text exactly as it appears in the original
+- This is for Spotify upload so quality must be professional grade`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120_000);
+    const timeout = setTimeout(() => controller.abort(), 180_000); // 3 minutes for larger image
 
     let response: Response;
     try {
@@ -241,7 +244,7 @@ Output must be a 1:1 square image.`;
           user_id: userId,
           amount: -1,
           type: "enhancement",
-          description: "Enhanced cover to 2K resolution",
+          description: "Enhanced cover to 3000x3000 resolution for Spotify",
         });
         logStep("Credit deducted", { newBalance: currentCredits - 1 });
       }
