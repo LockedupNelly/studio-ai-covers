@@ -45,12 +45,11 @@ export const SUBSCRIPTION_TIERS = {
     priceId: "price_1SdJV4FTlHtQpdKROOy0GQGD",
     productId: "prod_TaUUCtQXelHcBD",
     features: [
-      "Unlimited Generations",
+      "150 Generations / Month",
       "Priority Processing",
       "10% Off Add-Ons",
       "Priority Support",
       "Early Access Features",
-      "Real Designer Edits",
     ],
   },
   studio: {
@@ -60,14 +59,13 @@ export const SUBSCRIPTION_TIERS = {
     priceId: "price_1SdJVFFTlHtQpdKRfxzR9oXJ",
     productId: "prod_TaUUG2rRmV18Nz",
     features: [
-      "Unlimited Generations",
+      "500 Generations / Month",
       "Fastest Processing",
       "20% Off Add-Ons",
       "Dedicated Support",
       "Early Access Features",
       "Commercial License",
       "API Access",
-      "Real Designer Edits (Priority)",
     ],
   },
 };

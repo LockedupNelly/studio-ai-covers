@@ -152,18 +152,18 @@ const ProAccess = () => {
             </div>
           )}
 
-          {/* Real Designer Edits Feature */}
+          {/* Real Designer Edits Feature - Available to Everyone */}
           <div className="mb-12 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-2xl p-6 md:p-8">
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <Palette className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center md:text-left">
-                <h3 className="font-display text-xl mb-2">REAL DESIGNER EDITS</h3>
+                <h3 className="font-display text-xl mb-2">REAL DESIGNER EDITS — FREE FOR ALL</h3>
                 <p className="text-foreground/70">
-                  Pro and Studio subscribers get access to our professional design team. 
+                  All users get access to our professional design team. 
                   Request touch-ups, imperfection fixes, and enhancements on any generated cover. 
-                  Our designers will refine your artwork to perfection.
+                  Our designers will refine your artwork within 24 hours via email.
                 </p>
               </div>
             </div>

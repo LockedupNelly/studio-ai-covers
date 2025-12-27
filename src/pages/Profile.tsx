@@ -120,9 +120,10 @@ const Profile = () => {
       console.log("[Profile] Fetching generations for user:", user.id);
       const { data, error } = await supabase
         .from("generations")
-        .select("*")
+        .select("id, prompt, genre, style, mood, image_url, created_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (error) {
         console.error("[Profile] Supabase error:", error);
