@@ -139,10 +139,29 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    logStep("ERROR: Unexpected error", { error: errorMessage, stack: errorStack });
+
+    // Replicate commonly returns 402 when the account has no credit.
+    // Surface this accurately so the client can show a meaningful message.
+    const isReplicateInsufficientCredit =
+      typeof errorMessage === "string" &&
+      (errorMessage.includes("status 402") ||
+        errorMessage.includes("Insufficient credit") ||
+        errorMessage.includes("Payment Required"));
+
+    const status = isReplicateInsufficientCredit ? 402 : 500;
+    const clientError = isReplicateInsufficientCredit
+      ? "Upscaling failed: upscaling provider has insufficient credit"
+      : (errorMessage || "Upscaling failed");
+
+    logStep("ERROR: Unexpected error", { error: errorMessage, stack: errorStack, status });
+
     return new Response(
-      JSON.stringify({ error: errorMessage || "Upscaling failed" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: clientError,
+        details: errorMessage,
+        code: isReplicateInsufficientCredit ? "REPLICATE_INSUFFICIENT_CREDIT" : "UPSCALE_FAILED",
+      }),
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
