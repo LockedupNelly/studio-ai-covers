@@ -120,12 +120,17 @@ const Profile = () => {
       console.log("[Profile] Fetching generations for user:", user.id);
 
       const { data, error } = await supabase.functions.invoke("list-generations", {
-        body: { limit: 100, offset: 0 },
+        body: { limit: 50, offset: 0 },
       });
 
       if (error) {
         console.error("[Profile] Functions error:", error);
         throw error;
+      }
+
+      if (data?.error) {
+        console.error("[Profile] list-generations error:", data);
+        throw new Error(data.details || data.error);
       }
 
       const rows = (data?.generations ?? []) as Generation[];
@@ -134,7 +139,7 @@ const Profile = () => {
     } catch (error) {
       console.error("Error fetching generations:", error);
       toast.error("Error loading history", {
-        description: "Could not load your generation history",
+        description: error instanceof Error ? error.message : "Could not load your generation history",
       });
     } finally {
       setIsLoading(false);
