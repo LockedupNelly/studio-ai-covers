@@ -107,107 +107,168 @@ serve(async (req) => {
     
     logStep("Parsed prompt", { songTitle, artistName, hasTextStyle: !!textStyleInstructions });
 
-    // Build prompt for OpenAI gpt-image-1 using comprehensive system
+    // Build prompt for OpenAI gpt-image-1 using comprehensive Art Direction Engine
     const buildPrompt = (): string => {
-      // Genre-specific visual bias
-      const genreBias: Record<string, string> = {
-        "Hip-Hop": "Gritty cinematic realism, urban tone, bold presence, dramatic lighting, high contrast.",
-        "Rap": "Gritty cinematic realism, urban tone, bold presence, dramatic lighting, high contrast.",
-        "Pop": "Clean, polished, vibrant, modern aesthetic, visually striking, high clarity.",
-        "EDM": "Energetic, futuristic, neon accents, motion, light trails, high saturation.",
-        "R&B": "Moody, sensual, cinematic, smooth lighting, emotional depth, rich shadows.",
-        "Rock": "Raw, dramatic, bold lighting, gritty textures, high contrast.",
-        "Alternative": "Experimental, artistic, atmospheric, non-traditional composition.",
-        "Indie": "Intimate, cinematic, emotional, natural lighting, artistic restraint.",
-        "Metal": "Dark fantasy, aggressive, ominous, epic scale, dramatic lighting, heavy textures.",
-        "Country": "Grounded, warm cinematic realism, rustic textures, emotional storytelling.",
-        "Jazz": "Moody, elegant, low-key lighting, cinematic noir aesthetic.",
-        "Classical": "Refined, timeless, elegant, painterly lighting, dramatic composition.",
+      // ========== GENRE-SPECIFIC DIRECTOR LAYERS ==========
+      const genreDirectors: Record<string, { visual: string; narrative: string }> = {
+        "Hip-Hop": {
+          visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
+          narrative: "confidence, power, confrontation, movement"
+        },
+        "Rap": {
+          visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
+          narrative: "confidence, power, confrontation, movement"
+        },
+        "Pop": {
+          visual: "polished, vibrant, modern, clean composition with strong visual punch",
+          narrative: "confidence, clarity, star presence"
+        },
+        "EDM": {
+          visual: "energetic, futuristic, neon accents, motion, light trails",
+          narrative: "movement, intensity, sensory overload"
+        },
+        "R&B": {
+          visual: "moody, sensual, cinematic softness, rich shadows",
+          narrative: "intimacy, emotion, closeness"
+        },
+        "Rock": {
+          visual: "raw, dramatic, gritty textures, bold lighting",
+          narrative: "rebellion, intensity, impact"
+        },
+        "Alternative": {
+          visual: "experimental, atmospheric, unconventional framing",
+          narrative: "ambiguity, tension, individuality"
+        },
+        "Indie": {
+          visual: "intimate, cinematic restraint, natural lighting",
+          narrative: "authenticity, emotion, subtle storytelling"
+        },
+        "Metal": {
+          visual: "dark fantasy, ominous, epic scale, heavy textures",
+          narrative: "destruction, power, confrontation"
+        },
+        "Country": {
+          visual: "grounded cinematic realism, rustic textures, warm contrast",
+          narrative: "story, place, nostalgia"
+        },
+        "Jazz": {
+          visual: "elegant, low-key lighting, cinematic noir",
+          narrative: "mood, atmosphere, sophistication"
+        },
+        "Classical": {
+          visual: "refined, timeless, painterly lighting",
+          narrative: "grandeur, emotion, permanence"
+        },
       };
 
-      // Visual style modifiers
+      // ========== VISUAL STYLE MODIFIERS ==========
       const styleModifiers: Record<string, string> = {
-        "Realism": "Photorealistic, cinematic realism, natural lighting, realistic materials.",
-        "3D Render": "Ultra-detailed 3D render, realistic materials, cinematic lighting, high realism.",
-        "Illustration": "Detailed illustration, painterly textures, controlled lighting, artistic clarity.",
+        "Realism": "Photorealistic, cinematic realism, natural lighting.",
+        "3D Render": "Ultra-detailed 3D realism, cinematic lighting, physical materials.",
+        "Illustration": "Painterly textures, artistic clarity, controlled lighting.",
         "Anime": "Cinematic anime aesthetic, dramatic lighting, depth of field, expressive motion.",
-        "Fine Art": "Gallery-quality fine art, painterly lighting, dramatic composition.",
-        "Abstract": "Abstract composition, symbolic imagery, expressive color and form.",
-        "Minimalist": "Minimal composition, strong negative space, bold focal point.",
-        "Cinematic": "Film still aesthetic, dramatic lighting, depth, motion, atmosphere.",
-        "Retro": "Retro-inspired color grading, vintage textures, nostalgic lighting.",
+        "Fine Art": "Gallery-quality composition, painterly lighting, dramatic framing.",
+        "Abstract": "Symbolic imagery, expressive color and form.",
+        "Minimalist": "Strong negative space, single dominant focal element.",
+        "Cinematic": "Film still aesthetic, motion, atmosphere, dramatic lighting.",
+        "Retro": "Vintage color grading, nostalgic texture, analog feel.",
       };
 
-      // Mood modifiers
-      const moodModifiers: Record<string, string> = {
-        "Aggressive": "Intense, forceful, sharp lighting, high contrast.",
-        "Dark": "Dark, moody, ominous, low-key lighting, dramatic shadows.",
-        "Mysterious": "Atmospheric, foggy, restrained lighting, subtle tension.",
-        "Euphoric": "Uplifting, energetic, glowing highlights, dynamic motion.",
-        "Uplifting": "Hopeful, bright accents, emotional warmth.",
-        "Melancholic": "Somber, emotional, muted tones, soft lighting.",
-        "Romantic": "Warm, intimate, soft highlights, emotional closeness.",
-        "Peaceful": "Calm, balanced, gentle lighting, minimal contrast.",
-        "Intense": "High tension, dramatic lighting, strong contrast.",
-        "Nostalgic": "Nostalgic tone, soft contrast, film-like color grading.",
+      // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
+      const moodLayers: Record<string, string> = {
+        "Aggressive": "Sharp lighting, high contrast, forceful energy.",
+        "Dark": "Low-key lighting, ominous shadows, tension.",
+        "Mysterious": "Fog, restrained lighting, partial obscurity.",
+        "Euphoric": "Glowing highlights, motion, energy.",
+        "Uplifting": "Warm contrast, hopeful tone, openness.",
+        "Melancholic": "Muted colors, soft lighting, emotional weight.",
+        "Romantic": "Warm highlights, intimacy, closeness.",
+        "Peaceful": "Balanced composition, gentle lighting.",
+        "Intense": "High tension, dramatic contrast.",
+        "Nostalgic": "Soft contrast, film-like grading.",
       };
 
-      const genreStyle = genreBias[genre] || "Cinematic realism, dramatic lighting, professional quality.";
+      const genreDirection = genreDirectors[genre] || { 
+        visual: "cinematic realism, dramatic lighting, professional quality",
+        narrative: "emotion, story, impact"
+      };
       const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
-      const moodStyle = moodModifiers[mood] || "Dramatic, atmospheric, emotionally evocative.";
+      const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
 
-      // Typography section (only if song title present)
+      // ========== TYPOGRAPHY SECTION ==========
       let typographySection = '';
       if (songTitle) {
         typographySection = `
 
-TYPOGRAPHY RULES (CRITICAL - SPELL EXACTLY AS SHOWN):
-- Song Title: "${songTitle}" — Display as the PRIMARY text element, large and prominent
-- Artist Name: "${artistName || ''}" — Display SMALLER, below or near the title
-${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : '- Text Style: Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering'}
-- Typography must be integrated naturally into the environment — NOT flat poster-style overlays
+TYPOGRAPHY RULES (ONLY IF TEXT IS PRESENT - CRITICAL SPELLING):
+- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
+- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
+${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : '- Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering'}
+- Typography must be integrated naturally into the environment
+- Avoid flat, poster-style text overlays
 - Text should feel like it exists inside the world, not added afterward
 - Maintain legibility while preserving realism and atmosphere
 - SPELL THE TEXT EXACTLY AS PROVIDED — do not change, add, or omit any characters
 - Each text element appears ONCE only — no duplication`;
       }
 
-      // Build the complete prompt
-      return `SYSTEM: You are generating professional, high-end album cover artwork intended for commercial music distribution on streaming platforms.
+      // ========== BUILD COMPLETE ART-DIRECTED PROMPT ==========
+      return `SYSTEM ROLE:
+You are generating professional, high-end album cover artwork intended for commercial music distribution.
 
-GLOBAL QUALITY RULES:
-The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or illustrative. The result should look like a finished, high-budget album cover created by an experienced designer.
+===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
+The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
+The result should look like a finished, high-budget album cover created by an experienced designer.
 
 Always prioritize:
-- Strong central or iconographic composition suitable for album covers
+- Strong central or iconographic composition
 - Clear focal hierarchy
 - Cinematic lighting (backlighting, rim light, directional light, high contrast)
-- Realistic materials and textures (stone, metal, fabric, skin, surfaces)
+- Realistic materials and textures
 - Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
 - Mood-driven color grading
-- Album-safe framing (important elements not cropped at edges)
-- Thumbnail legibility at small sizes
+- Album-safe framing
+- Strong thumbnail legibility
 
-Use cinematic camera angles and depth of field where appropriate. The final image should feel intentional, dramatic, and professionally art-directed.
+Avoid flat lighting, symmetrical layouts, empty scenes, or overly clean surfaces.
+
+===== DIRECTOR PASS (CINEMATIC INTENT) =====
+The image must capture ONE defining cinematic moment — as if frozen from a movie trailer or album-defining scene.
+
+Prioritize:
+- A clear story implied in a single frame
+- One dominant visual event (impact, emergence, collision, motion, lightning strike)
+- Asymmetry over perfect balance
+- Natural imperfections (wear, erosion, grime, sparks, rain distortion)
+- Environmental interaction (weather affecting surfaces, light wrapping edges, debris reacting to motion)
+
+Focus on the exact moment of maximum intensity, not before or after.
+
+===== NEGATIVE CONSTRAINTS =====
+Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures, over-smoothing, washed-out contrast, or text floating unnaturally.
+
+===== ICON BIAS =====
+Compose the image so it is recognizable within one second at small thumbnail size.
 ${typographySection}
 
-GENRE VISUAL DIRECTION (${genre}):
-${genreStyle}
+===== GENRE-SPECIFIC DIRECTION: ${genre} =====
+Visual intent: ${genreDirection.visual}
+Narrative bias: ${genreDirection.narrative}
 
-VISUAL STYLE (${style}):
+===== VISUAL STYLE: ${style} =====
 ${visualStyle}
 
-MOOD/ATMOSPHERE (${mood}):
+===== MOOD/ATMOSPHERE: ${mood} =====
 ${moodStyle}
 
-USER'S CREATIVE VISION:
+===== USER'S CREATIVE VISION (APPEND EXACTLY) =====
 ${description}
 
-TECHNICAL REQUIREMENTS:
+===== TECHNICAL REQUIREMENTS =====
 - EXACT 1:1 square aspect ratio (1024x1024)
 - Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
 - Ultra high resolution, maximum detail and texture
-- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
+- Professional streaming platform quality (Spotify, Apple Music, etc.)`; 
     };
 
     const promptText = buildPrompt();
