@@ -541,16 +541,37 @@ ${base}`;
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
+    // Best-effort: persist generation for history (do not fail the request if DB write is slow)
+    if (userId) {
+      try {
+        const { error: genInsertErr } = await supabaseClient.from("generations").insert({
+          user_id: userId,
+          prompt: typeof prompt === "string" ? prompt : "",
+          genre: typeof genre === "string" ? genre : "",
+          style: typeof style === "string" ? style : "",
+          mood: typeof mood === "string" ? mood : "",
+          image_url: imageUrl,
+        });
+
+        if (genInsertErr) {
+          logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
+        } else {
+          logStep("Generation saved");
+        }
+      } catch (e) {
+        logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
     // Include warning if style didn't match but we're still returning the image
     const responsePayload: { imageUrl: string; warning?: string } = { imageUrl };
     if (textStyleReferenceImage && skipCreditCharge) {
       responsePayload.warning = "TEXT_STYLE_MISMATCH";
     }
-    
-    return new Response(
-      JSON.stringify(responsePayload),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+
+    return new Response(JSON.stringify(responsePayload), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     logStep("ERROR", { message: error instanceof Error ? error.message : String(error) });
     return new Response(
