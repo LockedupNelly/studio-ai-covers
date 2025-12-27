@@ -109,26 +109,42 @@ serve(async (req) => {
 
     // Build prompt for OpenAI gpt-image-1
     const buildPrompt = (): string => {
-      const textBlock = songTitle ? `
-TEXT (spell exactly):
-- Song title: "${songTitle}"
-- Artist: "${artistName || ''}"
-${textStyleInstructions ? `- Style: ${textStyleInstructions}` : ''}
-- Use modern, premium typography (2024 style)
-- Place text in clear space for readability, 15% margin from edges` : '';
+      // Build detailed text instructions if we have a song title
+      let textInstructions = '';
+      if (songTitle) {
+        textInstructions = `
 
-      return `Create album cover art. CRITICAL: Output must be EXACTLY 1:1 square aspect ratio. The artwork MUST fill the entire canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars on any side.
+TYPOGRAPHY REQUIREMENTS (CRITICAL - FOLLOW EXACTLY):
+1. SONG TITLE: "${songTitle}" - Display prominently at the TOP of the cover in large, bold, stylized 3D metallic letters with weathered texture. The title should be the most prominent text element.
+2. ARTIST NAME: "${artistName || ''}" - Display smaller, below the title, in a clean complementary font.
+3. TEXT STYLING: ${textStyleInstructions || 'Heavy metal/rock style typography with 3D depth, metallic sheen, and dramatic shadows'}
+4. SPELLING: Copy the exact characters shown above - do NOT change or add any letters
+5. PLACEMENT: Title at top 15% of image, artist name below it. Both must be clearly legible against the background.
+6. DO NOT duplicate or repeat any text - each text element appears ONCE only`;
+      }
 
-SCENE: ${description}
-GENRE: ${genre} | STYLE: ${style} | MOOD: ${mood}
-${textBlock}
+      return `Create a professional album cover artwork for a ${genre} music release.
 
-Requirements:
-- SQUARE 1:1 aspect ratio, artwork fills 100% of canvas
-- NO empty space, NO padding, NO borders, NO letterboxing
-- Photorealistic, gallery-quality
-- Artwork extends to all four edges with no margins
-- Text integrated naturally into the scene`;
+VISUAL CONCEPT:
+${description}
+
+ATMOSPHERE & STYLE:
+- Genre: ${genre}
+- Visual Style: ${style}
+- Mood/Tone: ${mood}
+- Quality: Ultra high resolution, photorealistic, cinematic lighting, dramatic atmosphere
+- Composition: Dynamic, visually striking, gallery-quality album artwork
+${textInstructions}
+
+TECHNICAL REQUIREMENTS:
+- EXACT 1:1 square aspect ratio (1024x1024 pixels)
+- Artwork fills 100% of canvas with NO borders, margins, or letterboxing
+- Rich detail, textures, and depth throughout the entire image
+- Professional album cover quality suitable for streaming platforms
+- Dramatic lighting with contrast and atmosphere
+- Elements extend to all edges - no empty space
+
+Create an epic, visually stunning album cover that would look professional on Spotify, Apple Music, and other platforms.`;
     };
 
     const promptText = buildPrompt();
