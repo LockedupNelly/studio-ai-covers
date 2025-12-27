@@ -116,20 +116,23 @@ const Index = () => {
             // Refresh credits after generation
             refetchCredits();
 
-            // Save to database
+            // Save to database (non-blocking, via backend function)
             if (user) {
-              const { error: saveError } = await supabase.from("generations").insert({
-                user_id: user.id,
-                prompt,
-                genre,
-                style,
-                mood,
-                image_url: data.imageUrl,
-              });
-
-              if (saveError) {
-                console.error("Error saving generation:", saveError);
-              }
+              void supabase.functions
+                .invoke("save-generation", {
+                  body: {
+                    prompt,
+                    genre,
+                    style,
+                    mood,
+                    imageUrl: data.imageUrl,
+                  },
+                })
+                .then(({ error: saveError }) => {
+                  if (saveError) {
+                    console.error("Error saving generation:", saveError);
+                  }
+                });
             }
 
             // Check for style mismatch warning
