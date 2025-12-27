@@ -57,13 +57,22 @@ const Auth = () => {
     try {
       if (isLogin) {
         console.log("[Auth] Attempting sign in with email:", email);
-        const { data, error } = await supabase.auth.signInWithPassword({
+
+        const timeoutMs = 15000;
+        const signInPromise = supabase.auth.signInWithPassword({
           email,
           password,
         });
-        
-        console.log("[Auth] Sign in response:", { data: !!data?.user, error: error?.message });
-        
+
+        const { data, error } = await Promise.race([
+          signInPromise,
+          new Promise<{ data: null; error: { message: string } }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: { message: "Login request timed out. Please try again." } }), timeoutMs)
+          ),
+        ]);
+
+        console.log("[Auth] Sign in response:", { data: !!(data as any)?.user, error: (error as any)?.message });
+
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             toast.error("Login failed", {
@@ -74,26 +83,34 @@ const Auth = () => {
               description: error.message,
             });
           }
-          setIsLoading(false);
           return;
         }
-        
+
         toast.success("Welcome back!", {
           description: "You've successfully signed in.",
         });
         navigate("/");
       } else {
         console.log("[Auth] Attempting sign up with email:", email);
-        const { data, error } = await supabase.auth.signUp({
+
+        const timeoutMs = 15000;
+        const signUpPromise = supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
           },
         });
-        
-        console.log("[Auth] Sign up response:", { data: !!data?.user, error: error?.message });
-        
+
+        const { data, error } = await Promise.race([
+          signUpPromise,
+          new Promise<{ data: null; error: { message: string } }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: { message: "Signup request timed out. Please try again." } }), timeoutMs)
+          ),
+        ]);
+
+        console.log("[Auth] Sign up response:", { data: !!(data as any)?.user, error: (error as any)?.message });
+
         if (error) {
           if (error.message.includes("already registered")) {
             toast.error("Account exists", {
@@ -104,10 +121,9 @@ const Auth = () => {
               description: error.message,
             });
           }
-          setIsLoading(false);
           return;
         }
-        
+
         toast.success("Account created!", {
           description: "Welcome to Cover Art Maker.",
         });

@@ -19,33 +19,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Clean up URL hash after OAuth callback
-        if (event === 'SIGNED_IN' && window.location.hash) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      }
-    );
+    let didSettle = false;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Safety: never stay stuck in loading forever
+    const safetyTimeout = window.setTimeout(() => {
+      if (!didSettle) {
+        console.warn("[AuthContext] Safety timeout hit; forcing loading=false");
+        setLoading(false);
+      }
+    }, 8000);
+
+    // Set up auth state listener FIRST
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[AuthContext] onAuthStateChange", { event, hasSession: !!session });
+      didSettle = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      // Clean up URL hash on initial load if user is already signed in
-      if (session && window.location.hash) {
-        window.history.replaceState(null, '', window.location.pathname);
+
+      // Clean up URL hash after OAuth callback
+      if (event === "SIGNED_IN" && window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // THEN check for existing session
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        console.log("[AuthContext] getSession", { hasSession: !!session });
+        didSettle = true;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        // Clean up URL hash on initial load if user is already signed in
+        if (session && window.location.hash) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      })
+      .catch((err) => {
+        console.error("[AuthContext] getSession error", err);
+        didSettle = true;
+        setLoading(false);
+        toast.error("Auth error", { description: "Could not initialize login. Please refresh." });
+      })
+      .finally(() => {
+        window.clearTimeout(safetyTimeout);
+      });
+
+    return () => {
+      window.clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {
