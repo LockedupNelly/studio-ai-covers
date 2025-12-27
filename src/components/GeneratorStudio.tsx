@@ -1120,7 +1120,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           </Button>
                         </div>
                         
-                        {/* Enhance button */}
+                        {/* Upscale button - uses Real-ESRGAN for true 4x upscaling */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1128,20 +1128,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             if (!generatedImage) return;
                             setIsEnhancing(true);
                             try {
-                              const { data, error } = await supabase.functions.invoke("enhance-cover", {
+                              const { data, error } = await supabase.functions.invoke("upscale-cover", {
                                 body: { imageUrl: generatedImage },
                               });
                               if (error) throw error;
                               if (data?.error) throw new Error(data.error);
-                              if (data?.imageUrl) {
-                                window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.imageUrl } }));
-                                toast.success("Cover enhanced to 3000×3000!", {
-                                  description: "Ready for streaming platforms.",
+                              if (data?.upscaledUrl) {
+                                window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.upscaledUrl } }));
+                                toast.success("Cover upscaled to 4K!", {
+                                  description: "True AI upscaling complete - ready for streaming platforms.",
                                 });
                                 refetchCredits();
                               }
                             } catch (err) {
-                              toast.error("Enhancement failed", {
+                              toast.error("Upscaling failed", {
                                 description: err instanceof Error ? err.message : "Please try again",
                               });
                             } finally {
@@ -1154,12 +1154,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           {isEnhancing ? (
                             <>
                               <RefreshCw className="w-4 h-4 animate-spin mr-1" />
-                              Enhancing...
+                              Upscaling...
                             </>
                           ) : (
                             <>
-                              <Zap className="w-4 h-4 mr-1" />
-                              Enhance for streaming platforms (1 credit)
+                              <Maximize2 className="w-4 h-4 mr-1" />
+                              Upscale to 4K (1 credit)
                             </>
                           )}
                         </Button>

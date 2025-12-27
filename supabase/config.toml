@@ -9,8 +9,14 @@ verify_jwt = true
 [functions.enhance-cover]
 verify_jwt = true
 
+[functions.upscale-cover]
+verify_jwt = true
+
 [functions.stripe-webhook]
 verify_jwt = false
 
 [functions.request-designer-edit]
+verify_jwt = true
+
+[functions.list-generations]
 verify_jwt = true
