@@ -10,8 +10,10 @@ interface ColorPickerPopoverProps {
   themeMode?: "light" | "dark";
 }
 
-// Color palette with shades - vibrant versions included (AI Select removed)
+// Color palette with shades - vibrant versions included + AI Select option
 const colorPalette = [
+  // AI Select - first option (no choice, let AI decide)
+  { id: "ai-select", name: "AI Select", color: "none", isAiSelect: true },
   // Row 1 - Reds (with vibrant)
   { id: "red-vibrant", name: "Vibrant Red", color: "#ff0000" },
   { id: "red", name: "Red", color: "#ef4444" },
@@ -99,14 +101,24 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               onClick={() => handleSelect(color.id)}
               className={`relative w-8 h-8 rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
-              } ${color.id === "white" ? "border border-border" : ""}`}
-              style={{ backgroundColor: color.color }}
+              } ${color.id === "white" ? "border border-border" : ""} ${
+                (color as any).isAiSelect ? "border-2 border-border bg-white" : ""
+              }`}
+              style={(color as any).isAiSelect ? {} : { backgroundColor: color.color }}
               title={color.name}
             >
-              {value === color.id && (
+              {(color as any).isAiSelect && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-full h-0.5 bg-red-500 rotate-45 absolute" />
+                </div>
+              )}
+              {value === color.id && !(color as any).isAiSelect && (
                 <Check className={`absolute inset-0 m-auto w-4 h-4 ${
                   ["white", "yellow-vibrant", "yellow", "gold", "cyan-vibrant", "green-vibrant"].includes(color.id) ? "text-gray-800" : "text-white"
                 }`} />
+              )}
+              {value === color.id && (color as any).isAiSelect && (
+                <Check className="absolute -top-1 -right-1 w-3 h-3 text-primary" />
               )}
             </button>
           ))}
@@ -121,7 +133,7 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
 
 // Helper to get actual color value from ID
 export const getColorValue = (colorId: string): string => {
-  if (colorId === "ai" || !colorId) return "";
+  if (colorId === "ai" || colorId === "ai-select" || !colorId) return "";
   const color = colorPalette.find(c => c.id === colorId);
   return color?.name || colorId;
 };

@@ -1075,11 +1075,45 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           </div>
                         )}
                       </div>
-                      <p className={`text-center text-xs ${mutedTextClass}`}>
-                        1024 × 1024px · Ready for streaming
-                      </p>
-                      <div className="flex flex-col gap-2 mt-2">
-                        {/* Enhance to 3K button */}
+                      {/* Progress bar during re-generation */}
+                      {isGenerating && (
+                        <div className="w-full space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
+                            <span className={mutedTextClass}>{Math.round(smoothProgress)}%</span>
+                          </div>
+                          <Progress value={smoothProgress} className="h-1.5" />
+                        </div>
+                      )}
+                      {!isGenerating && (
+                        <p className={`text-center text-xs ${mutedTextClass}`}>
+                          1024 × 1024px · Ready for streaming
+                        </p>
+                      )}
+                      <div className="flex flex-col gap-3 mt-3 w-full">
+                        {/* Primary actions row */}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="flex-1"
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                            onClick={() => setShowEditCoverDialog(true)}
+                            disabled={isGenerating}
+                          >
+                            Edit Cover
+                          </Button>
+                        </div>
+                        
+                        {/* Enhance button */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1095,7 +1129,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               if (data?.imageUrl) {
                                 window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.imageUrl } }));
                                 toast.success("Cover enhanced to 3000×3000!", {
-                                  description: "Ready for Spotify upload.",
+                                  description: "Ready for streaming platforms.",
                                 });
                                 refetchCredits();
                               }
@@ -1118,30 +1152,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           ) : (
                             <>
                               <Zap className="w-4 h-4 mr-1" />
-                              Enhance to 3K for Spotify (1 credit)
+                              Enhance for streaming platforms (1 credit)
                             </>
                           )}
                         </Button>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}
-                            onClick={() => setShowEditCoverDialog(true)}
-                            disabled={isGenerating}
-                          >
-                            Edit Cover
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleDownload}
-                          >
-                            Download
-                          </Button>
-                        </div>
-                        {/* Professional Edits + View Past Creations on same line */}
-                        <div className="flex items-center justify-between gap-2">
+                        
+                        {/* Links row */}
+                        <div className="flex items-center justify-between pt-1">
                           <button
                             onClick={() => setShowDesignerEditDialog(true)}
                             className={`text-xs font-medium transition-colors ${
@@ -1150,7 +1167,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                 : "text-primary hover:text-primary/80"
                             }`}
                           >
-                            Send for free professional edits
+                            Request free designer edits
                           </button>
                           <button
                             onClick={() => navigate("/profile")}

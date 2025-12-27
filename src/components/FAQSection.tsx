@@ -20,23 +20,15 @@ const faqItems = [
   },
   {
     question: "How much does it cost?",
-    answer: "Free to try up to 6 covers generated, then you can either buy one of the six for $4.99 or purchase up to 30 cover generations and download one for $4.99 or stop. So simply put it costs $4.99 per cover art generated and downloaded. If it takes more than 30 generations to create your cover art you can purchase an additional 30 cover generations for $4.99. Note: it is rare that a musician cannot generate a cover they love in more than 30 generations. Our average cover generation is eight (8)."
-  },
-  {
-    question: "Why are the cover images watermarked?",
-    answer: "We watermark the images to prevent theft. We pay AI providers per image generated. Our mission is to provide affordable, easy to generate AI album cover art for musicians that need cover art for the next drop. If you are looking to just play and learn AI, we get that but we are not the site for you."
+    answer: "We offer flexible pricing: purchase credit packs starting at $5 for 10 credits (1 credit = 1 cover generation), or subscribe to a monthly plan for even better value. Check our pricing page for current packages and subscription tiers."
   },
   {
     question: "Can I use the artwork for other things other than album cover art?",
     answer: "Yes, the cover artwork you create and purchase can be used for anything including podcast covers, posters, merch, greeting cards, etc."
   },
   {
-    question: "How is the Cover Art delivered? What is the delivery time?",
-    answer: "The cover art is immediately available to download after checkout. The Spotify Canvas, Motion Cover, and Pro Designer Added Song Title and Artist Name are delivered via email in 2-5 days."
-  },
-  {
-    question: "How and what format are the optional Spotify Canvas Cover Art and Motion Cover Art delivered?",
-    answer: "Spotify Canvas is a 3-8 second looping animated visual of your cover art that shows in vertical format (9:16) and is delivered as an MP4 file for Spotify. According to Spotify, when listeners see a Canvas Song, 5% are more likely to keep listening, 145% share the track, 20% add to their playlists. Artists with fewer than 1000 followers who use Canvas see an average 80% more streams and saves. Motion covers are an animated 30-second clip of your regular cover and can be extended for the length of your song. When you purchase a motion cover, you will receive both the regular cover (.JPEG) and the motion cover (.MP4)."
+    question: "What is the delivery time for add-ons?",
+    answer: "Add-ons such as Spotify Canvas, Motion Cover, and other motion upgrades are delivered via email in 2-5 days. Real Designer Edits are delivered within 24 hours via email."
   },
   {
     question: "Is it legal to use the cover art for music streaming and other commercial uses?",
