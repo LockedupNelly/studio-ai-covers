@@ -195,15 +195,22 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     const loadRecent = async () => {
       if (!user) return;
       try {
-        const { data, error } = await supabase
-          .from("generations")
-          .select("id, image_url")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(6);
-        if (!error && data) {
-          setRecentCovers(data as { id: string; image_url: string }[]);
+        const { data, error } = await supabase.functions.invoke("list-generations", {
+          body: { limit: 6, offset: 0 },
+        });
+
+        if (error) {
+          console.error("Failed to load recent covers (function)", error);
+          return;
         }
+
+        const rows = (data?.generations ?? []) as { id: string; image_url: string }[];
+        setRecentCovers(
+          rows
+            .filter((r) => !!r.image_url)
+            .map((r) => ({ id: r.id, image_url: r.image_url }))
+            .slice(0, 6)
+        );
       } catch (e) {
         console.error("Failed to load recent covers", e);
       }
