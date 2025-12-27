@@ -71,60 +71,96 @@ const Index = () => {
       return "Please try again";
     };
 
+    const shouldRetry = (message: string) => {
+      const m = message.toLowerCase();
+      return (
+        m.includes("failed to fetch") ||
+        m.includes("network") ||
+        m.includes("cors") ||
+        m.includes("timeout") ||
+        m.includes("timed out") ||
+        m.includes("502") ||
+        m.includes("503") ||
+        m.includes("504")
+      );
+    };
+
     try {
-      const { data, error } = await supabase.functions.invoke("generate-cover", {
-        body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
-      });
+      const maxAttempts = 3;
+      let lastError: unknown = null;
 
-      if (error) {
-        throw new Error(await extractInvokeErrorMessage(error));
-      }
-
-      if (data?.error) {
-        if (data.error.includes("No credits")) {
-          toast.error("No credits remaining", {
-            description: "Purchase more credits to continue generating.",
-          });
-          navigate("/purchase-credits");
-          return;
-        }
-        throw new Error(data.error);
-      }
-
-      if (data?.imageUrl) {
-        setGeneratedImage(data.imageUrl);
-
-        // Refresh credits after generation
-        refetchCredits();
-
-        // Save to database
-        if (user) {
-          const { error: saveError } = await supabase.from("generations").insert({
-            user_id: user.id,
-            prompt,
-            genre,
-            style,
-            mood,
-            image_url: data.imageUrl,
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const { data, error } = await supabase.functions.invoke("generate-cover", {
+            body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
           });
 
-          if (saveError) {
-            console.error("Error saving generation:", saveError);
+          if (error) {
+            throw new Error(await extractInvokeErrorMessage(error));
           }
-        }
 
-        // Check for style mismatch warning
-        if (data.warning === "TEXT_STYLE_MISMATCH") {
-          toast.info("Cover generated with style variation", {
-            description: "The text style may differ slightly from your selection. You were not charged.",
-            duration: 6000,
-          });
-        } else {
-          toast.success("Cover art generated!", {
-            description: `${genre} cover with ${style} style is ready.`,
-          });
+          if (data?.error) {
+            if (data.error.includes("No credits")) {
+              toast.error("No credits remaining", {
+                description: "Purchase more credits to continue generating.",
+              });
+              navigate("/purchase-credits");
+              return;
+            }
+            throw new Error(data.error);
+          }
+
+          if (data?.imageUrl) {
+            setGeneratedImage(data.imageUrl);
+
+            // Refresh credits after generation
+            refetchCredits();
+
+            // Save to database
+            if (user) {
+              const { error: saveError } = await supabase.from("generations").insert({
+                user_id: user.id,
+                prompt,
+                genre,
+                style,
+                mood,
+                image_url: data.imageUrl,
+              });
+
+              if (saveError) {
+                console.error("Error saving generation:", saveError);
+              }
+            }
+
+            // Check for style mismatch warning
+            if (data.warning === "TEXT_STYLE_MISMATCH") {
+              toast.info("Cover generated with style variation", {
+                description: "The text style may differ slightly from your selection. You were not charged.",
+                duration: 6000,
+              });
+            } else {
+              toast.success("Cover art generated!", {
+                description: `${genre} cover with ${style} style is ready.`,
+              });
+            }
+          }
+
+          // Success: stop retry loop
+          return;
+        } catch (e) {
+          lastError = e;
+          const msg = e instanceof Error ? e.message : String(e);
+
+          const canRetry = attempt < maxAttempts && shouldRetry(msg);
+          if (!canRetry) throw e;
+
+          // brief backoff
+          await new Promise((r) => setTimeout(r, 600 * attempt));
         }
       }
+
+      // If all retries failed, throw the last error
+      throw lastError;
     } catch (error) {
       console.error("Generation error:", error);
       toast.error("Generation failed", {
