@@ -107,44 +107,107 @@ serve(async (req) => {
     
     logStep("Parsed prompt", { songTitle, artistName, hasTextStyle: !!textStyleInstructions });
 
-    // Build prompt for OpenAI gpt-image-1
+    // Build prompt for OpenAI gpt-image-1 using comprehensive system
     const buildPrompt = (): string => {
-      // Build detailed text instructions if we have a song title
-      let textInstructions = '';
-      if (songTitle) {
-        textInstructions = `
+      // Genre-specific visual bias
+      const genreBias: Record<string, string> = {
+        "Hip-Hop": "Gritty cinematic realism, urban tone, bold presence, dramatic lighting, high contrast.",
+        "Rap": "Gritty cinematic realism, urban tone, bold presence, dramatic lighting, high contrast.",
+        "Pop": "Clean, polished, vibrant, modern aesthetic, visually striking, high clarity.",
+        "EDM": "Energetic, futuristic, neon accents, motion, light trails, high saturation.",
+        "R&B": "Moody, sensual, cinematic, smooth lighting, emotional depth, rich shadows.",
+        "Rock": "Raw, dramatic, bold lighting, gritty textures, high contrast.",
+        "Alternative": "Experimental, artistic, atmospheric, non-traditional composition.",
+        "Indie": "Intimate, cinematic, emotional, natural lighting, artistic restraint.",
+        "Metal": "Dark fantasy, aggressive, ominous, epic scale, dramatic lighting, heavy textures.",
+        "Country": "Grounded, warm cinematic realism, rustic textures, emotional storytelling.",
+        "Jazz": "Moody, elegant, low-key lighting, cinematic noir aesthetic.",
+        "Classical": "Refined, timeless, elegant, painterly lighting, dramatic composition.",
+      };
 
-TYPOGRAPHY REQUIREMENTS (CRITICAL - FOLLOW EXACTLY):
-1. SONG TITLE: "${songTitle}" - Display prominently at the TOP of the cover in large, bold, stylized 3D metallic letters with weathered texture. The title should be the most prominent text element.
-2. ARTIST NAME: "${artistName || ''}" - Display smaller, below the title, in a clean complementary font.
-3. TEXT STYLING: ${textStyleInstructions || 'Heavy metal/rock style typography with 3D depth, metallic sheen, and dramatic shadows'}
-4. SPELLING: Copy the exact characters shown above - do NOT change or add any letters
-5. PLACEMENT: Title at top 15% of image, artist name below it. Both must be clearly legible against the background.
-6. DO NOT duplicate or repeat any text - each text element appears ONCE only`;
+      // Visual style modifiers
+      const styleModifiers: Record<string, string> = {
+        "Realism": "Photorealistic, cinematic realism, natural lighting, realistic materials.",
+        "3D Render": "Ultra-detailed 3D render, realistic materials, cinematic lighting, high realism.",
+        "Illustration": "Detailed illustration, painterly textures, controlled lighting, artistic clarity.",
+        "Anime": "Cinematic anime aesthetic, dramatic lighting, depth of field, expressive motion.",
+        "Fine Art": "Gallery-quality fine art, painterly lighting, dramatic composition.",
+        "Abstract": "Abstract composition, symbolic imagery, expressive color and form.",
+        "Minimalist": "Minimal composition, strong negative space, bold focal point.",
+        "Cinematic": "Film still aesthetic, dramatic lighting, depth, motion, atmosphere.",
+        "Retro": "Retro-inspired color grading, vintage textures, nostalgic lighting.",
+      };
+
+      // Mood modifiers
+      const moodModifiers: Record<string, string> = {
+        "Aggressive": "Intense, forceful, sharp lighting, high contrast.",
+        "Dark": "Dark, moody, ominous, low-key lighting, dramatic shadows.",
+        "Mysterious": "Atmospheric, foggy, restrained lighting, subtle tension.",
+        "Euphoric": "Uplifting, energetic, glowing highlights, dynamic motion.",
+        "Uplifting": "Hopeful, bright accents, emotional warmth.",
+        "Melancholic": "Somber, emotional, muted tones, soft lighting.",
+        "Romantic": "Warm, intimate, soft highlights, emotional closeness.",
+        "Peaceful": "Calm, balanced, gentle lighting, minimal contrast.",
+        "Intense": "High tension, dramatic lighting, strong contrast.",
+        "Nostalgic": "Nostalgic tone, soft contrast, film-like color grading.",
+      };
+
+      const genreStyle = genreBias[genre] || "Cinematic realism, dramatic lighting, professional quality.";
+      const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
+      const moodStyle = moodModifiers[mood] || "Dramatic, atmospheric, emotionally evocative.";
+
+      // Typography section (only if song title present)
+      let typographySection = '';
+      if (songTitle) {
+        typographySection = `
+
+TYPOGRAPHY RULES (CRITICAL - SPELL EXACTLY AS SHOWN):
+- Song Title: "${songTitle}" — Display as the PRIMARY text element, large and prominent
+- Artist Name: "${artistName || ''}" — Display SMALLER, below or near the title
+${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : '- Text Style: Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering'}
+- Typography must be integrated naturally into the environment — NOT flat poster-style overlays
+- Text should feel like it exists inside the world, not added afterward
+- Maintain legibility while preserving realism and atmosphere
+- SPELL THE TEXT EXACTLY AS PROVIDED — do not change, add, or omit any characters
+- Each text element appears ONCE only — no duplication`;
       }
 
-      return `Create a professional album cover artwork for a ${genre} music release.
+      // Build the complete prompt
+      return `SYSTEM: You are generating professional, high-end album cover artwork intended for commercial music distribution on streaming platforms.
 
-VISUAL CONCEPT:
+GLOBAL QUALITY RULES:
+The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or illustrative. The result should look like a finished, high-budget album cover created by an experienced designer.
+
+Always prioritize:
+- Strong central or iconographic composition suitable for album covers
+- Clear focal hierarchy
+- Cinematic lighting (backlighting, rim light, directional light, high contrast)
+- Realistic materials and textures (stone, metal, fabric, skin, surfaces)
+- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
+- Mood-driven color grading
+- Album-safe framing (important elements not cropped at edges)
+- Thumbnail legibility at small sizes
+
+Use cinematic camera angles and depth of field where appropriate. The final image should feel intentional, dramatic, and professionally art-directed.
+${typographySection}
+
+GENRE VISUAL DIRECTION (${genre}):
+${genreStyle}
+
+VISUAL STYLE (${style}):
+${visualStyle}
+
+MOOD/ATMOSPHERE (${mood}):
+${moodStyle}
+
+USER'S CREATIVE VISION:
 ${description}
 
-ATMOSPHERE & STYLE:
-- Genre: ${genre}
-- Visual Style: ${style}
-- Mood/Tone: ${mood}
-- Quality: Ultra high resolution, photorealistic, cinematic lighting, dramatic atmosphere
-- Composition: Dynamic, visually striking, gallery-quality album artwork
-${textInstructions}
-
 TECHNICAL REQUIREMENTS:
-- EXACT 1:1 square aspect ratio (1024x1024 pixels)
-- Artwork fills 100% of canvas with NO borders, margins, or letterboxing
-- Rich detail, textures, and depth throughout the entire image
-- Professional album cover quality suitable for streaming platforms
-- Dramatic lighting with contrast and atmosphere
-- Elements extend to all edges - no empty space
-
-Create an epic, visually stunning album cover that would look professional on Spotify, Apple Music, and other platforms.`;
+- EXACT 1:1 square aspect ratio (1024x1024)
+- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
+- Ultra high resolution, maximum detail and texture
+- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
     };
 
     const promptText = buildPrompt();
