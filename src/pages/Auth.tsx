@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,14 +20,15 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { signInWithGoogle, user } = useAuth();
+  const { signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  // Redirect if already logged in - use useEffect to avoid render-time navigation
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -55,10 +56,13 @@ const Auth = () => {
     
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log("[Auth] Attempting sign in with email:", email);
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
+        console.log("[Auth] Sign in response:", { data: !!data?.user, error: error?.message });
         
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
@@ -70,6 +74,7 @@ const Auth = () => {
               description: error.message,
             });
           }
+          setIsLoading(false);
           return;
         }
         
@@ -78,13 +83,16 @@ const Auth = () => {
         });
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        console.log("[Auth] Attempting sign up with email:", email);
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
           },
         });
+        
+        console.log("[Auth] Sign up response:", { data: !!data?.user, error: error?.message });
         
         if (error) {
           if (error.message.includes("already registered")) {
@@ -96,6 +104,7 @@ const Auth = () => {
               description: error.message,
             });
           }
+          setIsLoading(false);
           return;
         }
         
@@ -105,6 +114,7 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error) {
+      console.error("[Auth] Unexpected error:", error);
       toast.error("Error", {
         description: "An unexpected error occurred. Please try again.",
       });
@@ -112,6 +122,15 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
