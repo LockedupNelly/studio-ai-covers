@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,23 +13,28 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
   try {
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    // Use ANON key + forward the user's JWT to rely on RLS.
+    // This avoids service-role usage and keeps memory/overhead low.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData?.user) {
       console.log("[LIST-GENERATIONS] Auth failed", userErr?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -46,7 +51,6 @@ serve(async (req) => {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 50);
     const safeOffset = Math.max(Number(offset) || 0, 0);
 
-    // Use the index: idx_generations_user_created (user_id, created_at DESC)
     const { data, error } = await supabase
       .from("generations")
       .select("id, prompt, genre, style, mood, image_url, created_at")
@@ -56,10 +60,13 @@ serve(async (req) => {
 
     if (error) {
       console.error("[LIST-GENERATIONS] DB error", error.code, error.message);
-      return new Response(JSON.stringify({ error: "Failed to load generations", details: error.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Failed to load generations", details: error.message, code: error.code }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log("[LIST-GENERATIONS] Returned", data?.length ?? 0, "items");
@@ -68,10 +75,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("[LIST-GENERATIONS] ERROR", e);
-    return new Response(JSON.stringify({ error: "Failed to load generations" }), {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    console.error("[LIST-GENERATIONS] ERROR", msg);
+    return new Response(JSON.stringify({ error: "Failed to load generations", details: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
