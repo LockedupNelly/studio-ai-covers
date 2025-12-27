@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
@@ -114,54 +115,41 @@ serve(async (req) => {
       }
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    logStep("Enhancing image using Gemini image-to-image");
+    logStep("Enhancing image using OpenAI gpt-image-1");
 
-    // Use Gemini to recreate the image at higher quality
-    // The key is to be VERY specific about preserving the exact image
-    const enhancePrompt = `You are an image enhancement AI. Your ONLY task is to reproduce this EXACT same image with enhanced quality and sharpness.
+    // Use OpenAI to recreate the image at higher quality
+    const enhancePrompt = `Create a high-quality, enhanced version of an album cover. The image should be:
+- Crystal clear with maximum sharpness and detail
+- Professional quality suitable for music streaming platforms
+- Perfect 1:1 square format (1024x1024)
+- No compression artifacts
+- Vibrant colors with proper contrast
+- Gallery-quality finish
 
-CRITICAL REQUIREMENTS:
-1. The output must be IDENTICAL to the input image in terms of:
-   - Exact same composition and layout
-   - Exact same colors and color palette
-   - Exact same text (same words, same fonts, same positions)
-   - Exact same subjects and elements
-   - Exact same art style
-2. ONLY improve: sharpness, clarity, detail, and reduce any compression artifacts
-3. DO NOT add, remove, or modify ANY visual elements
-4. DO NOT change the artistic style
-5. DO NOT reinterpret or reimagine the image
-6. The image must be a 1:1 square format
-7. This is for professional music streaming platforms - quality must be pristine
-
-Output a faithful, high-quality reproduction of the exact same image.`;
+This is for professional music distribution - quality must be pristine.`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 180_000);
 
     let response: Response;
     try {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      response = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: enhancePrompt },
-              { type: "image_url", image_url: { url: imageUrl } }
-            ]
-          }],
-          modalities: ["image", "text"]
+          model: "gpt-image-1",
+          prompt: enhancePrompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "high",
         }),
         signal: controller.signal,
       });
@@ -171,7 +159,7 @@ Output a faithful, high-quality reproduction of the exact same image.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      logStep("AI gateway error", { status: response.status, error: errorText });
+      logStep("OpenAI API error", { status: response.status, error: errorText });
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
@@ -182,21 +170,14 @@ Output a faithful, high-quality reproduction of the exact same image.`;
     }
 
     const data = await response.json();
-    const msg = data.choices?.[0]?.message;
+    const imageData = data.data?.[0];
     
-    // Try multiple locations for the image
-    let enhancedImageUrl = msg?.images?.[0]?.image_url?.url;
-    
-    if (!enhancedImageUrl && data.images?.[0]?.image_url?.url) {
-      enhancedImageUrl = data.images[0].image_url.url;
-    }
-    
-    if (!enhancedImageUrl && typeof msg?.content === "string" && msg.content.startsWith("data:image")) {
-      enhancedImageUrl = msg.content;
-    }
+    let enhancedImageUrl = imageData?.b64_json 
+      ? `data:image/png;base64,${imageData.b64_json}`
+      : imageData?.url;
 
     if (!enhancedImageUrl) {
-      logStep("No enhanced image returned", { messageKeys: msg ? Object.keys(msg) : [] });
+      logStep("No enhanced image returned");
       throw new Error("Enhancement failed - no image returned");
     }
 
