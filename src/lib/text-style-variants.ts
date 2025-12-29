@@ -73,16 +73,16 @@ const MODERN_VARIANT_DESCRIPTIONS: Record<number, string> = {
 };
 
 const RETRO_VARIANT_DESCRIPTIONS: Record<number, string> = {
-  1: "70s disco with chrome and gradients. Shiny metallic with warm tones. Groovy, nostalgic glamour.",
-  2: "80s synthwave neon glow. Hot pink/cyan with grid lines. Retro-futuristic aesthetic.",
-  3: "Vintage sign/marquee bulbs. Old Hollywood lightbulb letters. Classic entertainment feel.",
-  4: "Worn vintage with aged texture. Faded, weathered letterpress look. Authentic antique character.",
-  5: "Psychedelic 60s with swirls. Flowing, trippy patterns. Peace and love era vibes.",
-  6: "Art deco geometric elegance. 1920s inspired with gold accents. Gatsby-era sophistication.",
-  7: "VHS/analog distortion. Tracking errors and color bleed. 80s/90s home video aesthetic.",
-  8: "Retro gaming 8-bit pixels. Blocky, nostalgic video game style. Classic arcade feeling.",
-  9: "Newspaper/letterpress vintage. Old print shop texture. Traditional, editorial character.",
-  10: "Chrome airbrush 80s style. Smooth gradients with highlights. Classic album cover aesthetic."
+  1: "3D CHROME SCRIPT with metallic silver finish. Flowing cursive lettering with beveled edges and dramatic depth extrusion. Shiny reflective surface with shadows. 70s/80s chrome typography style.",
+  2: "ELEGANT NEON SIGNATURE SCRIPT with soft white glow. Thin, flowing handwritten cursive with glowing tube-light effect. The text appears to float with subtle light bloom around the strokes.",
+  3: "BOLD GROOVY SERIF with chunky rounded letterforms. Heavy, playful Cooper Black style typography with thick strokes. Vintage 70s feel with friendly, bubbly character.",
+  4: "8-BIT PIXEL SERIF FONT. Retro video game typography with blocky, pixelated letterforms. Classic arcade/computer game aesthetic with jagged edges and nostalgic digital character.",
+  5: "GROOVY 70s BUBBLE SCRIPT with rounded, flowing letterforms. Funky retro typography with smooth curves and playful character. Disco-era aesthetic with soft, bouncy strokes.",
+  6: "CHROME ITALIC RACING FONT with metallic finish and star sparkles. Bold, slanted sports-style lettering with 3D chrome effect. Dynamic speed aesthetic with lens flare highlights.",
+  7: "AGGRESSIVE BRUSH STROKE ITALIC with metallic silver texture. Bold, hand-painted appearance with dynamic forward slant. Speed lines and raw, energetic brush marks. Racing/action movie aesthetic.",
+  8: "3D CHROME HEAVY METAL LETTERING with beveled edges and star sparkles. Bold, angular rock/metal band style typography. Sharp points and dramatic dimensional depth. 80s rock album aesthetic.",
+  9: "MASSIVE 3D CHROME BLOCK LETTERS with deep extrusion and sparkle effects. Ultra-bold uppercase sans-serif with dramatic depth. Stacked layout with cinematic impact. 80s movie poster typography.",
+  10: "CHROME BRUSH SCRIPT with metallic silver finish. Dynamic, hand-painted cursive with speed lines. Bold, energetic strokes with dimensional sheen. 80s action/sports aesthetic."
 };
 
 // Helper to generate variants with detailed descriptions
