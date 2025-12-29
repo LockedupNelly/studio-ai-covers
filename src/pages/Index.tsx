@@ -116,24 +116,7 @@ const Index = () => {
             // Refresh credits after generation
             refetchCredits();
 
-            // Save to database (non-blocking, via backend function)
-            if (user) {
-              void supabase.functions
-                .invoke("save-generation", {
-                  body: {
-                    prompt,
-                    genre,
-                    style,
-                    mood,
-                    imageUrl: data.imageUrl,
-                  },
-                })
-                .then(({ error: saveError }) => {
-                  if (saveError) {
-                    console.error("Error saving generation:", saveError);
-                  }
-                });
-            }
+            // Note: Generation is saved in the edge function, no need to save again here
 
             // Check for style mismatch warning
             if (data.warning === "TEXT_STYLE_MISMATCH") {
