@@ -131,6 +131,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceProgress, setEnhanceProgress] = useState(0);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
@@ -1076,13 +1077,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <div className={`relative aspect-square rounded-lg overflow-hidden w-full border-2 ${
                         themeMode === "light" ? "border-gray-300" : "border-gray-500"
                       }`}>
+                        {/* Original/base image - shown blurred during upscaling */}
                         <img 
-                          src={upscaledImageUrl || generatedImage} 
+                          src={generatedImage} 
                           alt="Generated Cover Art" 
                           className={`w-full h-full object-cover transition-all duration-500 ${
                             isEnhancing ? "blur-sm scale-105" : ""
-                          }`}
+                          } ${upscaledImageUrl && !isRevealing ? "hidden" : ""}`}
                         />
+                        {/* Upscaled image with reveal animation */}
+                        {upscaledImageUrl && (
+                          <img 
+                            src={upscaledImageUrl} 
+                            alt="Upscaled Cover Art 4K" 
+                            className="absolute inset-0 w-full h-full object-cover"
+                            style={{
+                              clipPath: isRevealing 
+                                ? 'inset(0 0 0 0)' 
+                                : 'inset(0 0 0 0)',
+                              animation: isRevealing ? 'revealFromTop 2s ease-out forwards' : 'none',
+                            }}
+                          />
+                        )}
                         {isGenerating && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <RefreshCw className="w-8 h-8 text-white animate-spin" />
@@ -1174,7 +1190,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                 if (data?.error) throw new Error(data.error);
                                 if (data?.upscaledUrl) {
                                   setEnhanceProgress(100);
+                                  // Start reveal animation
+                                  setIsRevealing(true);
                                   setUpscaledImageUrl(data.upscaledUrl);
+                                  // End reveal after 2 seconds
+                                  setTimeout(() => setIsRevealing(false), 2000);
                                   toast.success("Cover upscaled to 4K!", {
                                     description: "True AI upscaling complete - ready for streaming platforms.",
                                   });

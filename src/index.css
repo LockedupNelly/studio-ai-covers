@@ -100,3 +100,8 @@
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
+
+@keyframes revealFromTop {
+  0% { clip-path: inset(100% 0 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
