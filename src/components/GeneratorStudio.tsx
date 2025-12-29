@@ -379,6 +379,22 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     if (!imageToDownload) return;
 
     try {
+      // For upscaled images, download directly without processing (already 4K)
+      if (upscaledImageUrl) {
+        const res = await fetch(upscaledImageUrl);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "cover-art-4k.png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // For standard images, process to 3000x3000
       const res = await fetch(imageToDownload);
       const blob = await res.blob();
       const bitmap = await createImageBitmap(blob);
@@ -388,8 +404,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       const sx = Math.floor((bitmap.width - side) / 2);
       const sy = Math.floor((bitmap.height - side) / 2);
 
-      // Use original dimensions for upscaled, 3000 for standard
-      const outSize = upscaledImageUrl ? Math.max(side, 3000) : 3000;
+      const outSize = 3000;
       const canvas = document.createElement("canvas");
       canvas.width = outSize;
       canvas.height = outSize;
@@ -407,7 +422,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       const url = URL.createObjectURL(outBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art-3000x3000.png";
+      link.download = "cover-art-3000x3000.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
