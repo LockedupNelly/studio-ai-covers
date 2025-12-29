@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +19,8 @@ serve(async (req) => {
     const { imageUrl, instructions } = await req.json();
     logStep("Request received", { 
       instructions: instructions?.slice(0, 50), 
-      hasImage: !!imageUrl 
+      hasImage: !!imageUrl,
+      imageUrlPrefix: imageUrl?.slice(0, 50)
     });
 
     if (!imageUrl || !instructions) {
@@ -30,51 +30,58 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    logStep("Editing cover art with OpenAI");
+    logStep("Editing cover art with Lovable AI (image edit mode)");
 
-    const editPrompt = `You are a professional album cover designer. Edit this album cover according to the following instructions:
+    const editPrompt = `Edit this album cover image according to these instructions:
 
 ${instructions}
 
 CRITICAL REQUIREMENTS:
-1. Maintain the original square aspect ratio (1:1)
-2. Keep the overall composition and style similar
-3. Make ONLY the changes requested - do not alter other elements
-4. The artwork must completely fill the canvas - NO empty borders
-5. Ensure all text remains readable and properly positioned
-6. Maintain professional album cover quality
+1. Keep the EXACT same composition, layout, and overall design
+2. Make ONLY the specific changes requested - preserve everything else
+3. Maintain the original text, fonts, and their positions
+4. Keep the same aspect ratio and dimensions
+5. Do not change elements that weren't mentioned in the instructions
+6. The result should look like a subtle modification of the original, not a new image`;
 
-Apply the requested edits while preserving the artistic integrity of the original cover.`;
-
-    // For edits, we need to use the images/edits endpoint with mask, 
-    // but gpt-image-1 can also handle edits via generations with a detailed prompt
-    // Since we're doing text-based edits, we'll describe the original and changes
-    
     const controller = new AbortController();
-    const timeoutMs = 55_000;
+    const timeoutMs = 90_000; // 90 seconds for image editing
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     let response: Response;
     try {
-      // Use gpt-image-1 with a prompt that describes the edit
-      // We'll reference the original image concept in the prompt
-      response = await fetch("https://api.openai.com/v1/images/generations", {
+      // Use Lovable AI gateway with Gemini for actual image editing
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-image-1",
-          prompt: editPrompt,
-          n: 1,
-          size: "1024x1024",
-          quality: "high",
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: editPrompt
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl
+                  }
+                }
+              ]
+            }
+          ],
+          modalities: ["image", "text"]
         }),
         signal: controller.signal,
       });
@@ -93,7 +100,7 @@ Apply the requested edits while preserving the artistic integrity of the origina
 
     if (!response.ok) {
       const errorText = await response.text();
-      logStep("OpenAI API error", { status: response.status, error: errorText });
+      logStep("Lovable AI error", { status: response.status, error: errorText });
 
       if (response.status === 429) {
         return new Response(
@@ -103,31 +110,29 @@ Apply the requested edits while preserving the artistic integrity of the origina
       }
       if (response.status === 402 || response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "OpenAI API credits exhausted. Please check your API key." }),
+          JSON.stringify({ error: "API credits exhausted. Please check your configuration." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    logStep("OpenAI response received");
+    logStep("Lovable AI response received", { hasChoices: !!data.choices });
 
-    const imageData = data.data?.[0];
-    const newImageUrl = imageData?.b64_json 
-      ? `data:image/png;base64,${imageData.b64_json}`
-      : imageData?.url;
+    // Extract the edited image from the response
+    const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
-    if (!newImageUrl) {
-      logStep("No image in response", { data: JSON.stringify(data) });
-      throw new Error("No image generated");
+    if (!editedImageUrl) {
+      logStep("No image in response", { data: JSON.stringify(data).slice(0, 500) });
+      throw new Error("No edited image generated");
     }
 
     logStep("Cover edited successfully");
 
     return new Response(
-      JSON.stringify({ imageUrl: newImageUrl }),
+      JSON.stringify({ imageUrl: editedImageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
