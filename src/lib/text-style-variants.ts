@@ -44,55 +44,91 @@ const CREATIVE_VARIANT_DESCRIPTIONS: Record<number, string> = {
 };
 
 const DARK_VARIANT_DESCRIPTIONS: Record<number, string> = {
-  1: "Gothic blackletter with dramatic shadows. Medieval-inspired letterforms with deep darkness. Mysterious, ancient aesthetic.",
-  2: "Cracked stone/marble texture. Letters appear carved from dark stone with fractures. Ancient, powerful feeling.",
-  3: "Blood red on black with drip effects. Horror-inspired with liquid dripping from letters. Intense, visceral impact.",
-  4: "Smoke/mist dissolving effect. Letters fade into wisps of dark smoke. Ethereal, haunting atmosphere.",
-  5: "Lightning/electrical crackling effect. Bright electrical arcs around dark letters. Powerful, energetic darkness.",
-  6: "Torn paper/collage dark aesthetic. Ripped edges with layered dark textures. Chaotic, artistic destruction.",
-  7: "Glitch/corrupted digital effect. Pixelated distortion with scan lines. Broken, unsettling digital horror.",
-  8: "Fire and embers on charred text. Burning edges with floating sparks. Destructive, intense heat.",
-  9: "Ice/frost crystalline dark style. Frozen, sharp crystal formations. Cold, unforgiving atmosphere.",
-  10: "Shadow silhouette with subtle depth. Minimal but dramatic shadow play. Elegant, mysterious darkness."
+  1: "TYPOGRAPHY STYLE: Gothic blackletter with chrome metallic finish and sparkle effects. LETTERFORMS: Sharp, pointed medieval blackletter with dramatic angular serifs and high contrast thick/thin strokes. EFFECTS: Mirror-finish chrome surface, small star sparkle highlights scattered around text, sharp pointed terminals. COLOR: Silver chrome with bright white specular highlights on black background. MOOD: Medieval dark fantasy, heavy metal album art, royal gothic luxury.",
+  
+  2: "TYPOGRAPHY STYLE: Cracked stone/marble serif with weathered texture. LETTERFORMS: Classical Roman serif letterforms that appear carved from ancient stone with visible crack lines running through. EFFECTS: Deep fissures and cracks throughout letters, rough stone texture, chipped edges, dust/debris particles. COLOR: Gray stone with dark shadows in cracks on black background. MOOD: Ancient ruins, powerful monuments, timeless and enduring.",
+  
+  3: "TYPOGRAPHY STYLE: Horror blood drip text with liquid effects. LETTERFORMS: Bold sans-serif or serif with thick strokes, liquid pooling at bottom of letters. EFFECTS: Blood/liquid dripping from letters, wet glossy surface, puddles forming below, splatter marks. COLOR: Deep crimson red with darker shadows, glossy wet reflections on black background. MOOD: Horror film, visceral intensity, violent and dramatic.",
+  
+  4: "TYPOGRAPHY STYLE: Smoke/mist dissolving ethereal text. LETTERFORMS: Letters that appear to be made of or dissolving into smoke, soft undefined edges that fade into wisps. EFFECTS: Swirling smoke tendrils, letters fading at edges, atmospheric fog, gradient opacity. COLOR: Gray/white smoke on black background, subtle transparency. MOOD: Mysterious, supernatural, haunting disappearance.",
+  
+  5: "TYPOGRAPHY STYLE: Aggressive blackletter with sharp pointed extensions. LETTERFORMS: Heavy metal style blackletter with exaggerated sharp spikes and points extending from letters, angular aggressive terminals. EFFECTS: Sharp pointed protrusions, blade-like extensions, subtle metallic sheen. COLOR: White/silver text with sharp contrast on black background. MOOD: Death metal, aggressive, dangerous, weaponized typography.",
+  
+  6: "TYPOGRAPHY STYLE: Torn paper collage with layered dark textures. LETTERFORMS: Letters appear cut or torn from different paper sources, uneven edges, varied textures within each letter. EFFECTS: Ripped paper edges, layered textures, visible paper grain, chaotic overlapping. COLOR: Off-white torn paper on black with visible texture variations. MOOD: Punk zine, chaotic art, deconstructed design.",
+  
+  7: "TYPOGRAPHY STYLE: Digital glitch corruption with scan lines. LETTERFORMS: Sans-serif text heavily corrupted with digital artifacts, horizontal displacement, broken apart sections. EFFECTS: Scan lines, RGB color separation, pixel displacement, data corruption blocks, static noise. COLOR: White text with cyan/magenta glitch artifacts on black. MOOD: Corrupted signal, cyberpunk horror, digital decay.",
+  
+  8: "TYPOGRAPHY STYLE: Burning ember text with fire and charred edges. LETTERFORMS: Letters appear to be burning wood or paper, glowing hot edges, charred and crumbling sections. EFFECTS: Glowing ember edges, floating sparks, ash particles, smoke, heat distortion. COLOR: Orange/red glowing edges fading to charred black, ember particles. MOOD: Destruction, intense heat, apocalyptic fire.",
+  
+  9: "TYPOGRAPHY STYLE: Frozen ice crystal text with frost effects. LETTERFORMS: Letters made of or covered in ice, sharp crystalline edges, frozen translucent appearance. EFFECTS: Ice crystals forming on letters, frost patterns, frozen condensation, icicle formations. COLOR: Pale blue-white ice with cold highlights on dark background. MOOD: Frozen, unforgiving cold, winter horror.",
+  
+  10: "TYPOGRAPHY STYLE: Minimal shadow silhouette with elegant depth. LETTERFORMS: Clean, elegant serif or sans-serif with strong shadow creating dimensional depth, sophisticated restraint. EFFECTS: Long dramatic shadow casting, subtle gradient in shadow, clean crisp edges. COLOR: White text with deep black shadow on dark gray background. MOOD: Elegant mystery, sophisticated darkness, minimal drama."
 };
 
 const FUTURISTIC_VARIANT_DESCRIPTIONS: Record<number, string> = {
-  1: "Holographic display with scan lines. Semi-transparent with digital artifacts. Sci-fi interface aesthetic.",
-  2: "Neon circuit board patterns. Glowing tech lines integrated with letters. Cyberpunk technology feel.",
-  3: "Chrome/titanium metallic finish. Sleek, polished futuristic metal. Premium tech aesthetic.",
-  4: "Glitching/pixelated distortion. Digital corruption with color separation. Cyber-glitch style.",
-  5: "Laser-cut precision lines. Sharp, geometric with light beam effects. High-tech precision.",
-  6: "Plasma/energy glow effect. Pulsing energy contained in letter shapes. Powerful sci-fi energy.",
-  7: "Wireframe/blueprint technical style. Engineering diagram aesthetic. Technical, precise design.",
-  8: "Gradient chrome with rainbow reflections. Iridescent metallic surface. Premium futuristic luxury.",
-  9: "Digital matrix/code rain effect. Falling code integrated with text. Hacker/cyber aesthetic.",
-  10: "Floating hologram with depth layers. 3D holographic projection look. Advanced technology display."
+  1: "TYPOGRAPHY STYLE: Chrome italic racing script with metallic shine and star sparkles. LETTERFORMS: Bold, slanted connected script with speed-inspired angles, sharp terminals, racing aesthetic. EFFECTS: Mirror-finish chrome surface, lens flare sparkle highlights, subtle motion blur suggestion. COLOR: Silver chrome with bright white specular highlights on dark background. MOOD: Luxury sports cars, high-speed racing, premium performance.",
+  
+  2: "TYPOGRAPHY STYLE: Neon circuit board integrated text. LETTERFORMS: Modern sans-serif with circuit traces extending from letters, PCB-inspired geometric connections. EFFECTS: Glowing neon lines, circuit paths connecting letters, electronic nodes, subtle pulse effect. COLOR: Electric cyan/green neon glow on dark PCB-textured background. MOOD: Cyberpunk tech, electronic circuits, AI/computing.",
+  
+  3: "TYPOGRAPHY STYLE: Sleek titanium/chrome metallic finish. LETTERFORMS: Clean, geometric sans-serif with brushed metal texture, precision engineering aesthetic. EFFECTS: Brushed metal grain, subtle reflections, machined precision edges. COLOR: Cool silver/titanium with blue-tinted highlights on dark background. MOOD: Aerospace technology, premium devices, precision engineering.",
+  
+  4: "TYPOGRAPHY STYLE: Heavy digital glitch with RGB separation. LETTERFORMS: Bold sans-serif torn apart by glitch effects, horizontal displacement creating fragmented appearance. EFFECTS: RGB color channel separation, horizontal slice displacement, pixel corruption, digital artifacts. COLOR: White text with separated cyan/magenta/yellow channels on black. MOOD: System malfunction, cyber attack, digital corruption.",
+  
+  5: "TYPOGRAPHY STYLE: Elegant high-contrast Didone serif. LETTERFORMS: Refined serif with extreme thick/thin contrast, hairline serifs, elegant vertical stress. EFFECTS: Clean, precise letterforms with minimal effects, sophisticated restraint. COLOR: Pure white on black, perfect contrast. MOOD: High fashion, luxury editorial, timeless elegance with modern sensibility.",
+  
+  6: "TYPOGRAPHY STYLE: Plasma energy glow contained in letter shapes. LETTERFORMS: Bold letters that appear to contain swirling plasma energy, glowing from within. EFFECTS: Pulsing inner glow, energy wisps, electrical plasma texture, outer glow halo. COLOR: Electric blue/purple plasma glow with white hot core on dark background. MOOD: Contained power, sci-fi energy, fusion reactor.",
+  
+  7: "TYPOGRAPHY STYLE: Technical wireframe blueprint aesthetic. LETTERFORMS: Letters rendered as technical line drawings, construction lines visible, engineering diagram style. EFFECTS: Thin precise lines, measurement annotations, grid alignment, technical callouts. COLOR: Cyan/blue lines on dark navy blueprint background. MOOD: Engineering precision, technical design, architectural planning.",
+  
+  8: "TYPOGRAPHY STYLE: Iridescent chrome with rainbow holographic reflections. LETTERFORMS: Smooth, rounded sans-serif with oil-slick rainbow chrome finish. EFFECTS: Shifting rainbow reflections, holographic color play, glossy surface. COLOR: Rainbow iridescent chrome shifting through spectrum on dark background. MOOD: Futuristic luxury, premium tech, holographic materials.",
+  
+  9: "TYPOGRAPHY STYLE: Digital matrix code rain integration. LETTERFORMS: Text integrated with falling green code rain, characters partially obscured by cascading data. EFFECTS: Vertical falling code streams, glowing characters, digital rain overlay. COLOR: Bright green matrix code on black background. MOOD: Hacker aesthetic, digital realm, cyberspace.",
+  
+  10: "TYPOGRAPHY STYLE: Floating holographic projection with depth layers. LETTERFORMS: Semi-transparent text appearing as 3D hologram, visible scan lines, floating in space. EFFECTS: Holographic flicker, layered transparency, projection beam visible, scan lines. COLOR: Cyan/blue hologram with translucent quality on dark background. MOOD: Advanced technology, sci-fi interface, futuristic display."
 };
 
 const MODERN_VARIANT_DESCRIPTIONS: Record<number, string> = {
-  1: "Clean geometric sans-serif. Minimal, precise letterforms. Contemporary, professional aesthetic.",
-  2: "Bold condensed with tight tracking. Impactful, space-efficient typography. Strong, modern statement.",
-  3: "Thin elegant with wide spacing. Refined, luxurious minimalism. High-fashion editorial style.",
-  4: "Gradient overlay with smooth transitions. Modern color blending. Fresh, contemporary feel.",
-  5: "Outlined/stroke only letters. Minimal, sophisticated outline style. Clean, architectural approach.",
-  6: "Split/layered color effect. Overlapping color planes. Dynamic, energetic modern design.",
-  7: "Dot matrix/halftone pattern. Retro-modern print technique. Graphic, textured approach.",
-  8: "Soft shadow with depth. Subtle 3D effect with smooth shadows. Approachable, friendly modern.",
-  9: "Geometric shapes integrated. Letters formed from basic shapes. Constructivist, artistic modern.",
-  10: "Gradient mesh with organic flow. Smooth, flowing color transitions. Fluid, contemporary style."
+  1: "TYPOGRAPHY STYLE: Ultra-bold condensed headline sans-serif. LETTERFORMS: Extremely heavy, very tightly spaced uppercase, maximum visual weight, newspaper headline impact. EFFECTS: None - pure typographic power through weight and scale. COLOR: Solid black on white or white on black, high contrast. MOOD: Bold journalism, impactful headlines, commanding presence.",
+  
+  2: "TYPOGRAPHY STYLE: Bold extended sans-serif with generous tracking. LETTERFORMS: Wide, bold sans-serif with letters spaced apart, strong horizontal emphasis. EFFECTS: Clean, no effects - typographic impact through spacing and weight. COLOR: White on dark or black on light, clean contrast. MOOD: Contemporary branding, modern luxury, confident statement.",
+  
+  3: "TYPOGRAPHY STYLE: Thin elegant extended sans-serif. LETTERFORMS: Ultra-light weight, wide letterforms with generous letter-spacing, refined and delicate. EFFECTS: Minimal - pure elegance through restraint. COLOR: White or light gray on dark, subtle contrast. MOOD: High fashion, luxury editorial, refined minimalism.",
+  
+  4: "TYPOGRAPHY STYLE: Gradient color overlay on bold sans-serif. LETTERFORMS: Bold, clean sans-serif serving as canvas for gradient. EFFECTS: Smooth gradient transition across text, modern color blending. COLOR: Vibrant gradient (pink to orange, blue to purple, etc.) on contrasting background. MOOD: Contemporary digital, fresh and energetic, social media aesthetic.",
+  
+  5: "TYPOGRAPHY STYLE: Bold rounded sans-serif. LETTERFORMS: Heavy weight with rounded terminals and corners, friendly geometric forms. EFFECTS: None - clean, approachable through rounded forms. COLOR: White on dark background, soft contrast. MOOD: Friendly tech, approachable modern, contemporary warmth.",
+  
+  6: "TYPOGRAPHY STYLE: Split/layered color offset effect. LETTERFORMS: Bold sans-serif with duplicated layers offset slightly, creating depth through color. EFFECTS: Multiple colored layers offset horizontally or vertically, risograph-style overlap. COLOR: Overlapping cyan and magenta, or complementary colors on white. MOOD: Dynamic design, energetic printing, contemporary graphic style.",
+  
+  7: "TYPOGRAPHY STYLE: Halftone dot pattern texture. LETTERFORMS: Bold text filled with halftone dot pattern, retro printing technique. EFFECTS: Visible dot grid pattern within letterforms, varying dot sizes for tone. COLOR: Black dots on white or colored dots on contrasting background. MOOD: Retro-modern print, pop art influence, graphic texture.",
+  
+  8: "TYPOGRAPHY STYLE: Clean sans-serif with soft dimensional shadow. LETTERFORMS: Medium weight, friendly sans-serif with subtle 3D depth effect. EFFECTS: Soft, slightly offset shadow creating gentle lift from surface. COLOR: White or colored text with soft gray/colored shadow. MOOD: Approachable, friendly modern, subtle dimension.",
+  
+  9: "TYPOGRAPHY STYLE: Geometric constructivist letterforms. LETTERFORMS: Letters built from basic geometric shapes - circles, triangles, rectangles, visible construction. EFFECTS: Visible geometric building blocks, mathematical precision. COLOR: Bold primary colors or black/white geometric forms. MOOD: Bauhaus influence, artistic construction, designed typography.",
+  
+  10: "TYPOGRAPHY STYLE: Organic gradient mesh flowing through text. LETTERFORMS: Sans-serif serving as container for flowing gradient mesh. EFFECTS: Smooth, organic color transitions, fluid gradient movement. COLOR: Flowing gradients of complementary colors, organic transitions. MOOD: Fluid contemporary, organic digital, smooth modern aesthetic."
 };
 
 const RETRO_VARIANT_DESCRIPTIONS: Record<number, string> = {
-  1: "3D CHROME SCRIPT with metallic silver finish. Flowing cursive lettering with beveled edges and dramatic depth extrusion. Shiny reflective surface with shadows. 70s/80s chrome typography style.",
-  2: "ELEGANT NEON SIGNATURE SCRIPT with soft white glow. Thin, flowing handwritten cursive with glowing tube-light effect. The text appears to float with subtle light bloom around the strokes.",
-  3: "BOLD GROOVY SERIF with chunky rounded letterforms. Heavy, playful Cooper Black style typography with thick strokes. Vintage 70s feel with friendly, bubbly character.",
-  4: "8-BIT PIXEL SERIF FONT. Retro video game typography with blocky, pixelated letterforms. Classic arcade/computer game aesthetic with jagged edges and nostalgic digital character.",
-  5: "GROOVY 70s BUBBLE SCRIPT with rounded, flowing letterforms. Funky retro typography with smooth curves and playful character. Disco-era aesthetic with soft, bouncy strokes.",
-  6: "CHROME ITALIC RACING FONT with metallic finish and star sparkles. Bold, slanted sports-style lettering with 3D chrome effect. Dynamic speed aesthetic with lens flare highlights.",
-  7: "AGGRESSIVE BRUSH STROKE ITALIC with metallic silver texture. Bold, hand-painted appearance with dynamic forward slant. Speed lines and raw, energetic brush marks. Racing/action movie aesthetic.",
-  8: "3D CHROME HEAVY METAL LETTERING with beveled edges and star sparkles. Bold, angular rock/metal band style typography. Sharp points and dramatic dimensional depth. 80s rock album aesthetic.",
-  9: "MASSIVE 3D CHROME BLOCK LETTERS with deep extrusion and sparkle effects. Ultra-bold uppercase sans-serif with dramatic depth. Stacked layout with cinematic impact. 80s movie poster typography.",
-  10: "CHROME BRUSH SCRIPT with metallic silver finish. Dynamic, hand-painted cursive with speed lines. Bold, energetic strokes with dimensional sheen. 80s action/sports aesthetic."
+  1: "TYPOGRAPHY STYLE: 3D chrome script with deep extrusion. LETTERFORMS: Flowing connected script with rounded strokes, 80s chrome lettering style. EFFECTS: Deep 3D extrusion showing side faces, mirror chrome reflections, dramatic shadows. COLOR: Silver chrome with gradient from bright to shadowed, sparkle highlights. MOOD: 80s movie titles, retro luxury, nostalgic chrome.",
+  
+  2: "TYPOGRAPHY STYLE: Elegant neon signature script with soft glow. LETTERFORMS: Thin, delicate connected cursive like a handwritten signature, neon tube construction. EFFECTS: Soft outer glow, light bloom, subtle reflection below. COLOR: White or pastel neon with matching glow halo on dark background. MOOD: Elegant nightlife, upscale lounge, sophisticated retro.",
+  
+  3: "TYPOGRAPHY STYLE: Heavy groovy rounded serif. LETTERFORMS: Very thick, rounded Cooper Black style with friendly bubble proportions, 70s aesthetic. EFFECTS: Minimal - impact through bold friendly forms. COLOR: Warm colors or white on contrasting background. MOOD: 70s advertising, friendly retro, groovy warmth.",
+  
+  4: "TYPOGRAPHY STYLE: 8-bit pixel art serif font. LETTERFORMS: Blocky, pixelated letterforms with visible pixel grid, retro video game typography. EFFECTS: Jagged pixel edges, grid-aligned construction. COLOR: Bright arcade colors or white pixels on dark. MOOD: Retro gaming, 8-bit nostalgia, arcade aesthetic.",
+  
+  5: "TYPOGRAPHY STYLE: Groovy 70s flowing script. LETTERFORMS: Rounded, bouncy connected script with disco-era personality, playful curves. EFFECTS: Soft, friendly forms with smooth connections. COLOR: Warm retro palette on contrasting background. MOOD: Disco era, funky 70s, groovy vibes.",
+  
+  6: "TYPOGRAPHY STYLE: Chrome italic racing font with sparkles. LETTERFORMS: Bold, slanted condensed sans-serif with speed aesthetic, racing stripe feel. EFFECTS: Chrome metallic finish, lens flare sparkles, speed lines suggested. COLOR: Silver chrome with white sparkle highlights on dark. MOOD: 80s racing, sports graphics, high-speed retro.",
+  
+  7: "TYPOGRAPHY STYLE: Aggressive metallic brush stroke italic. LETTERFORMS: Bold, hand-painted appearance with forward slant, visible brush texture in strokes. EFFECTS: Metallic silver sheen on brush strokes, dynamic energy, speed lines. COLOR: Silver metallic on dark background with motion blur suggestion. MOOD: 80s action movies, energetic sports, dynamic retro.",
+  
+  8: "TYPOGRAPHY STYLE: 3D chrome heavy metal lettering. LETTERFORMS: Bold, angular letterforms with sharp points, rock/metal band aesthetic, beveled edges. EFFECTS: Deep 3D chrome extrusion, sparkle highlights, dramatic lighting. COLOR: Silver chrome with gradient depth, star sparkles on dark. MOOD: 80s rock albums, heavy metal, powerful retro.",
+  
+  9: "TYPOGRAPHY STYLE: Massive 3D chrome block letters. LETTERFORMS: Ultra-bold uppercase sans-serif with enormous 3D depth, cinematic scale. EFFECTS: Very deep extrusion, chrome reflections, sparkle effects, dramatic scale. COLOR: Polished chrome with deep shadows, lens flare highlights. MOOD: 80s blockbuster movies, epic scale, monumental retro.",
+  
+  10: "TYPOGRAPHY STYLE: Dynamic chrome brush script. LETTERFORMS: Energetic cursive painted with bold strokes, metallic finish, forward motion. EFFECTS: Chrome metallic sheen, speed lines, dynamic brush marks. COLOR: Silver chrome with motion effects on dark background. MOOD: 80s action sports, dynamic retro, energetic chrome."
 };
 
 // Helper to generate variants with detailed descriptions
