@@ -107,218 +107,94 @@ serve(async (req) => {
     
     logStep("Parsed prompt", { songTitle, artistName, hasTextStyle: !!textStyleInstructions });
 
-    // Build prompt for OpenAI gpt-image-1 using comprehensive Art Direction Engine
-    const buildPrompt = (): string => {
-      // ========== GENRE-SPECIFIC DIRECTOR LAYERS ==========
-      const genreDirectors: Record<string, { visual: string; narrative: string }> = {
-        "Hip-Hop": {
-          visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
-          narrative: "confidence, power, confrontation, movement"
-        },
-        "Rap": {
-          visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
-          narrative: "confidence, power, confrontation, movement"
-        },
-        "Pop": {
-          visual: "polished, vibrant, modern, clean composition with strong visual punch",
-          narrative: "confidence, clarity, star presence"
-        },
-        "EDM": {
-          visual: "energetic, futuristic, neon accents, motion, light trails",
-          narrative: "movement, intensity, sensory overload"
-        },
-        "R&B": {
-          visual: "moody, sensual, cinematic softness, rich shadows",
-          narrative: "intimacy, emotion, closeness"
-        },
-        "Rock": {
-          visual: "raw, dramatic, gritty textures, bold lighting",
-          narrative: "rebellion, intensity, impact"
-        },
-        "Alternative": {
-          visual: "experimental, atmospheric, unconventional framing",
-          narrative: "ambiguity, tension, individuality"
-        },
-        "Indie": {
-          visual: "intimate, cinematic restraint, natural lighting",
-          narrative: "authenticity, emotion, subtle storytelling"
-        },
-        "Metal": {
-          visual: "dark fantasy, ominous, epic scale, heavy textures",
-          narrative: "destruction, power, confrontation"
-        },
-        "Country": {
-          visual: "grounded cinematic realism, rustic textures, warm contrast",
-          narrative: "story, place, nostalgia"
-        },
-        "Jazz": {
-          visual: "elegant, low-key lighting, cinematic noir",
-          narrative: "mood, atmosphere, sophistication"
-        },
-        "Classical": {
-          visual: "refined, timeless, painterly lighting",
-          narrative: "grandeur, emotion, permanence"
-        },
-      };
-
-      // ========== VISUAL STYLE MODIFIERS ==========
-      const styleModifiers: Record<string, string> = {
-        "Realism": "Photorealistic, cinematic realism, natural lighting.",
-        "3D Render": "Ultra-detailed 3D realism, cinematic lighting, physical materials.",
-        "Illustration": "Painterly textures, artistic clarity, controlled lighting.",
-        "Anime": "Cinematic anime aesthetic, dramatic lighting, depth of field, expressive motion.",
-        "Fine Art": "Gallery-quality composition, painterly lighting, dramatic framing.",
-        "Abstract": "Symbolic imagery, expressive color and form.",
-        "Minimalist": "Strong negative space, single dominant focal element.",
-        "Cinematic": "Film still aesthetic, motion, atmosphere, dramatic lighting.",
-        "Retro": "Vintage color grading, nostalgic texture, analog feel.",
-      };
-
-      // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
-      const moodLayers: Record<string, string> = {
-        "Aggressive": "Sharp lighting, high contrast, forceful energy.",
-        "Dark": "Low-key lighting, ominous shadows, tension.",
-        "Mysterious": "Fog, restrained lighting, partial obscurity.",
-        "Euphoric": "Glowing highlights, motion, energy.",
-        "Uplifting": "Warm contrast, hopeful tone, openness.",
-        "Melancholic": "Muted colors, soft lighting, emotional weight.",
-        "Romantic": "Warm highlights, intimacy, closeness.",
-        "Peaceful": "Balanced composition, gentle lighting.",
-        "Intense": "High tension, dramatic contrast.",
-        "Nostalgic": "Soft contrast, film-like grading.",
-      };
-
-      const genreDirection = genreDirectors[genre] || { 
-        visual: "cinematic realism, dramatic lighting, professional quality",
-        narrative: "emotion, story, impact"
-      };
-      const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
-      const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
-
-      // ========== TEXT INTEGRATION CONTRACT ==========
-      let typographySection = '';
-      if (songTitle) {
-        typographySection = `
-
-===== TEXT INTEGRATION CONTRACT (MANDATORY IF TEXT EXISTS) =====
-Text must be treated as a physical object inside the scene, not an overlay.
-
-TEXT CONTENT (SPELL EXACTLY):
-- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
-- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
-${textStyleInstructions ? `- Text Style Reference: ${textStyleInstructions}` : ''}
-- Each text element appears ONCE only — no duplication
-
-FORBIDDEN:
-- Flat overlay text
-- Poster-style typography
-- Text floating in empty space
-- Clean, stamped, or UI-like lettering
-- Text unaffected by lighting, weather, or perspective
-
-REQUIRED:
-- Text must exist as part of the environment
-- Text must interact with light, shadow, depth, weather, and motion
-- Text must inherit the material properties of the scene
-- Text must show wear, texture, imperfections, and perspective distortion
-- Text must be partially affected by atmosphere (rain, sparks, fog, smoke)
-- Prefer engraved, carved, metallic, embossed, painted, neon, or physically embedded lettering
-
-If the text cannot be naturally integrated into the environment, restructure the scene so that it can be.
-
-===== TEXT CAMERA RULE =====
-Camera angle, depth of field, and framing must acknowledge the text as part of the scene.
-Text should share perspective distortion and focus falloff with surrounding elements.`;
-      }
-
-      // ========== BUILD COMPLETE ART-DIRECTED PROMPT ==========
-      return `SYSTEM ROLE:
-You are generating professional, high-end album cover artwork intended for commercial music distribution.
-
-===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
-The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
-The result should look like a finished, high-budget album cover created by an experienced designer.
-
-Always prioritize:
-- Strong central or iconographic composition
-- Clear focal hierarchy
-- Cinematic lighting (backlighting, rim light, directional light, high contrast)
-- Realistic materials and textures
-- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
-- Mood-driven color grading
-- Album-safe framing
-- Strong thumbnail legibility
-
-Avoid flat lighting, symmetrical layouts, empty scenes, or overly clean surfaces.
-
-===== DIRECTOR PASS (CINEMATIC INTENT) =====
-The image must capture ONE defining cinematic moment — as if frozen from a movie trailer or album-defining scene.
-
-Prioritize:
-- A clear story implied in a single frame
-- One dominant visual event (impact, emergence, collision, motion, lightning strike)
-- Asymmetry over perfect balance
-- Natural imperfections (wear, erosion, grime, sparks, rain distortion)
-- Environmental interaction (weather affecting surfaces, light wrapping edges, debris reacting to motion)
-
-Focus on the exact moment of maximum intensity, not before or after.
-
-===== EVENT INTENSITY LAYER (ALWAYS APPLY) =====
-The image must depict an active, high-energy moment, not a static scene.
-
-Force the environment to react to the subject:
-- Motion causes sparks, debris, rain distortion, smoke, or crowd reaction
-- Surfaces show stress, friction, wear, heat, or damage
-- Lighting responds to action (flares, explosions, lightning, reflections)
-- Perspective exaggerates speed, scale, or impact
-
-The scene should feel unstable, dynamic, and alive.
-Avoid calm or frozen compositions unless the mood explicitly requires stillness.
-
-===== PHYSICAL CONSEQUENCE BIAS =====
-Every major action should leave visible consequences on the environment
-(scratches, sparks, cracks, debris, distortion, heat, water displacement).
-
-===== SCALE AND DENSITY RULE =====
-Fill the frame with meaningful detail.
-Avoid large empty areas unless required for composition.
-Crowds, structures, weather, and effects should reinforce scale and intensity.
-${['Hip-Hop', 'Rap', 'EDM', 'Rock', 'Metal'].includes(genre) ? `
-===== FORCED PERSPECTIVE (SPEED/POWER GENRES) =====
-Use aggressive perspective, low angles, motion compression, and depth exaggeration to amplify speed, power, and dominance.
-` : ''}
-===== NEGATIVE CONSTRAINTS =====
-Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures, over-smoothing, washed-out contrast, or text floating unnaturally.
-
-===== ICON BIAS =====
-Compose the image so it is recognizable within one second at small thumbnail size.
-${typographySection}
-
-===== GENRE-SPECIFIC DIRECTION: ${genre} =====
-Visual intent: ${genreDirection.visual}
-Narrative bias: ${genreDirection.narrative}
-
-===== VISUAL STYLE: ${style} =====
-${visualStyle}
-
-===== MOOD/ATMOSPHERE: ${mood} =====
-${moodStyle}
-
-===== USER'S CREATIVE VISION (APPEND EXACTLY) =====
-${description}
-
-===== TECHNICAL REQUIREMENTS =====
-- EXACT 1:1 square aspect ratio (1024x1024)
-- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
-- Ultra high resolution, maximum detail and texture
-- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
+    // ========== GENRE-SPECIFIC DIRECTOR LAYERS ==========
+    const genreDirectors: Record<string, { visual: string; narrative: string }> = {
+      "Hip-Hop": {
+        visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
+        narrative: "confidence, power, confrontation, movement"
+      },
+      "Rap": {
+        visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
+        narrative: "confidence, power, confrontation, movement"
+      },
+      "Pop": {
+        visual: "polished, vibrant, modern, clean composition with strong visual punch",
+        narrative: "confidence, clarity, star presence"
+      },
+      "EDM": {
+        visual: "energetic, futuristic, neon accents, motion, light trails",
+        narrative: "movement, intensity, sensory overload"
+      },
+      "R&B": {
+        visual: "moody, sensual, cinematic softness, rich shadows",
+        narrative: "intimacy, emotion, closeness"
+      },
+      "Rock": {
+        visual: "raw, dramatic, gritty textures, bold lighting",
+        narrative: "rebellion, intensity, impact"
+      },
+      "Alternative": {
+        visual: "experimental, atmospheric, unconventional framing",
+        narrative: "ambiguity, tension, individuality"
+      },
+      "Indie": {
+        visual: "intimate, cinematic restraint, natural lighting",
+        narrative: "authenticity, emotion, subtle storytelling"
+      },
+      "Metal": {
+        visual: "dark fantasy, ominous, epic scale, heavy textures",
+        narrative: "destruction, power, confrontation"
+      },
+      "Country": {
+        visual: "grounded cinematic realism, rustic textures, warm contrast",
+        narrative: "story, place, nostalgia"
+      },
+      "Jazz": {
+        visual: "elegant, low-key lighting, cinematic noir",
+        narrative: "mood, atmosphere, sophistication"
+      },
+      "Classical": {
+        visual: "refined, timeless, painterly lighting",
+        narrative: "grandeur, emotion, permanence"
+      },
     };
 
-    const promptText = buildPrompt();
-    logStep("Built prompt", { length: promptText.length, preview: promptText.slice(0, 200) });
+    // ========== VISUAL STYLE MODIFIERS ==========
+    const styleModifiers: Record<string, string> = {
+      "Realism": "Photorealistic, cinematic realism, natural lighting.",
+      "3D Render": "Ultra-detailed 3D realism, cinematic lighting, physical materials.",
+      "Illustration": "Painterly textures, artistic clarity, controlled lighting.",
+      "Anime": "Cinematic anime aesthetic, dramatic lighting, depth of field, expressive motion.",
+      "Fine Art": "Gallery-quality composition, painterly lighting, dramatic framing.",
+      "Abstract": "Symbolic imagery, expressive color and form.",
+      "Minimalist": "Strong negative space, single dominant focal element.",
+      "Cinematic": "Film still aesthetic, motion, atmosphere, dramatic lighting.",
+      "Retro": "Vintage color grading, nostalgic texture, analog feel.",
+    };
 
-    // Make the generation request with OpenAI gpt-image-1
-    const makeImageRequest = async (maxRetries = 2): Promise<string> => {
+    // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
+    const moodLayers: Record<string, string> = {
+      "Aggressive": "Sharp lighting, high contrast, forceful energy.",
+      "Dark": "Low-key lighting, ominous shadows, tension.",
+      "Mysterious": "Fog, restrained lighting, partial obscurity.",
+      "Euphoric": "Glowing highlights, motion, energy.",
+      "Uplifting": "Warm contrast, hopeful tone, openness.",
+      "Melancholic": "Muted colors, soft lighting, emotional weight.",
+      "Romantic": "Warm highlights, intimacy, closeness.",
+      "Peaceful": "Balanced composition, gentle lighting.",
+      "Intense": "High tension, dramatic contrast.",
+      "Nostalgic": "Soft contrast, film-like grading.",
+    };
+
+    const genreDirection = genreDirectors[genre] || { 
+      visual: "cinematic realism, dramatic lighting, professional quality",
+      narrative: "emotion, story, impact"
+    };
+    const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
+    const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
+
+    // Helper function to make image generation request
+    const makeImageRequest = async (promptText: string, maxRetries = 2): Promise<string> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         logStep(`Generation attempt ${attempt}/${maxRetries}`);
         
@@ -360,7 +236,6 @@ ${description}
           if (response.status === 429) throw new Error("RATE_LIMIT");
           if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
           
-          // Check for content policy violation
           if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
             throw new Error("CONTENT_MODERATED");
           }
@@ -372,7 +247,6 @@ ${description}
         const data = await response.json();
         logStep("OpenAI response received", { hasData: !!data?.data?.[0] });
         
-        // OpenAI returns b64_json by default, or url
         const imageData = data.data?.[0];
         if (!imageData) {
           if (attempt === maxRetries) throw new Error("Failed to generate image. Please try again.");
@@ -380,7 +254,6 @@ ${description}
           continue;
         }
 
-        // gpt-image-1 returns base64 by default
         const imageUrl = imageData.b64_json 
           ? `data:image/png;base64,${imageData.b64_json}`
           : imageData.url;
@@ -396,14 +269,285 @@ ${description}
       throw new Error("Failed to generate image after retries");
     };
 
-    // Generate the image
+    // Helper function to analyze cover with GPT-5 vision for text styling
+    const analyzeForTextStyling = async (coverImageBase64: string, userTextStyle?: string): Promise<string> => {
+      logStep("PASS 2: Analyzing cover for optimal text styling");
+      
+      const analysisPrompt = userTextStyle 
+        ? `You are analyzing an album cover to determine how to style text that will be integrated into it.
+
+The user has selected this text style preference: "${userTextStyle}"
+
+Analyze the image and provide SPECIFIC styling instructions for the text that:
+1. Honors the user's style choice ("${userTextStyle}")
+2. Uses colors extracted from the cover's palette (provide exact hex codes or descriptions)
+3. Specifies effects that will make text feel PART of the scene (not overlaid)
+4. Describes texture/material the text should appear to be made of
+5. Suggests how lighting/shadows from the scene should affect the text
+6. Recommends positioning that complements the composition
+
+Respond with a detailed, specific paragraph describing EXACTLY how the text should appear, including:
+- Primary text color (from the image's color palette)
+- Secondary/accent colors for effects
+- Material/texture (metallic, stone, neon, etc.)
+- Effects (glow, shadow, emboss, distress, etc.)
+- How scene elements should interact with text (rain, sparks, light, fog)
+- Font style characteristics (bold, thin, condensed, etc.)
+
+Be extremely specific and visual in your description.`
+        : `You are analyzing an album cover to determine the PERFECT text styling that will feel naturally integrated.
+
+Analyze the image and determine:
+1. The dominant color palette (extract 3-4 key colors)
+2. The overall mood and aesthetic
+3. What material/texture would text naturally be made of in this scene
+4. How light sources in the image would affect text
+5. What font style best matches the aesthetic
+
+Respond with a detailed, specific paragraph describing EXACTLY how the text should appear, including:
+- Primary text color (from the image's color palette) 
+- Secondary/accent colors for effects
+- Material/texture the text should appear to be (metallic, stone, neon, graffiti, etc.)
+- Effects (glow, shadow, emboss, distress, weathering, etc.)
+- How scene elements should interact with text (rain drops, sparks, light flares, fog wisps)
+- Font style characteristics (bold condensed, elegant serif, grunge sans-serif, etc.)
+- Specific integration details (text appearing carved, painted, projected, burning, etc.)
+
+Be extremely specific. The goal is text that looks like it was PHOTOGRAPHED in the scene, not added in post.`;
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: analysisPrompt },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: coverImageBase64.startsWith("data:") 
+                      ? coverImageBase64 
+                      : `data:image/png;base64,${coverImageBase64}`,
+                    detail: "high"
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 500,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        logStep("Vision analysis error", { error });
+        // Fallback to generic styling based on genre/mood
+        return `Use colors that complement a ${mood} ${genre} aesthetic. Text should be bold, cinematic, and integrated into the scene with appropriate shadows and lighting effects.`;
+      }
+
+      const data = await response.json();
+      const analysis = data.choices?.[0]?.message?.content || "";
+      logStep("Text styling analysis complete", { preview: analysis.slice(0, 100) });
+      return analysis;
+    };
+
+    // ========== 3-PASS GENERATION PIPELINE ==========
     let imageUrl: string;
     let finalImageUrl: string;
 
     try {
-      imageUrl = await makeImageRequest();
+      // ===== PASS 1: Generate cover WITHOUT text =====
+      logStep("PASS 1: Generating cover art without text");
+      
+      const pass1Prompt = `SYSTEM ROLE:
+You are generating professional, high-end album cover artwork intended for commercial music distribution.
+IMPORTANT: DO NOT include ANY text, titles, or typography in this image. Generate ONLY the visual artwork/background.
 
-      // Upload base64 image to storage for better performance + stable URLs
+===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
+The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
+The result should look like a finished, high-budget album cover created by an experienced designer.
+
+Always prioritize:
+- Strong central or iconographic composition
+- Clear focal hierarchy
+- Cinematic lighting (backlighting, rim light, directional light, high contrast)
+- Realistic materials and textures
+- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
+- Mood-driven color grading
+- Album-safe framing with space for text to be added later
+- Strong thumbnail legibility
+
+Avoid flat lighting, symmetrical layouts, empty scenes, or overly clean surfaces.
+
+===== DIRECTOR PASS (CINEMATIC INTENT) =====
+The image must capture ONE defining cinematic moment — as if frozen from a movie trailer or album-defining scene.
+
+Prioritize:
+- A clear story implied in a single frame
+- One dominant visual event (impact, emergence, collision, motion, lightning strike)
+- Asymmetry over perfect balance
+- Natural imperfections (wear, erosion, grime, sparks, rain distortion)
+- Environmental interaction (weather affecting surfaces, light wrapping edges, debris reacting to motion)
+
+Focus on the exact moment of maximum intensity, not before or after.
+
+===== EVENT INTENSITY LAYER (ALWAYS APPLY) =====
+The image must depict an active, high-energy moment, not a static scene.
+
+Force the environment to react to the subject:
+- Motion causes sparks, debris, rain distortion, smoke, or crowd reaction
+- Surfaces show stress, friction, wear, heat, or damage
+- Lighting responds to action (flares, explosions, lightning, reflections)
+- Perspective exaggerates speed, scale, or impact
+
+The scene should feel unstable, dynamic, and alive.
+
+===== PHYSICAL CONSEQUENCE BIAS =====
+Every major action should leave visible consequences on the environment
+(scratches, sparks, cracks, debris, distortion, heat, water displacement).
+
+===== SCALE AND DENSITY RULE =====
+Fill the frame with meaningful detail.
+Avoid large empty areas unless required for composition.
+Crowds, structures, weather, and effects should reinforce scale and intensity.
+${['Hip-Hop', 'Rap', 'EDM', 'Rock', 'Metal'].includes(genre) ? `
+===== FORCED PERSPECTIVE (SPEED/POWER GENRES) =====
+Use aggressive perspective, low angles, motion compression, and depth exaggeration to amplify speed, power, and dominance.
+` : ''}
+===== NEGATIVE CONSTRAINTS =====
+Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures, over-smoothing, washed-out contrast.
+DO NOT include any text, typography, letters, words, or titles. This is artwork only.
+
+===== ICON BIAS =====
+Compose the image so it is recognizable within one second at small thumbnail size.
+
+===== GENRE-SPECIFIC DIRECTION: ${genre} =====
+Visual intent: ${genreDirection.visual}
+Narrative bias: ${genreDirection.narrative}
+
+===== VISUAL STYLE: ${style} =====
+${visualStyle}
+
+===== MOOD/ATMOSPHERE: ${mood} =====
+${moodStyle}
+
+===== USER'S CREATIVE VISION =====
+${description}
+
+===== TECHNICAL REQUIREMENTS =====
+- EXACT 1:1 square aspect ratio (1024x1024)
+- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
+- Ultra high resolution, maximum detail and texture
+- NO TEXT, NO TYPOGRAPHY, NO LETTERS - artwork only
+- Leave compositional space for text integration (typically lower third)`;
+
+      const pass1Image = await makeImageRequest(pass1Prompt);
+      logStep("PASS 1 complete: Cover artwork generated");
+
+      // If no song title, just return the text-free cover
+      if (!songTitle) {
+        logStep("No song title provided, returning text-free cover");
+        imageUrl = pass1Image;
+      } else {
+        // ===== PASS 2: Analyze cover for text styling =====
+        const textStylingAnalysis = await analyzeForTextStyling(pass1Image, textStyleInstructions || undefined);
+        logStep("PASS 2 complete: Text styling analyzed");
+
+        // ===== PASS 3: Generate final cover with integrated styled text =====
+        logStep("PASS 3: Generating final cover with integrated text");
+        
+        const pass3Prompt = `SYSTEM ROLE:
+You are generating professional, high-end album cover artwork intended for commercial music distribution.
+You must recreate the visual aesthetic and scene from the reference while adding perfectly integrated typography.
+
+===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
+The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
+The result should look like a finished, high-budget album cover created by an experienced designer.
+
+Always prioritize:
+- Strong central or iconographic composition
+- Clear focal hierarchy
+- Cinematic lighting (backlighting, rim light, directional light, high contrast)
+- Realistic materials and textures
+- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
+- Mood-driven color grading
+- Album-safe framing
+- Strong thumbnail legibility
+
+===== GENRE-SPECIFIC DIRECTION: ${genre} =====
+Visual intent: ${genreDirection.visual}
+Narrative bias: ${genreDirection.narrative}
+
+===== VISUAL STYLE: ${style} =====
+${visualStyle}
+
+===== MOOD/ATMOSPHERE: ${mood} =====
+${moodStyle}
+
+===== USER'S CREATIVE VISION =====
+${description}
+
+===== AI-ANALYZED TEXT STYLING (FOLLOW EXACTLY) =====
+${textStylingAnalysis}
+
+===== TEXT INTEGRATION CONTRACT (MANDATORY) =====
+Text must be treated as a physical object inside the scene, not an overlay.
+
+TEXT CONTENT (SPELL EXACTLY - EACH WORD MUST BE SPELLED CORRECTLY):
+- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
+- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
+- Each text element appears ONCE only — no duplication
+
+CRITICAL SPELLING RULES:
+- The song title is "${songTitle}" - spell each letter exactly as shown
+- The artist name is "${artistName || ''}" - spell each letter exactly as shown
+- Double-check every letter before finalizing
+- Do not substitute similar-looking characters
+- Do not add or remove any letters
+
+FORBIDDEN:
+- Flat overlay text
+- Poster-style typography
+- Text floating in empty space
+- Clean, stamped, or UI-like lettering
+- Text unaffected by lighting, weather, or perspective
+- Generic white or black text
+
+REQUIRED:
+- Text must exist as part of the environment
+- Text must interact with light, shadow, depth, weather, and motion
+- Text must inherit the material properties described in the styling analysis
+- Text must show wear, texture, imperfections, and perspective distortion
+- Text must be partially affected by atmosphere (rain, sparks, fog, smoke)
+- Text colors must come from the cover's existing color palette
+- Text must feel like it was PHOTOGRAPHED in the scene, not added in post-production
+
+===== TEXT CAMERA RULE =====
+Camera angle, depth of field, and framing must acknowledge the text as part of the scene.
+Text should share perspective distortion and focus falloff with surrounding elements.
+
+===== NEGATIVE CONSTRAINTS =====
+Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures.
+Never use plain white, plain black, or generic colored text. Always use styled, integrated typography.
+
+===== TECHNICAL REQUIREMENTS =====
+- EXACT 1:1 square aspect ratio (1024x1024)
+- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
+- Ultra high resolution, maximum detail and texture
+- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
+
+        const pass3Image = await makeImageRequest(pass3Prompt);
+        logStep("PASS 3 complete: Final integrated cover generated");
+        imageUrl = pass3Image;
+      }
+
+      // Upload to storage
       finalImageUrl = imageUrl;
       if (imageUrl.startsWith("data:image")) {
         try {
@@ -413,7 +557,6 @@ ${description}
           const extension = mimeType.split("/")[1] || "png";
           const fileName = `${userId || "anon"}/${Date.now()}.${extension}`;
 
-          // Convert base64 to Uint8Array
           const binaryString = atob(base64Data);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
@@ -477,7 +620,7 @@ ${description}
       );
     }
 
-    logStep("Generation complete");
+    logStep("Generation complete (3-pass pipeline)");
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
@@ -521,7 +664,7 @@ ${description}
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
-    // Best-effort: persist generation for history (do not fail the request if DB write is slow)
+    // Best-effort: persist generation for history
     if (userId) {
       try {
         const { error: genInsertErr } = await supabaseClient.from("generations").insert({
