@@ -129,6 +129,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhanceProgress, setEnhanceProgress] = useState(0);
+  const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   const [progressStage, setProgressStage] = useState(0);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
@@ -141,6 +143,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       generationStartTime.current = Date.now();
       setProgressStage(0);
       setSmoothProgress(0);
+      setUpscaledImageUrl(null); // Reset upscaled image when starting new generation
       
       // Animate progress smoothly toward 95% over time (never reaches 100 until done)
       const progressInterval = setInterval(() => {
@@ -371,10 +374,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleDownload = async () => {
-    if (!generatedImage) return;
+    const imageToDownload = upscaledImageUrl || generatedImage;
+    if (!imageToDownload) return;
 
     try {
-      const res = await fetch(generatedImage);
+      const res = await fetch(imageToDownload);
       const blob = await res.blob();
       const bitmap = await createImageBitmap(blob);
 
@@ -383,7 +387,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       const sx = Math.floor((bitmap.width - side) / 2);
       const sy = Math.floor((bitmap.height - side) / 2);
 
-      const outSize = 3000;
+      // Use original dimensions for upscaled, 3000 for standard
+      const outSize = upscaledImageUrl ? Math.max(side, 3000) : 3000;
       const canvas = document.createElement("canvas");
       canvas.width = outSize;
       canvas.height = outSize;
@@ -401,7 +406,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       const url = URL.createObjectURL(outBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "cover-art-3000x3000.png";
+      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art-3000x3000.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -409,8 +414,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     } catch {
       // Fallback: direct download
       const link = document.createElement("a");
-      link.href = generatedImage;
-      link.download = "cover-art.png";
+      link.href = imageToDownload;
+      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art.png";
       link.click();
     }
   };
@@ -1072,13 +1077,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         themeMode === "light" ? "border-gray-300" : "border-gray-500"
                       }`}>
                         <img 
-                          src={generatedImage} 
+                          src={upscaledImageUrl || generatedImage} 
                           alt="Generated Cover Art" 
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-all duration-500 ${
+                            isEnhancing ? "blur-sm scale-105" : ""
+                          }`}
                         />
                         {isGenerating && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <RefreshCw className="w-8 h-8 text-white animate-spin" />
+                          </div>
+                        )}
+                        {isEnhancing && (
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div className="text-center text-white">
+                              <Maximize2 className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                              <p className="text-sm font-medium">Upscaling to 4K...</p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1092,9 +1107,19 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <Progress value={smoothProgress} className="h-1.5" />
                         </div>
                       )}
-                      {!isGenerating && (
+                      {/* Progress bar during upscaling */}
+                      {isEnhancing && (
+                        <div className="w-full space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`font-medium ${textClass}`}>Upscaling to 4K...</span>
+                            <span className={mutedTextClass}>{Math.round(enhanceProgress)}%</span>
+                          </div>
+                          <Progress value={enhanceProgress} className="h-1.5" />
+                        </div>
+                      )}
+                      {!isGenerating && !isEnhancing && (
                         <p className={`text-center text-xs ${mutedTextClass}`}>
-                          1024 × 1024px · Ready for streaming
+                          {upscaledImageUrl ? "4K · Ready for print & streaming" : "1024 × 1024px · Ready for streaming"}
                         </p>
                       )}
                       <div className="flex flex-col gap-3 mt-3 w-full">
@@ -1121,48 +1146,66 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </div>
                         
                         {/* Upscale button - uses Real-ESRGAN for true 4x upscaling */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            if (!generatedImage) return;
-                            setIsEnhancing(true);
-                            try {
-                              const { data, error } = await supabase.functions.invoke("upscale-cover", {
-                                body: { imageUrl: generatedImage },
-                              });
-                              if (error) throw error;
-                              if (data?.error) throw new Error(data.error);
-                              if (data?.upscaledUrl) {
-                                window.dispatchEvent(new CustomEvent('coverEdited', { detail: { imageUrl: data.upscaledUrl } }));
-                                toast.success("Cover upscaled to 4K!", {
-                                  description: "True AI upscaling complete - ready for streaming platforms.",
+                        {!upscaledImageUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              if (!generatedImage) return;
+                              setIsEnhancing(true);
+                              setEnhanceProgress(0);
+                              
+                              // Animate progress during upscaling
+                              const startTime = Date.now();
+                              const progressInterval = setInterval(() => {
+                                const elapsed = Date.now() - startTime;
+                                // Asymptotic curve to ~90% over 30 seconds
+                                const progress = Math.min(90, 60 * (1 - Math.exp(-elapsed / 5000)) + 30 * (1 - Math.exp(-elapsed / 15000)));
+                                setEnhanceProgress(progress);
+                              }, 100);
+                              
+                              try {
+                                const { data, error } = await supabase.functions.invoke("upscale-cover", {
+                                  body: { imageUrl: generatedImage },
                                 });
-                                refetchCredits();
+                                clearInterval(progressInterval);
+                                
+                                if (error) throw error;
+                                if (data?.error) throw new Error(data.error);
+                                if (data?.upscaledUrl) {
+                                  setEnhanceProgress(100);
+                                  setUpscaledImageUrl(data.upscaledUrl);
+                                  toast.success("Cover upscaled to 4K!", {
+                                    description: "True AI upscaling complete - ready for streaming platforms.",
+                                  });
+                                  refetchCredits();
+                                }
+                              } catch (err) {
+                                clearInterval(progressInterval);
+                                toast.error("Upscaling failed", {
+                                  description: err instanceof Error ? err.message : "Please try again",
+                                });
+                              } finally {
+                                setIsEnhancing(false);
+                                setEnhanceProgress(0);
                               }
-                            } catch (err) {
-                              toast.error("Upscaling failed", {
-                                description: err instanceof Error ? err.message : "Please try again",
-                              });
-                            } finally {
-                              setIsEnhancing(false);
-                            }
-                          }}
-                          disabled={isEnhancing || isGenerating}
-                          className={`w-full ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                        >
-                          {isEnhancing ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin mr-1" />
-                              Upscaling...
-                            </>
-                          ) : (
-                            <>
-                              <Maximize2 className="w-4 h-4 mr-1" />
-                              Upscale to 4K (1 credit)
-                            </>
-                          )}
-                        </Button>
+                            }}
+                            disabled={isEnhancing || isGenerating}
+                            className={`w-full ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                          >
+                            {isEnhancing ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 animate-spin mr-1" />
+                                Upscaling...
+                              </>
+                            ) : (
+                              <>
+                                <Maximize2 className="w-4 h-4 mr-1" />
+                                Upscale to 4K (1 credit)
+                              </>
+                            )}
+                          </Button>
+                        )}
                         
                         {/* Links row */}
                         <div className="flex items-center justify-between pt-1">
