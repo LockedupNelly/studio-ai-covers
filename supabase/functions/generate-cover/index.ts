@@ -271,49 +271,50 @@ serve(async (req) => {
 
     // Helper function to analyze cover with GPT-5 vision for text styling
     const analyzeForTextStyling = async (coverImageBase64: string, userTextStyle?: string): Promise<string> => {
-      logStep("PASS 2: Analyzing cover for optimal text styling");
+      logStep("PASS 2: Analyzing cover for optimal text styling", { userTextStyle: userTextStyle?.slice(0, 100) });
       
       const analysisPrompt = userTextStyle 
-        ? `You are analyzing an album cover to determine how to style text that will be integrated into it.
+        ? `You are analyzing an album cover to determine how to integrate text that MUST match a specific style.
 
-The user has selected this text style preference: "${userTextStyle}"
+===== MANDATORY TEXT STYLE (USER SELECTED - MUST FOLLOW EXACTLY) =====
+"${userTextStyle}"
 
-Analyze the image and provide SPECIFIC styling instructions for the text that:
-1. Honors the user's style choice ("${userTextStyle}")
-2. Uses colors extracted from the cover's palette (provide exact hex codes or descriptions)
-3. Specifies effects that will make text feel PART of the scene (not overlaid)
-4. Describes texture/material the text should appear to be made of
-5. Suggests how lighting/shadows from the scene should affect the text
-6. Recommends positioning that complements the composition
+The user has explicitly chosen this text style. You MUST honor this choice exactly. Your job is to:
+1. PRESERVE the exact font style, weight, and characteristics described above
+2. Adapt the COLOR PALETTE from the cover image to apply to this text style
+3. Determine how scene elements (lighting, weather, particles) should interact with this specific text style
+4. Suggest material/texture integration that matches both the style AND the cover
 
-Respond with a detailed, specific paragraph describing EXACTLY how the text should appear, including:
-- Primary text color (from the image's color palette)
-- Secondary/accent colors for effects
-- Material/texture (metallic, stone, neon, etc.)
-- Effects (glow, shadow, emboss, distress, etc.)
-- How scene elements should interact with text (rain, sparks, light, fog)
-- Font style characteristics (bold, thin, condensed, etc.)
+Analyze the cover image and respond with specific instructions that:
+- KEEP the typography style exactly as described: "${userTextStyle}"
+- ADAPT colors from the image (list 2-3 specific colors from the cover to use)
+- DESCRIBE how the scene's lighting should affect this text style
+- SPECIFY environmental interactions (rain, sparks, fog, etc. touching the text)
+- EXPLAIN the text's integration method (embossed, carved, painted, glowing, etc.)
 
-Be extremely specific and visual in your description.`
+CRITICAL: Do not change the fundamental text style. If the user chose "Bold distressed uppercase with splatter texture" - the output MUST be bold, distressed, uppercase with splatter. Only adapt the colors and scene integration.
+
+Respond with a detailed paragraph starting with the exact text style, then color adaptation, then integration details.`
         : `You are analyzing an album cover to determine the PERFECT text styling that will feel naturally integrated.
 
 Analyze the image and determine:
-1. The dominant color palette (extract 3-4 key colors)
+1. The dominant color palette (extract 3-4 key colors with descriptions)
 2. The overall mood and aesthetic
 3. What material/texture would text naturally be made of in this scene
 4. How light sources in the image would affect text
-5. What font style best matches the aesthetic
+5. What font style best matches the aesthetic (be specific: bold vs thin, serif vs sans, distressed vs clean, etc.)
 
 Respond with a detailed, specific paragraph describing EXACTLY how the text should appear, including:
+- Font style characteristics (bold condensed, elegant serif, grunge sans-serif, hand-painted, etc.)
 - Primary text color (from the image's color palette) 
 - Secondary/accent colors for effects
-- Material/texture the text should appear to be (metallic, stone, neon, graffiti, etc.)
-- Effects (glow, shadow, emboss, distress, weathering, etc.)
+- Material/texture the text should appear to be (metallic, stone, neon, graffiti, paint, etc.)
+- Effects (glow, shadow, emboss, distress, weathering, splatter, etc.)
 - How scene elements should interact with text (rain drops, sparks, light flares, fog wisps)
-- Font style characteristics (bold condensed, elegant serif, grunge sans-serif, etc.)
 - Specific integration details (text appearing carved, painted, projected, burning, etc.)
 
-Be extremely specific. The goal is text that looks like it was PHOTOGRAPHED in the scene, not added in post.`;
+Be extremely specific and creative. The goal is text that looks like it was PHOTOGRAPHED in the scene, not added in post.
+Choose a distinctive, impactful text style that matches the cover's energy.`;
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -462,6 +463,21 @@ ${description}
         // ===== PASS 3: Generate final cover with integrated styled text =====
         logStep("PASS 3: Generating final cover with integrated text");
         
+        // Build text style section - user's selected style takes precedence
+        const textStyleSection = textStyleInstructions 
+          ? `===== MANDATORY TEXT STYLE (USER SELECTED - FOLLOW EXACTLY) =====
+The user has explicitly chosen this text style. You MUST create text that matches this description:
+"${textStyleInstructions}"
+
+This is NON-NEGOTIABLE. The font style, weight, texture, and effects described above MUST be followed.
+Do not deviate from this style. Do not simplify it. Replicate it exactly.
+
+===== COLOR & INTEGRATION ADAPTATION (FROM AI ANALYSIS) =====
+Apply these colors and integration details TO the mandatory text style above:
+${textStylingAnalysis}`
+          : `===== AI-DETERMINED TEXT STYLING (FOLLOW EXACTLY) =====
+${textStylingAnalysis}`;
+
         const pass3Prompt = `SYSTEM ROLE:
 You are generating professional, high-end album cover artwork intended for commercial music distribution.
 You must recreate the visual aesthetic and scene from the reference while adding perfectly integrated typography.
@@ -493,8 +509,7 @@ ${moodStyle}
 ===== USER'S CREATIVE VISION =====
 ${description}
 
-===== AI-ANALYZED TEXT STYLING (FOLLOW EXACTLY) =====
-${textStylingAnalysis}
+${textStyleSection}
 
 ===== TEXT INTEGRATION CONTRACT (MANDATORY) =====
 Text must be treated as a physical object inside the scene, not an overlay.
@@ -513,16 +528,17 @@ CRITICAL SPELLING RULES:
 
 FORBIDDEN:
 - Flat overlay text
-- Poster-style typography
+- Poster-style typography  
 - Text floating in empty space
 - Clean, stamped, or UI-like lettering
 - Text unaffected by lighting, weather, or perspective
 - Generic white or black text
+- Ignoring the user's selected text style
 
 REQUIRED:
+- Text must match the user's selected style EXACTLY (font, weight, effects, texture)
 - Text must exist as part of the environment
 - Text must interact with light, shadow, depth, weather, and motion
-- Text must inherit the material properties described in the styling analysis
 - Text must show wear, texture, imperfections, and perspective distortion
 - Text must be partially affected by atmosphere (rain, sparks, fog, smoke)
 - Text colors must come from the cover's existing color palette
@@ -535,13 +551,13 @@ Text should share perspective distortion and focus falloff with surrounding elem
 ===== NEGATIVE CONSTRAINTS =====
 Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures.
 Never use plain white, plain black, or generic colored text. Always use styled, integrated typography.
+NEVER ignore the user's selected text style.
 
 ===== TECHNICAL REQUIREMENTS =====
 - EXACT 1:1 square aspect ratio (1024x1024)
 - Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
 - Ultra high resolution, maximum detail and texture
 - Professional streaming platform quality (Spotify, Apple Music, etc.)`;
-
         const pass3Image = await makeImageRequest(pass3Prompt);
         logStep("PASS 3 complete: Final integrated cover generated");
         imageUrl = pass3Image;
