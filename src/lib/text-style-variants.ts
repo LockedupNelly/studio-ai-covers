@@ -80,7 +80,7 @@ const FUTURISTIC_VARIANT_DESCRIPTIONS: Record<number, string> = {
   
   7: "TYPOGRAPHY STYLE: Technical wireframe blueprint aesthetic. LETTERFORMS: Letters rendered as technical line drawings, construction lines visible, engineering diagram style. EFFECTS: Thin precise lines, measurement annotations, grid alignment, technical callouts. COLOR: Cyan/blue lines on dark navy blueprint background. MOOD: Engineering precision, technical design, architectural planning.",
   
-  8: "TYPOGRAPHY STYLE: Iridescent chrome with rainbow holographic reflections. LETTERFORMS: Smooth, rounded sans-serif with oil-slick rainbow chrome finish. EFFECTS: Shifting rainbow reflections, holographic color play, glossy surface. COLOR: Rainbow iridescent chrome shifting through spectrum on dark background. MOOD: Futuristic luxury, premium tech, holographic materials.",
+  8: "TYPOGRAPHY STYLE: Elegant high-contrast DIDONE SERIF with dramatic thick/thin stroke contrast (like Bodoni or Didot typeface). LETTERFORMS: Refined serif with EXTREME thick-to-hairline stroke contrast, vertical stress, sharp unbracketed serifs, ball terminals on letters like 'a' and 'c'. EFFECTS: Clean, precise letterforms with NO special effects - pure typography elegance. COLOR: Pure white on black background, maximum contrast. MOOD: High fashion editorial, Vogue magazine, luxury typography, timeless elegance.",
   
   9: "TYPOGRAPHY STYLE: Digital matrix code rain integration. LETTERFORMS: Text integrated with falling green code rain, characters partially obscured by cascading data. EFFECTS: Vertical falling code streams, glowing characters, digital rain overlay. COLOR: Bright green matrix code on black background. MOOD: Hacker aesthetic, digital realm, cyberspace.",
   
