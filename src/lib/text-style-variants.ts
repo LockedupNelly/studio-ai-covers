@@ -19,11 +19,11 @@ export interface TextStyleWithVariants {
   variants: TextStyleVariant[];
 }
 
-// Detailed descriptions for each creative variant
+// Detailed descriptions for each creative variant - MUST MATCH PREVIEW IMAGES
 const CREATIVE_VARIANT_DESCRIPTIONS: Record<number, string> = {
   1: "Elegant white brush script with soft glow/bloom effect. Flowing cursive letterforms with organic brush strokes. The text has a dreamy, ethereal quality with subtle light diffusion around the edges.",
-  2: "Bold, distressed uppercase sans-serif. Heavy black letters with rough, worn edges and splatter/spray paint texture. Grungy, aggressive street art aesthetic.",
-  3: "Elegant serif font with subtle vintage character. Clean, sophisticated letterforms with slight texture. Timeless, classic typography with refined proportions.",
+  2: "Bold, distressed uppercase sans-serif. Heavy black letters with rough, worn edges and splatter/spray paint texture. Grungy, aggressive street art aesthetic. White/light text with heavy distress marks.",
+  3: "BOLD CHUNKY DISTORTED DISPLAY FONT. Heavy, thick letterforms with high contrast. Some letters larger than others creating dynamic rhythm. Black and white with strong visual impact. Warped, playful, bold sans-serif.",
   4: "CHUNKY, BOLD, DISTRESSED BLOCK LETTERS. Heavy uppercase sans-serif with rough, hand-painted edges. The letters have an uneven, slightly wobbly baseline giving a raw, energetic feel. White text with grunge texture.",
   5: "Neon glow effect with vibrant electric colors. Glowing tube-light aesthetic with bright core and soft outer glow. Futuristic club/arcade feeling.",
   6: "Hand-drawn sketch style with pencil/charcoal texture. Imperfect, organic letterforms that look authentically hand-crafted. Artistic, personal touch.",
