@@ -324,45 +324,85 @@ CRITICAL REQUIREMENTS:
     if (editMode === "text_layer") {
       logStep("TEXT LAYER MODE: Generating transparent text overlay");
       
-      const title = typography?.songTitle || songTitle || null;
-      const artist = typography?.artistName || artistName || null;
+      let title = typography?.songTitle || songTitle || null;
+      let artist = typography?.artistName || artistName || null;
       const stylePrompt = typography?.stylePrompt || "Modern, clean typography";
       const styleRefUrl = typography?.styleReferenceImageUrl || styleReferenceImageUrl || null;
       const analysis = typography?.coverAnalysis || coverAnalysis || null;
 
+      // If no title/artist provided, try to extract from the image
       if (!title && !artist) {
-        return new Response(
-          JSON.stringify({ error: "No title or artist text provided for text layer mode" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        logStep("No metadata, extracting text from image for text layer mode");
+        try {
+          const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
+
+Schema:
+{
+  "items": [
+    {
+      "text": "EXACT TEXT (verbatim, preserve spelling)",
+      "location": "top|upper|center|lower|bottom",
+      "approxSize": "small|medium|large"
+    }
+  ]
+}
+
+Rules:
+- Include EVERY text element (title, artist, labels).
+- Do NOT invent new words.
+- If a word is unclear, make your best guess.
+
+Now extract the text. Output JSON ONLY.`;
+
+          const raw = await callLovableText(extractionPrompt, effectiveImageUrl);
+          const extracted = tryParseExtractedText(raw);
+          
+          // Use the extracted text
+          const largeText = extracted.items.find(i => i.approxSize === "large");
+          const mediumText = extracted.items.find(i => i.approxSize === "medium" && i.text !== largeText?.text);
+          
+          title = largeText?.text || extracted.items[0]?.text || null;
+          artist = mediumText?.text || (extracted.items.length > 1 ? extracted.items[1]?.text : null);
+          
+          logStep("Text extracted for text layer", { title, artist });
+        } catch (e) {
+          logStep("Text extraction failed", { error: e instanceof Error ? e.message : String(e) });
+          // Fall through to legacy mode
+        }
       }
 
-      try {
-        const textLayerDataUrl = await generateTransparentTextLayer(
-          effectiveImageUrl,
-          title,
-          artist,
-          stylePrompt,
-          styleRefUrl,
-          analysis
-        );
+      // Still no text? Fall back to legacy mode
+      if (!title && !artist) {
+        logStep("No text found, falling back to legacy mode");
+        // Fall through to legacy mode by not returning here
+      } else {
+        try {
+          const textLayerDataUrl = await generateTransparentTextLayer(
+            effectiveImageUrl,
+            title,
+            artist,
+            stylePrompt,
+            styleRefUrl,
+            analysis
+          );
 
-        logStep("Text layer mode complete - returning for frontend compositing");
-        
-        clearTimeout(timeout);
-        return new Response(
-          JSON.stringify({ 
-            textLayerUrl: textLayerDataUrl,
-            baseArtworkUrl: effectiveImageUrl,
-            mode: "text_layer"
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      } catch (e) {
-        logStep("Text layer generation failed, falling back to legacy mode", { 
-          error: e instanceof Error ? e.message : String(e) 
-        });
-        // Fall through to legacy mode
+          logStep("Text layer mode complete - returning for frontend compositing");
+          
+          clearTimeout(timeout);
+          return new Response(
+            JSON.stringify({ 
+              textLayerUrl: textLayerDataUrl,
+              baseArtworkUrl: effectiveImageUrl,
+              mode: "text_layer"
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        } catch (e) {
+          logStep("Text layer generation failed, falling back to legacy mode", { 
+            error: e instanceof Error ? e.message : String(e) 
+          });
+          // Fall through to legacy mode
+        }
       }
     }
 
