@@ -180,7 +180,7 @@ const EditStudio = () => {
     }
     
     if (accentColor) {
-      instructions.push(`Add subtle ${getColorValue(accentColor)} accent highlights to smaller text elements or decorative details`);
+      instructions.push(`Add ${getColorValue(accentColor)} accent highlights and color accents throughout the cover artwork - this includes lighting effects, glows, color grading, decorative elements, and design details. Make the accent color visibly present in the overall design aesthetic.`);
     }
     
     if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
