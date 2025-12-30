@@ -18,7 +18,7 @@ serve(async (req) => {
   try {
     const { imageUrl, instructions } = await req.json();
     logStep("Request received", { 
-      instructions: instructions?.slice(0, 50), 
+      instructions: instructions?.slice(0, 100), 
       hasImage: !!imageUrl,
       imageUrlPrefix: imageUrl?.slice(0, 50)
     });
@@ -37,20 +37,23 @@ serve(async (req) => {
 
     logStep("Editing cover art with Lovable AI (image edit mode)");
 
-    const editPrompt = `Edit this album cover image according to these instructions:
+    // Build a cleaner, more direct prompt that avoids complex text instructions
+    const editPrompt = `You are an expert album cover art editor. Edit this album cover image with the following changes:
 
 ${instructions}
 
-CRITICAL REQUIREMENTS:
-1. Keep the EXACT same composition, layout, and overall design
-2. Make ONLY the specific changes requested - preserve everything else
-3. Maintain the original text, fonts, and their positions
-4. Keep the same aspect ratio and dimensions
-5. Do not change elements that weren't mentioned in the instructions
-6. The result should look like a subtle modification of the original, not a new image`;
+IMPORTANT GUIDELINES:
+- Keep the same overall composition and layout
+- Make the requested visual changes naturally
+- Maintain the professional quality of album artwork
+- If changing text style is requested, redesign the typography to match the requested style while keeping the same text content
+- Apply color changes, textures, and effects as requested
+- The result should look like a polished, professional album cover
+
+Generate the edited version of this image now.`;
 
     const controller = new AbortController();
-    const timeoutMs = 90_000; // 90 seconds for image editing
+    const timeoutMs = 120_000; // 120 seconds for image editing
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     let response: Response;
@@ -89,7 +92,7 @@ CRITICAL REQUIREMENTS:
       if (e instanceof DOMException && e.name === "AbortError") {
         logStep("AI request timed out", { timeoutMs });
         return new Response(
-          JSON.stringify({ error: "Edit timed out. Please try again." }),
+          JSON.stringify({ error: "Edit timed out. Please try again with simpler edits." }),
           { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -125,8 +128,22 @@ CRITICAL REQUIREMENTS:
     const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
     if (!editedImageUrl) {
-      logStep("No image in response", { data: JSON.stringify(data).slice(0, 500) });
-      throw new Error("No edited image generated");
+      // Log the text response if any
+      const textResponse = data.choices?.[0]?.message?.content;
+      logStep("No image in response", { 
+        textResponse: textResponse?.slice(0, 200),
+        fullData: JSON.stringify(data).slice(0, 500) 
+      });
+      
+      // Check if the model refused or couldn't complete
+      if (textResponse && (textResponse.includes("can't") || textResponse.includes("cannot") || textResponse.includes("unable"))) {
+        return new Response(
+          JSON.stringify({ error: "The AI couldn't apply those specific edits. Try simpler changes or fewer options at once." }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      throw new Error("No edited image generated. Try applying fewer edits at once.");
     }
 
     logStep("Cover edited successfully");
