@@ -332,85 +332,73 @@ CRITICAL REQUIREMENTS:
       return `data:image/png;base64,${textLayerB64}`;
     };
 
-    // ===== TEXT LAYER MODE: Non-destructive text editing =====
+    // Mutable versions of key variables for legacy mode
+    let effectiveSongTitle = songTitle;
+    let effectiveArtistName = artistName;
+    let effectiveInstructions = instructions;
+    let effectiveStyleRefUrl = styleReferenceImageUrl;
+
+    // ===== TEXT LAYER MODE: Convert to legacy mode with proper instructions =====
     if (editMode === "text_layer") {
-      logStep("TEXT LAYER MODE: Generating transparent text overlay");
+      logStep("TEXT LAYER MODE: Converting to legacy inpaint mode");
       
-      let title = typography?.songTitle || songTitle || null;
-      let artist = typography?.artistName || artistName || null;
+      const title = typography?.songTitle || songTitle || null;
+      const artist = typography?.artistName || artistName || null;
       const stylePrompt = typography?.stylePrompt || "Modern, clean typography";
       const styleRefUrl = typography?.styleReferenceImageUrl || styleReferenceImageUrl || null;
-      const analysis = typography?.coverAnalysis || coverAnalysis || null;
+      
+      // Convert text_layer request to legacy instructions format
+      // This ensures the legacy mode has the proper text replacement instructions
+      if (title || artist) {
+        logStep("Converting text_layer to legacy with text metadata", { title, artist });
+        
+        // Override variables for legacy mode
+        effectiveSongTitle = title;
+        effectiveArtistName = artist;
+        effectiveInstructions = `TEXT TYPOGRAPHY FULL REPLACE: Re-style all text on this album cover.
 
-      // If no title/artist provided, try to extract from the image
-      if (!title && !artist) {
-        logStep("No metadata, extracting text from image for text layer mode");
-        try {
-          const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
+TYPOGRAPHY STYLE: ${stylePrompt}
 
-Schema:
-{
-  "items": [
-    {
-      "text": "EXACT TEXT (verbatim, preserve spelling)",
-      "location": "top|upper|center|lower|bottom",
-      "approxSize": "small|medium|large"
-    }
-  ]
-}
+The song title is "${title || 'unknown'}" and artist is "${artist || 'unknown'}".
 
-Rules:
-- Include EVERY text element (title, artist, labels).
-- Do NOT invent new words.
-- If a word is unclear, make your best guess.
-
-Now extract the text. Output JSON ONLY.`;
-
-          const raw = await callLovableText(extractionPrompt, effectiveImageUrl);
-          const extracted = tryParseExtractedText(raw);
-          
-          // Use the extracted text
-          const largeText = extracted.items.find(i => i.approxSize === "large");
-          const mediumText = extracted.items.find(i => i.approxSize === "medium" && i.text !== largeText?.text);
-          
-          title = largeText?.text || extracted.items[0]?.text || null;
-          artist = mediumText?.text || (extracted.items.length > 1 ? extracted.items[1]?.text : null);
-          
-          logStep("Text extracted for text layer", { title, artist });
-        } catch (e) {
-          logStep("Text extraction failed", { error: e instanceof Error ? e.message : String(e) });
-          // Fall through to legacy mode
+CRITICAL RULES:
+- Keep the EXACT same text content - do not change any words
+- Only change the visual style/typography of the text
+- Preserve the artwork/background as much as possible
+- Apply the new typography style to all text elements`;
+        
+        // Also use the style reference if provided
+        if (styleRefUrl) {
+          effectiveStyleRefUrl = styleRefUrl;
         }
+      } else {
+        logStep("Text layer mode has no text metadata, will extract from image");
       }
-
-      // Text layer mode disabled - always use legacy mode for text style changes
-      // The text_layer approach was producing poor quality results
-      logStep("Text layer mode disabled, using legacy mode for text style changes");
     }
 
     // ===== LEGACY MODE: Original inpainting approach =====
     logStep("Using legacy inpaint mode");
 
     const hasTextReplace =
-      typeof instructions === "string" && instructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
+      typeof effectiveInstructions === "string" && effectiveInstructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
 
     let extractedTextJson: string | null = null;
     
     if (hasTextReplace) {
-      if (songTitle || artistName) {
-        logStep("Using metadata for text (skipping AI extraction)", { songTitle, artistName });
+      if (effectiveSongTitle || effectiveArtistName) {
+        logStep("Using metadata for text (skipping AI extraction)", { songTitle: effectiveSongTitle, artistName: effectiveArtistName });
         const items: Array<{ text: string; location: string; approxSize: string }> = [];
         
-        if (songTitle) {
+        if (effectiveSongTitle) {
           items.push({
-            text: songTitle,
+            text: effectiveSongTitle,
             location: "center",
             approxSize: "large",
           });
         }
-        if (artistName) {
+        if (effectiveArtistName) {
           items.push({
-            text: artistName,
+            text: effectiveArtistName,
             location: "lower",
             approxSize: "medium",
           });
@@ -452,16 +440,16 @@ Now extract the text. Output JSON ONLY.`;
       }
     }
 
-    const hasVisualChanges = typeof instructions === "string" && (
-      instructions.toLowerCase().includes("visual style") ||
-      instructions.toLowerCase().includes("mood") ||
-      instructions.toLowerCase().includes("lighting") ||
-      instructions.toLowerCase().includes("texture") ||
-      instructions.toLowerCase().includes("color") ||
-      instructions.toLowerCase().includes("accent") ||
-      instructions.toLowerCase().includes("change") ||
-      instructions.toLowerCase().includes("add") ||
-      instructions.toLowerCase().includes("make")
+    const hasVisualChanges = typeof effectiveInstructions === "string" && (
+      effectiveInstructions.toLowerCase().includes("visual style") ||
+      effectiveInstructions.toLowerCase().includes("mood") ||
+      effectiveInstructions.toLowerCase().includes("lighting") ||
+      effectiveInstructions.toLowerCase().includes("texture") ||
+      effectiveInstructions.toLowerCase().includes("color") ||
+      effectiveInstructions.toLowerCase().includes("accent") ||
+      effectiveInstructions.toLowerCase().includes("change") ||
+      effectiveInstructions.toLowerCase().includes("add") ||
+      effectiveInstructions.toLowerCase().includes("make")
     );
     
     const isSimpleEdit = !hasTextReplace && hasVisualChanges;
@@ -473,7 +461,7 @@ Now extract the text. Output JSON ONLY.`;
       
       const simpleEditPrompt = `You are an expert album cover art editor. Apply the following changes to this artwork:
 
-${instructions}
+${effectiveInstructions}
 
 CRITICAL RULES:
 - Apply the requested changes accurately and visibly
@@ -534,7 +522,7 @@ Remove ALL text now and output the cleaned, text-free image.`;
       const visualPrompt = `You are an expert album cover art editor. Apply the following visual changes to this artwork.
 
 REQUESTED VISUAL EDITS:
-${instructions}
+${effectiveInstructions}
 
 CRITICAL RULES:
 - Apply the visual style, mood, lighting, texture, and color changes as requested
@@ -624,7 +612,7 @@ Add the text now with the requested typography style, integrated colors, and sma
           return await callLovableImageEdit(
             stage2Prompt,
             currentImageUrl,
-            styleReferenceImageUrl ?? null
+            effectiveStyleRefUrl ?? null
           );
         })()
       : currentImageUrl;
