@@ -169,6 +169,57 @@ const EditStudio = () => {
     }
   }, [passedState, navigate]);
   
+  // Fetch cover analysis from database if not provided but we have an image URL
+  useEffect(() => {
+    const fetchCoverData = async () => {
+      if (!user || !passedState?.imageUrl) return;
+      
+      // Skip if we already have all metadata
+      if (originalState.coverAnalysis && originalState.songTitle && originalState.artistName) return;
+      
+      try {
+        // Fetch the generation record by image URL
+        const { data, error } = await supabase
+          .from("generations")
+          .select("song_title, artist_name, cover_analysis")
+          .eq("image_url", passedState.imageUrl)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        if (error) {
+          console.error("Failed to fetch cover data:", error);
+          return;
+        }
+        
+        if (data) {
+          // Update original state with fetched data if not already set
+          if (!originalState.songTitle && data.song_title) {
+            setCurrentState(prev => ({
+              ...prev,
+              songTitle: data.song_title,
+            }));
+          }
+          if (!originalState.artistName && data.artist_name) {
+            setCurrentState(prev => ({
+              ...prev,
+              artistName: data.artist_name,
+            }));
+          }
+          if (!originalState.coverAnalysis && data.cover_analysis) {
+            setCurrentState(prev => ({
+              ...prev,
+              coverAnalysis: data.cover_analysis as unknown as CoverAnalysis,
+            }));
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching cover data:", e);
+      }
+    };
+    
+    fetchCoverData();
+  }, [user, passedState?.imageUrl, originalState.songTitle, originalState.artistName, originalState.coverAnalysis]);
+  
   const buildEditInstructions = () => {
     const instructions: string[] = [];
     

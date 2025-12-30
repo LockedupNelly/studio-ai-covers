@@ -1176,6 +1176,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                 style,
                                 mood,
                                 textStyle,
+                                songTitle: songTitle.trim(),
+                                artistName: artistName.trim(),
                               }
                             })}
                             disabled={isGenerating}
