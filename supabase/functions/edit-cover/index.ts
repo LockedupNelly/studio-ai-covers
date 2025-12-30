@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,12 @@ type ExtractedText = {
     approxSize?: "small" | "medium" | "large";
     notes?: string;
   }>;
+};
+
+type TextPlacement = {
+  titleBox?: { x: number; y: number; w: number; h: number; alignment: string };
+  artistBox?: { x: number; y: number; w: number; h: number; alignment: string };
+  notes?: string;
 };
 
 const normalizeText = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -44,7 +51,6 @@ const tryParseExtractedText = (raw: string): ExtractedText => {
       notes: typeof (it as any)?.notes === "string" ? String((it as any).notes).slice(0, 120) : undefined,
     }))
     .filter((it) => it.text.length > 0)
-    // Deduplicate to prevent "IS HERE" getting duplicated by the model
     .filter((it) => {
       const key = `${it.text.toLowerCase()}|${it.location ?? ""}|${it.approxSize ?? ""}`;
       if (seen.has(key)) return false;
@@ -55,39 +61,67 @@ const tryParseExtractedText = (raw: string): ExtractedText => {
   return { items };
 };
 
+const tryParsePlacement = (raw: string): TextPlacement => {
+  const trimmed = String(raw ?? "").trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Placement detection did not return JSON");
+  }
+  const jsonCandidate = trimmed.slice(start, end + 1);
+  return JSON.parse(jsonCandidate) as TextPlacement;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { imageUrl, instructions, styleReferenceImageUrl, songTitle, artistName, coverAnalysis } = await req.json();
+    const body = await req.json();
+    const { 
+      imageUrl, 
+      instructions, 
+      styleReferenceImageUrl, 
+      songTitle, 
+      artistName, 
+      coverAnalysis,
+      editMode,
+      baseArtworkUrl,
+      typography
+    } = body;
+    
     logStep("Request received", {
-      instructions: instructions?.slice(0, 100),
+      editMode: editMode || "legacy",
+      instructions: instructions?.slice?.(0, 100),
       hasImage: !!imageUrl,
+      hasBaseArtwork: !!baseArtworkUrl,
       hasStyleRef: !!styleReferenceImageUrl,
-      imageUrlPrefix: imageUrl?.slice(0, 50),
       songTitle,
       artistName,
       hasCoverAnalysis: !!coverAnalysis,
+      hasTypography: !!typography,
     });
 
-    if (!imageUrl || !instructions) {
+    // For text_layer mode, we need baseArtworkUrl
+    const effectiveImageUrl = baseArtworkUrl || imageUrl;
+    
+    if (!effectiveImageUrl) {
       return new Response(
-        JSON.stringify({ error: "Missing image URL or instructions" }),
+        JSON.stringify({ error: "Missing image URL" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    logStep("Editing cover art with Lovable AI");
-
     const controller = new AbortController();
-    const timeoutMs = 120_000; // 120 seconds for image editing
+    const timeoutMs = 180_000; // 180 seconds for complex operations
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     const callLovableText = async (prompt: string, image: string) => {
@@ -172,14 +206,175 @@ serve(async (req) => {
       return outUrl;
     };
 
+    // Generate transparent text layer using OpenAI gpt-image-1
+    const generateTransparentTextLayer = async (
+      baseImageUrl: string,
+      title: string | null,
+      artist: string | null,
+      stylePrompt: string,
+      styleRefUrl: string | null,
+      analysis: any
+    ): Promise<string> => {
+      if (!OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY is not configured for text layer generation");
+      }
+
+      logStep("Generating transparent text layer", { title, artist, stylePrompt });
+
+      // First, detect optimal text placement using vision model
+      const placementPrompt = `Analyze this album cover artwork and determine the optimal placement for text overlay.
+      
+The cover should have:
+- Title text: "${title || 'TITLE'}"  
+- Artist text: "${artist || 'ARTIST'}"
+
+${analysis?.subjectPosition ? `The main subject is positioned: ${analysis.subjectPosition}` : ''}
+${analysis?.safeTextZones?.length ? `Safe zones for text: ${analysis.safeTextZones.join(', ')}` : ''}
+${analysis?.avoidZones?.length ? `Avoid placing text over: ${analysis.avoidZones.join(', ')}` : ''}
+
+Return ONLY valid JSON (no markdown, no code fences) with this exact schema:
+{
+  "titleBox": { "x": 0.1, "y": 0.3, "w": 0.8, "h": 0.25, "alignment": "center" },
+  "artistBox": { "x": 0.15, "y": 0.75, "w": 0.7, "h": 0.12, "alignment": "center" },
+  "notes": "Brief explanation of placement choices"
+}
+
+Values are normalized 0-1 (x=0 is left edge, y=0 is top edge).
+Choose placements that don't obscure the main subject and look balanced.`;
+
+      let placement: TextPlacement;
+      try {
+        const placementRaw = await callLovableText(placementPrompt, baseImageUrl);
+        placement = tryParsePlacement(placementRaw);
+        logStep("Text placement detected", placement);
+      } catch (e) {
+        logStep("Placement detection failed, using defaults", { error: e instanceof Error ? e.message : String(e) });
+        // Default placement: title in center, artist below
+        placement = {
+          titleBox: { x: 0.1, y: 0.35, w: 0.8, h: 0.2, alignment: "center" },
+          artistBox: { x: 0.15, y: 0.72, w: 0.7, h: 0.1, alignment: "center" },
+        };
+      }
+
+      // Build color guidance from cover analysis
+      const colorGuidance = analysis?.dominantColors?.length
+        ? `Use colors that complement the cover's palette: ${analysis.dominantColors.join(', ')}. Add shadows, glows, or gradients that make the text feel integrated with the artwork's lighting.`
+        : `Sample the dominant colors from the reference artwork and use harmonious tones. Add shadows or glows that match the lighting direction.`;
+
+      // Generate transparent text layer with OpenAI
+      const textLayerPrompt = `Generate a TRANSPARENT PNG image (1024x1024) containing ONLY typography text - NO background, NO artwork.
+
+TEXT TO RENDER:
+${title ? `- Main title: "${title}" (large, prominent, positioned in upper-center area)` : ''}
+${artist ? `- Artist name: "${artist}" (medium size, positioned below title or in lower area)` : ''}
+
+TYPOGRAPHY STYLE:
+${stylePrompt}
+
+INTEGRATION & EFFECTS:
+${colorGuidance}
+- Add appropriate drop shadows, outer glows, or subtle gradients ON THE TEXT ITSELF
+- The text effects should make it look like the text belongs on a dark/moody album cover
+- DO NOT add any background - the image must be 100% transparent except for the text and its effects
+
+CRITICAL REQUIREMENTS:
+1. Output a PNG with TRANSPARENT background (alpha channel)
+2. ONLY render the text and its effects - nothing else
+3. Position title prominently in the upper-center to center area
+4. Position artist name below the title or in the lower third
+5. Make the text large and legible
+6. The text should have professional album cover typography quality`;
+
+      const openAIResponse = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-image-1",
+          prompt: textLayerPrompt,
+          n: 1,
+          size: "1024x1024",
+          background: "transparent",
+          output_format: "png",
+          quality: "high",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!openAIResponse.ok) {
+        const errorText = await openAIResponse.text();
+        logStep("OpenAI gpt-image-1 error", { status: openAIResponse.status, error: errorText });
+        throw new Error(`OpenAI image generation failed: ${openAIResponse.status}`);
+      }
+
+      const openAIData = await openAIResponse.json();
+      const textLayerB64 = openAIData.data?.[0]?.b64_json;
+      
+      if (!textLayerB64) {
+        throw new Error("No text layer image returned from OpenAI");
+      }
+
+      logStep("Transparent text layer generated successfully");
+      return `data:image/png;base64,${textLayerB64}`;
+    };
+
+    // ===== TEXT LAYER MODE: Non-destructive text editing =====
+    if (editMode === "text_layer") {
+      logStep("TEXT LAYER MODE: Generating transparent text overlay");
+      
+      const title = typography?.songTitle || songTitle || null;
+      const artist = typography?.artistName || artistName || null;
+      const stylePrompt = typography?.stylePrompt || "Modern, clean typography";
+      const styleRefUrl = typography?.styleReferenceImageUrl || styleReferenceImageUrl || null;
+      const analysis = typography?.coverAnalysis || coverAnalysis || null;
+
+      if (!title && !artist) {
+        return new Response(
+          JSON.stringify({ error: "No title or artist text provided for text layer mode" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      try {
+        const textLayerDataUrl = await generateTransparentTextLayer(
+          effectiveImageUrl,
+          title,
+          artist,
+          stylePrompt,
+          styleRefUrl,
+          analysis
+        );
+
+        logStep("Text layer mode complete - returning for frontend compositing");
+        
+        clearTimeout(timeout);
+        return new Response(
+          JSON.stringify({ 
+            textLayerUrl: textLayerDataUrl,
+            baseArtworkUrl: effectiveImageUrl,
+            mode: "text_layer"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (e) {
+        logStep("Text layer generation failed, falling back to legacy mode", { 
+          error: e instanceof Error ? e.message : String(e) 
+        });
+        // Fall through to legacy mode
+      }
+    }
+
+    // ===== LEGACY MODE: Original inpainting approach =====
+    logStep("Using legacy inpaint mode");
+
     const hasTextReplace =
       typeof instructions === "string" && instructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
 
-    // Determine the text to use: prefer metadata (100% accurate), fallback to extraction
     let extractedTextJson: string | null = null;
     
     if (hasTextReplace) {
-      // If we have song metadata from the database, use it directly (no AI extraction needed)
       if (songTitle || artistName) {
         logStep("Using metadata for text (skipping AI extraction)", { songTitle, artistName });
         const items: Array<{ text: string; location: string; approxSize: string }> = [];
@@ -202,7 +397,6 @@ serve(async (req) => {
         extractedTextJson = JSON.stringify({ items });
         logStep("Text metadata prepared", { items });
       } else {
-        // Fallback: extract text from image (for older covers without metadata)
         logStep("No metadata available, extracting text from image");
         const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
 
@@ -226,7 +420,7 @@ Rules:
 
 Now extract the text. Output JSON ONLY.`;
 
-        const raw = await callLovableText(extractionPrompt, imageUrl);
+        const raw = await callLovableText(extractionPrompt, effectiveImageUrl);
         const extracted = tryParseExtractedText(raw);
         extractedTextJson = JSON.stringify(extracted);
         logStep("Text extraction complete (fallback)", {
@@ -236,7 +430,6 @@ Now extract the text. Output JSON ONLY.`;
       }
     }
 
-    // Detect if visual changes (non-text) are requested
     const hasVisualChanges = typeof instructions === "string" && (
       instructions.toLowerCase().includes("visual style") ||
       instructions.toLowerCase().includes("mood") ||
@@ -249,12 +442,10 @@ Now extract the text. Output JSON ONLY.`;
       instructions.toLowerCase().includes("make")
     );
     
-    // Check if this is a simple edit (not text replace, but has visual instructions)
     const isSimpleEdit = !hasTextReplace && hasVisualChanges;
 
-    let currentImageUrl = imageUrl;
+    let currentImageUrl = effectiveImageUrl;
 
-    // ===== SIMPLE EDIT PATH: Apply general edit instructions directly =====
     if (isSimpleEdit) {
       logStep("Simple edit: Applying visual changes directly");
       
@@ -285,7 +476,6 @@ Apply the edits now and output the modified image.`;
       }
     }
 
-    // ===== STAGE 1A: DEDICATED TEXT ERASURE (only when text restyle is requested) =====
     if (hasTextReplace) {
       logStep("Stage 1A: Dedicated text erasure");
       
@@ -316,11 +506,9 @@ Remove ALL text now and output the cleaned, text-free image.`;
       }
     }
 
-    // ===== STAGE 1B: VISUAL STYLE CHANGES (only for text replace path with additional visual changes) =====
     if (hasTextReplace && hasVisualChanges) {
       logStep("Stage 1B: Applying visual style changes");
       
-      // Build visual-only instructions (exclude text-related parts)
       const visualPrompt = `You are an expert album cover art editor. Apply the following visual changes to this artwork.
 
 REQUESTED VISUAL EDITS:
@@ -347,16 +535,13 @@ Apply the visual changes now and output the edited image.`;
         logStep("Stage 1B failed; continuing with current image", {
           error: e instanceof Error ? e.message : String(e),
         });
-        // Continue with current image if visual changes fail
       }
     }
 
-    // ===== STAGE 2: RE-TYPESET TEXT (only when text restyle was requested) =====
     const finalImageUrl = hasTextReplace
       ? await (async () => {
           logStep("Stage 2: Re-typesetting text with selected style and color integration");
 
-          // Build color integration rules from cover analysis
           const colorIntegrationRules = coverAnalysis?.dominantColors?.length
             ? `COLOR INTEGRATION (MANDATORY - USE COVER'S COLOR PALETTE):
 The cover's dominant colors are: ${coverAnalysis.dominantColors.join(', ')}
@@ -368,7 +553,6 @@ Choose the most impactful color from the palette for the main text.`
 Sample the dominant colors from the cover image and use them for the text.
 Avoid plain white or generic colors - use colors that exist in the artwork.`;
 
-          // Build smart placement rules from cover analysis
           const placementRules = coverAnalysis?.safeTextZones?.length || coverAnalysis?.avoidZones?.length
             ? `SMART TEXT PLACEMENT (MANDATORY):
 Subject is located: ${coverAnalysis?.subjectPosition || 'center'}
@@ -423,6 +607,7 @@ Add the text now with the requested typography style, integrated colors, and sma
         })()
       : currentImageUrl;
 
+    clearTimeout(timeout);
     logStep("Cover edited successfully");
 
     return new Response(JSON.stringify({ imageUrl: finalImageUrl }), {
