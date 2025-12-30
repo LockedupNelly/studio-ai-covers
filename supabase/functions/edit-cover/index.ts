@@ -261,29 +261,41 @@ Choose placements that don't obscure the main subject and look balanced.`;
         ? `Use colors that complement the cover's palette: ${analysis.dominantColors.join(', ')}. Add shadows, glows, or gradients that make the text feel integrated with the artwork's lighting.`
         : `Sample the dominant colors from the reference artwork and use harmonious tones. Add shadows or glows that match the lighting direction.`;
 
+      const placementGuidance = `
+PLACEMENT CONSTRAINTS (normalized 0-1 coordinates relative to a 1024x1024 canvas):
+- Title box: ${placement?.titleBox ? JSON.stringify(placement.titleBox) : '{"x":0.1,"y":0.35,"w":0.8,"h":0.2,"alignment":"center"}'}
+- Artist box: ${placement?.artistBox ? JSON.stringify(placement.artistBox) : '{"x":0.15,"y":0.72,"w":0.7,"h":0.1,"alignment":"center"}'}
+Rules:
+- Render the title fully INSIDE the title box; render the artist fully INSIDE the artist box.
+- Do not exceed each box bounds; keep ~4% inner padding inside each box.
+- Size the typography to FIT the box (do not overflow / do not crop).
+- Respect the alignment field when centering/left/right aligning.
+- Do NOT make the text so large it spans the whole cover.
+`.trim();
+
       // Generate transparent text layer with OpenAI
       const textLayerPrompt = `Generate a TRANSPARENT PNG image (1024x1024) containing ONLY typography text - NO background, NO artwork.
 
 TEXT TO RENDER:
-${title ? `- Main title: "${title}" (large, prominent, positioned in upper-center area)` : ''}
-${artist ? `- Artist name: "${artist}" (medium size, positioned below title or in lower area)` : ''}
+${title ? `- Main title: "${title}"` : ''}
+${artist ? `- Artist name: "${artist}"` : ''}
 
 TYPOGRAPHY STYLE:
 ${stylePrompt}
 
+${placementGuidance}
+
 INTEGRATION & EFFECTS:
 ${colorGuidance}
 - Add appropriate drop shadows, outer glows, or subtle gradients ON THE TEXT ITSELF
-- The text effects should make it look like the text belongs on a dark/moody album cover
+- The text effects should make it look like the text belongs on this artwork
 - DO NOT add any background - the image must be 100% transparent except for the text and its effects
 
 CRITICAL REQUIREMENTS:
 1. Output a PNG with TRANSPARENT background (alpha channel)
 2. ONLY render the text and its effects - nothing else
-3. Position title prominently in the upper-center to center area
-4. Position artist name below the title or in the lower third
-5. Make the text large and legible
-6. The text should have professional album cover typography quality`;
+3. Text must be readable and professional, but constrained to the specified boxes`;
+
 
       const openAIResponse = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",

@@ -340,7 +340,7 @@ const EditStudio = () => {
   };
 
   // Check if we have text metadata for text layer mode
-  const hasTextMetadata = !!(originalState.songTitle || originalState.artistName);
+  const hasTextMetadata = !!(currentState.songTitle || currentState.artistName);
 
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
@@ -378,7 +378,7 @@ const EditStudio = () => {
       
       if (useTextLayerMode) {
         // ===== NON-DESTRUCTIVE TEXT LAYER MODE =====
-        console.log("Using non-destructive text layer mode", { songTitle: originalState.songTitle, artistName: originalState.artistName });
+        console.log("Using non-destructive text layer mode", { songTitle: currentState.songTitle, artistName: currentState.artistName });
         toast.info("Using non-destructive text layer mode");
         
         const stylePrompt = selectedVariant?.promptInstructions || 
@@ -400,17 +400,17 @@ const EditStudio = () => {
             baseArtworkUrl: artworkUrl,
             imageUrl: artworkUrl,
             typography: {
-              songTitle: originalState.songTitle,
-              artistName: originalState.artistName,
+              songTitle: currentState.songTitle,
+              artistName: currentState.artistName,
               stylePrompt,
               styleReferenceImageUrl: styleRefUrl,
-              coverAnalysis: originalState.coverAnalysis,
+              coverAnalysis: currentState.coverAnalysis,
             },
           },
         });
         
         if (error) throw error;
-        
+
         setProgress(60);
         
         if (data?.mode === "text_layer" && data?.textLayerUrl) {
