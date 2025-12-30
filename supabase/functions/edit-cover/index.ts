@@ -39,33 +39,46 @@ serve(async (req) => {
     logStep("Editing cover art with Lovable AI (image edit mode)");
 
     // Build a comprehensive prompt for accurate album cover editing
-    const editPrompt = `You are an expert album cover art editor specializing in typography and visual effects.
+    const editPrompt = `You are an expert album cover art editor. Follow these instructions EXACTLY.
 
-Edit this album cover image with the following changes:
-
+REQUESTED EDITS:
 ${instructions}
 
-ABSOLUTELY CRITICAL - TEXT CONTENT RULES:
-1. NEVER ADD ANY NEW WORDS OR TEXT that is not already on the cover
-2. NEVER interpret style descriptions (like "chrome", "neon", "fire", etc.) as text to add - these are STYLE DESCRIPTORS ONLY
-3. The ONLY text on the final cover must be the EXACT words that were already on the original cover
-4. If the original says "HALF TIME SHOW" and "GRREGORY", the result MUST say ONLY "HALF TIME SHOW" and "GRREGORY" - nothing else
+=== CRITICAL TEXT RULES (MOST IMPORTANT - READ CAREFULLY) ===
 
-TYPOGRAPHY WORKFLOW (if text styling is requested):
-- STEP 1: READ and identify ALL text currently visible on the cover (artist name, song title, any labels)
-- STEP 2: COMPLETELY ERASE/REMOVE the existing text (clean inpaint the background)
-- STEP 3: RE-CREATE the EXACT SAME WORDS in the new typography style
-- STEP 4: The style reference image shows the VISUAL STYLE to apply - NOT text content to copy
-- Keep text in the same general position/scale as the original
+1. FIRST: Look at the ORIGINAL ALBUM COVER (the last image provided) and identify the EXACT text currently shown. For example: "DISCO NIGHTS" and "PHILBERGS"
 
-GENERAL GUIDELINES:
+2. NEVER USE TEXT FROM THE STYLE REFERENCE IMAGE. If a style reference is provided (first image), it shows sample/placeholder text like "SONG TITLE" or "ARTIST NAME" - IGNORE THAT TEXT COMPLETELY. Only use it to see the VISUAL STYLE of the typography.
+
+3. The FINAL cover must contain ONLY the EXACT words from the ORIGINAL cover:
+   - Same words, same spelling
+   - NO additions like "Chrome", "Fire", "Neon" - these are STYLE DESCRIPTIONS, not text to add
+   - NO placeholders like "Song Title", "Artist Name"
+   - NO new words whatsoever
+
+4. When restyling text:
+   - READ the exact text from the original cover
+   - COMPLETELY ERASE all existing text from the image
+   - REDRAW those EXACT SAME WORDS in the new typography style
+   - Position text in similar locations as original
+
+=== VISUAL STYLE TRANSFORMATION ===
+
+If a visual style change is requested (like "Anime", "Cinematic", "3D Render", etc.):
+- Transform the ENTIRE ARTWORK to that visual style
+- The background, subject matter, lighting - everything should reflect the new style
+- Do NOT just change the text - transform the whole image artistically
+- An "Anime" style should look like anime art
+- A "Cinematic" style should look like a movie poster
+- Apply the style change to the full image composition
+
+=== GENERAL GUIDELINES ===
 - Keep the same overall composition and layout
-- Make the requested visual changes naturally
-- Maintain the professional quality of album artwork
-- Apply color changes, textures, and effects as requested
-- The result should look like a polished, professional album cover
+- Maintain professional album cover quality
+- Apply all requested changes (style + text + effects together)
+- The result must look like a polished, professional album cover
 
-Generate the edited version of this image now.`;
+Now edit the image with ALL the requested changes.`;
 
     const controller = new AbortController();
     const timeoutMs = 120_000; // 120 seconds for image editing
