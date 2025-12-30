@@ -46,32 +46,38 @@ export type Database = {
       }
       generations: {
         Row: {
+          artist_name: string | null
           created_at: string
           genre: string
           id: string
           image_url: string
           mood: string
           prompt: string
+          song_title: string | null
           style: string
           user_id: string
         }
         Insert: {
+          artist_name?: string | null
           created_at?: string
           genre: string
           id?: string
           image_url: string
           mood: string
           prompt: string
+          song_title?: string | null
           style: string
           user_id: string
         }
         Update: {
+          artist_name?: string | null
           created_at?: string
           genre?: string
           id?: string
           image_url?: string
           mood?: string
           prompt?: string
+          song_title?: string | null
           style?: string
           user_id?: string
         }

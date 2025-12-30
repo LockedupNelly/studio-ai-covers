@@ -680,7 +680,7 @@ NEVER ignore the user's selected text style.
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
-    // Best-effort: persist generation for history
+    // Best-effort: persist generation for history (now includes song_title and artist_name)
     if (userId) {
       try {
         const { error: genInsertErr } = await supabaseClient.from("generations").insert({
@@ -690,12 +690,14 @@ NEVER ignore the user's selected text style.
           style: typeof style === "string" ? style : "",
           mood: typeof mood === "string" ? mood : "",
           image_url: imageUrl,
+          song_title: songTitle || null,
+          artist_name: artistName || null,
         });
 
         if (genInsertErr) {
           logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
         } else {
-          logStep("Generation saved");
+          logStep("Generation saved", { songTitle, artistName });
         }
       } catch (e) {
         logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });

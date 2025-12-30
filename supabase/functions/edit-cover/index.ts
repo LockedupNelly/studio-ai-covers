@@ -61,12 +61,14 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, instructions, styleReferenceImageUrl } = await req.json();
+    const { imageUrl, instructions, styleReferenceImageUrl, songTitle, artistName } = await req.json();
     logStep("Request received", {
       instructions: instructions?.slice(0, 100),
       hasImage: !!imageUrl,
       hasStyleRef: !!styleReferenceImageUrl,
       imageUrlPrefix: imageUrl?.slice(0, 50),
+      songTitle,
+      artistName,
     });
 
     if (!imageUrl || !instructions) {
@@ -172,11 +174,36 @@ serve(async (req) => {
     const hasTextReplace =
       typeof instructions === "string" && instructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
 
-    // Stage 0: Extract the exact text from the CURRENT cover (so we never add/remove words)
+    // Determine the text to use: prefer metadata (100% accurate), fallback to extraction
     let extractedTextJson: string | null = null;
+    
     if (hasTextReplace) {
-      logStep("Extracting on-cover text (for exact re-typeset)");
-      const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
+      // If we have song metadata from the database, use it directly (no AI extraction needed)
+      if (songTitle || artistName) {
+        logStep("Using metadata for text (skipping AI extraction)", { songTitle, artistName });
+        const items: Array<{ text: string; location: string; approxSize: string }> = [];
+        
+        if (songTitle) {
+          items.push({
+            text: songTitle,
+            location: "center",
+            approxSize: "large",
+          });
+        }
+        if (artistName) {
+          items.push({
+            text: artistName,
+            location: "lower",
+            approxSize: "medium",
+          });
+        }
+        
+        extractedTextJson = JSON.stringify({ items });
+        logStep("Text metadata prepared", { items });
+      } else {
+        // Fallback: extract text from image (for older covers without metadata)
+        logStep("No metadata available, extracting text from image");
+        const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
 
 Schema:
 {
@@ -198,13 +225,14 @@ Rules:
 
 Now extract the text. Output JSON ONLY.`;
 
-      const raw = await callLovableText(extractionPrompt, imageUrl);
-      const extracted = tryParseExtractedText(raw);
-      extractedTextJson = JSON.stringify(extracted);
-      logStep("Text extraction complete", {
-        items: extracted.items.length,
-        preview: extracted.items.slice(0, 4),
-      });
+        const raw = await callLovableText(extractionPrompt, imageUrl);
+        const extracted = tryParseExtractedText(raw);
+        extractedTextJson = JSON.stringify(extracted);
+        logStep("Text extraction complete (fallback)", {
+          items: extracted.items.length,
+          preview: extracted.items.slice(0, 4),
+        });
+      }
     }
 
     // Stage 1: Apply ALL requested edits, but ALWAYS remove existing typography completely when text restyle is requested.

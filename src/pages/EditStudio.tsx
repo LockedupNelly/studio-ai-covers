@@ -23,6 +23,8 @@ interface EditState {
   mood?: string;
   textStyle?: string;
   prompt?: string;
+  songTitle?: string | null;
+  artistName?: string | null;
 }
 
 // Visual Style options
@@ -106,6 +108,8 @@ const EditStudio = () => {
     textStyle: passedState?.textStyle || "",
     genre: passedState?.genre || "",
     prompt: passedState?.prompt || "",
+    songTitle: passedState?.songTitle || null,
+    artistName: passedState?.artistName || null,
   });
   
   // Current values (track what's been "applied")
@@ -278,6 +282,9 @@ const EditStudio = () => {
           imageUrl: imageUrl,
           instructions: instructions,
           styleReferenceImageUrl,
+          // Pass song metadata so edit-cover doesn't need to extract text from the image
+          songTitle: originalState.songTitle,
+          artistName: originalState.artistName,
         },
       });
       

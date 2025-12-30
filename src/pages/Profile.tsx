@@ -19,6 +19,8 @@ interface Generation {
   mood: string;
   image_url: string;
   created_at: string;
+  song_title?: string | null;
+  artist_name?: string | null;
 }
 
 const Profile = () => {
@@ -376,7 +378,9 @@ const Profile = () => {
                               genre: gen.genre, 
                               style: gen.style, 
                               mood: gen.mood,
-                              prompt: gen.prompt 
+                              prompt: gen.prompt,
+                              songTitle: gen.song_title,
+                              artistName: gen.artist_name,
                             } 
                           })}
                         >
