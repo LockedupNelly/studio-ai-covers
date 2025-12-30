@@ -37,16 +37,22 @@ serve(async (req) => {
 
     logStep("Editing cover art with Lovable AI (image edit mode)");
 
-    // Build a cleaner, more direct prompt that avoids complex text instructions
-    const editPrompt = `You are an expert album cover art editor. Edit this album cover image with the following changes:
+    // Build a comprehensive prompt for accurate album cover editing
+    const editPrompt = `You are an expert album cover art editor specializing in typography and visual effects. Edit this album cover image with the following changes:
 
 ${instructions}
 
-IMPORTANT GUIDELINES:
+CRITICAL TYPOGRAPHY GUIDELINES (if text styling is requested):
+- FIRST: Carefully identify and READ all text currently visible on the cover (artist name, song title, any labels)
+- PRESERVE: Keep the exact same words/text content - do NOT change what the text says
+- TRANSFORM: Apply the new typography style PRECISELY as described to the existing text
+- The typography style description is DETAILED and SPECIFIC - follow it exactly
+- The new text should be in the same general position as the original text
+
+GENERAL GUIDELINES:
 - Keep the same overall composition and layout
 - Make the requested visual changes naturally
 - Maintain the professional quality of album artwork
-- If changing text style is requested, redesign the typography to match the requested style while keeping the same text content
 - Apply color changes, textures, and effects as requested
 - The result should look like a polished, professional album cover
 
