@@ -268,6 +268,12 @@ CRITICAL RULES:
 - Keep all existing text EXACTLY as it appears (same position, same words)
 - Make the changes impactful and noticeable
 
+QUALITY PRESERVATION (MANDATORY):
+- Maintain the FULL RESOLUTION and DETAIL of the original image
+- Do NOT reduce image quality, add blur, artifacts, or lose fine details
+- The output must be as CRISP and HIGH-QUALITY as the input
+- Preserve sharp edges, textures, and micro-details from the original
+
 Apply the edits now and output the modified image.`;
 
       try {
@@ -292,6 +298,12 @@ CRITICAL INSTRUCTIONS:
 - Do NOT add any new text whatsoever
 - Do NOT change the artwork style, colors, mood, or composition - ONLY remove text
 - The output should look like a completely textless version of the original album art
+
+QUALITY PRESERVATION (MANDATORY):
+- Maintain the FULL RESOLUTION and DETAIL of the original image
+- Do NOT reduce image quality, add blur, artifacts, or lose fine details
+- The output must be as CRISP and HIGH-QUALITY as the input
+- Preserve sharp edges, textures, and micro-details from the original
 
 Remove ALL text now and output the cleaned, text-free image.`;
 
@@ -319,6 +331,12 @@ CRITICAL RULES:
 - Do NOT add any text or typography to the image
 - Keep the image completely text-free
 - Maintain the overall composition while applying the requested visual changes
+
+QUALITY PRESERVATION (MANDATORY):
+- Maintain the FULL RESOLUTION and DETAIL of the original image
+- Do NOT reduce image quality, add blur, artifacts, or lose fine details
+- The output must be as CRISP and HIGH-QUALITY as the input
+- Preserve sharp edges, textures, and micro-details from the original
 
 Apply the visual changes now and output the edited image.`;
 
@@ -388,6 +406,12 @@ RULES (ABSOLUTE - FOLLOW EXACTLY):
 5. Position text in SAFE zones only (see SMART TEXT PLACEMENT above)
 6. Do NOT modify the background artwork at all - ONLY add the text overlay
 7. The text must feel designed-into the cover, not overlaid
+
+QUALITY PRESERVATION (MANDATORY):
+- Maintain the FULL RESOLUTION and DETAIL of the original image
+- Do NOT reduce image quality, add blur, artifacts, or lose fine details
+- The output must be as CRISP and HIGH-QUALITY as the input
+- Preserve sharp edges, textures, and micro-details from the original
 
 Add the text now with the requested typography style, integrated colors, and smart placement.`;
 
