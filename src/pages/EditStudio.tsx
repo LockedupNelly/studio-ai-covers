@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
+import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight } from "lucide-react";
@@ -103,6 +104,7 @@ const lightingOptions = [
 const EditStudio = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
+  const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -122,6 +124,9 @@ const EditStudio = () => {
     artistName: passedState?.artistName || null,
     coverAnalysis: passedState?.coverAnalysis || null,
   });
+  
+  // Store the base artwork (without text) for non-destructive text edits
+  const [baseArtworkUrl, setBaseArtworkUrl] = useState<string | null>(null);
   
   // Current values (track what's been "applied")
   const [currentState, setCurrentState] = useState({ ...originalState });
@@ -264,6 +269,25 @@ const EditStudio = () => {
     }
   };
   
+  // Determine if this is a text-only edit (no visual changes)
+  const isTextOnlyEdit = (
+    hasTextStyleChange: boolean,
+    mainColorSet: boolean
+  ): boolean => {
+    // Text-only if: only text style changed (with optional text color)
+    // No: visual style, mood, accent color, texture, lighting, parental advisory, custom instructions
+    const hasVisualEdits = 
+      (style !== currentState.style && style !== "None") ||
+      (mood !== currentState.mood && mood !== "None") ||
+      accentColor ||
+      parentalAdvisory !== "none" ||
+      texture !== "none" ||
+      lighting !== "none" ||
+      customInstructions.trim();
+    
+    return hasTextStyleChange && !hasVisualEdits;
+  };
+
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
@@ -283,64 +307,140 @@ const EditStudio = () => {
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 90) return prev;
-        return prev + Math.random() * 10;
+        return prev + Math.random() * 8;
       });
-    }, 500);
+    }, 600);
     
     try {
-      const styleReferenceImageUrl =
-        textStyle && selectedVariant && textStyle !== currentState.textStyle
+      // Check if this is a text-only edit
+      const currentVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
+      const hasTextStyleChange = !!(currentVariantId && currentVariantId !== currentState.textStyleVariantId);
+      const textOnlyEdit = isTextOnlyEdit(hasTextStyleChange, !!mainColor);
+      
+      let finalImageUrl: string;
+      
+      if (textOnlyEdit && user) {
+        // ===== NON-DESTRUCTIVE TEXT LAYER MODE =====
+        toast.info("Using non-destructive text layer mode");
+        
+        const stylePrompt = selectedVariant?.promptInstructions || 
+          selectedVariant?.description || 
+          `${textStyle} ${selectedVariant?.name || ''} style`;
+        
+        const styleRefUrl = selectedVariant?.previewImage 
           ? new URL(selectedVariant.previewImage, window.location.origin).toString()
           : null;
 
-      const { data, error } = await supabase.functions.invoke("edit-cover", {
-        body: {
-          imageUrl: imageUrl,
-          instructions: instructions,
-          styleReferenceImageUrl,
-          // Pass song metadata so edit-cover doesn't need to extract text from the image
-          songTitle: originalState.songTitle,
-          artistName: originalState.artistName,
-          // Pass cover analysis for color integration and smart placement
-          coverAnalysis: originalState.coverAnalysis,
-        },
-      });
-      
-      if (error) throw error;
-      
-      if (data?.imageUrl) {
-        setProgress(100);
+        // Use baseArtworkUrl if we have one, otherwise use current image
+        const artworkUrl = baseArtworkUrl || imageUrl;
         
-        // Update history
-        const newHistory = [...editHistory.slice(0, historyIndex + 1), data.imageUrl];
-        setEditHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
+        setProgress(20);
         
-        setImageUrl(data.imageUrl);
-        
-        // Update current state to reflect what was applied
-        const appliedVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
-        setCurrentState({
-          ...currentState,
-          imageUrl: data.imageUrl,
-          style: style !== "None" ? style : currentState.style,
-          mood: mood !== "None" ? mood : currentState.mood,
-          textStyle: textStyle || currentState.textStyle,
-          textStyleVariantId: appliedVariantId || currentState.textStyleVariantId,
+        const { data, error } = await supabase.functions.invoke("edit-cover", {
+          body: {
+            editMode: "text_layer",
+            baseArtworkUrl: artworkUrl,
+            imageUrl: artworkUrl,
+            typography: {
+              songTitle: originalState.songTitle,
+              artistName: originalState.artistName,
+              stylePrompt,
+              styleReferenceImageUrl: styleRefUrl,
+              coverAnalysis: originalState.coverAnalysis,
+            },
+          },
         });
         
-        // Reset single-use options
-        setMainColor("");
-        setAccentColor("");
-        setParentalAdvisory("none");
-        setTexture("none");
-        setLighting("none");
-        setCustomInstructions("");
+        if (error) throw error;
         
-        toast.success("Edits applied!", { description: "Your cover has been updated and saved" });
+        setProgress(60);
+        
+        if (data?.mode === "text_layer" && data?.textLayerUrl) {
+          // Composite the text layer over the base artwork in the browser
+          const result = await compositeAndUpload(
+            data.baseArtworkUrl,
+            data.textLayerUrl,
+            user.id
+          );
+          
+          finalImageUrl = result.imageUrl;
+          
+          // Store the base artwork URL for future text-only edits
+          if (!baseArtworkUrl) {
+            // First time: we need to create a clean base artwork
+            // For now, use the erased version from a one-time operation
+            setBaseArtworkUrl(data.baseArtworkUrl);
+          }
+        } else if (data?.imageUrl) {
+          // Fallback: backend returned a fully composed image
+          finalImageUrl = data.imageUrl;
+        } else {
+          throw new Error("No image returned from edit");
+        }
       } else {
-        throw new Error("No image returned from edit");
+        // ===== LEGACY MODE: Full inpainting =====
+        const styleReferenceImageUrl =
+          textStyle && selectedVariant
+            ? new URL(selectedVariant.previewImage, window.location.origin).toString()
+            : null;
+
+        const { data, error } = await supabase.functions.invoke("edit-cover", {
+          body: {
+            imageUrl: imageUrl,
+            instructions: instructions,
+            styleReferenceImageUrl,
+            songTitle: originalState.songTitle,
+            artistName: originalState.artistName,
+            coverAnalysis: originalState.coverAnalysis,
+          },
+        });
+        
+        if (error) throw error;
+        
+        if (!data?.imageUrl) {
+          throw new Error("No image returned from edit");
+        }
+        
+        finalImageUrl = data.imageUrl;
+        
+        // After a visual edit, clear the base artwork cache
+        // (the composition has changed, so we need fresh text removal next time)
+        setBaseArtworkUrl(null);
       }
+      
+      setProgress(100);
+      
+      // Update history
+      const newHistory = [...editHistory.slice(0, historyIndex + 1), finalImageUrl];
+      setEditHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      
+      setImageUrl(finalImageUrl);
+      
+      // Update current state to reflect what was applied
+      const appliedVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
+      setCurrentState({
+        ...currentState,
+        imageUrl: finalImageUrl,
+        style: style !== "None" ? style : currentState.style,
+        mood: mood !== "None" ? mood : currentState.mood,
+        textStyle: textStyle || currentState.textStyle,
+        textStyleVariantId: appliedVariantId || currentState.textStyleVariantId,
+      });
+      
+      // Reset single-use options
+      setMainColor("");
+      setAccentColor("");
+      setParentalAdvisory("none");
+      setTexture("none");
+      setLighting("none");
+      setCustomInstructions("");
+      
+      toast.success("Edits applied!", { 
+        description: textOnlyEdit 
+          ? "Text layer updated (background preserved)" 
+          : "Your cover has been updated" 
+      });
     } catch (error) {
       console.error("Edit error:", error);
       // Refund credit on failure
