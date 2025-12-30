@@ -389,8 +389,44 @@ Now extract the text. Output JSON ONLY.`;
         // Fall through to legacy mode by not returning here
       } else {
         try {
+          // ===== STEP 1: ERASE existing text from the base artwork =====
+          logStep("TEXT LAYER MODE - Step 1: Erasing existing text from artwork");
+          
+          const erasePrompt = `You are an image inpainting specialist. Your ONLY task is to COMPLETELY REMOVE ALL TEXT from this album cover.
+
+CRITICAL INSTRUCTIONS:
+- ERASE every single letter, word, number, and character from the image
+- Use context-aware inpainting to seamlessly fill where text was with appropriate background content (extend the sky, texture, artwork, etc.)
+- The result MUST have ZERO visible text, typography, lettering, or characters remaining
+- Do NOT add any new text whatsoever
+- Do NOT change the artwork style, colors, mood, or composition - ONLY remove text
+- The output should look like a completely textless version of the original album art
+
+QUALITY PRESERVATION (MANDATORY):
+- Maintain the FULL RESOLUTION and DETAIL of the original image
+- Do NOT reduce image quality, add blur, artifacts, or lose fine details
+- The output must be as CRISP and HIGH-QUALITY as the input
+- Preserve sharp edges, textures, and micro-details from the original
+
+Remove ALL text now and output the cleaned, text-free image.`;
+
+          let cleanBaseArtworkUrl: string;
+          try {
+            cleanBaseArtworkUrl = await callLovableImageEdit(erasePrompt, effectiveImageUrl, null);
+            logStep("TEXT LAYER MODE - Step 1 complete: Text erased from artwork");
+          } catch (eraseError) {
+            logStep("Text erasure failed, falling back to legacy mode", { 
+              error: eraseError instanceof Error ? eraseError.message : String(eraseError) 
+            });
+            // Fall through to legacy mode
+            cleanBaseArtworkUrl = effectiveImageUrl; // Use original if erasure fails
+          }
+
+          // ===== STEP 2: Generate transparent text layer =====
+          logStep("TEXT LAYER MODE - Step 2: Generating transparent text layer");
+          
           const textLayerDataUrl = await generateTransparentTextLayer(
-            effectiveImageUrl,
+            cleanBaseArtworkUrl,
             title,
             artist,
             stylePrompt,
@@ -404,7 +440,7 @@ Now extract the text. Output JSON ONLY.`;
           return new Response(
             JSON.stringify({ 
               textLayerUrl: textLayerDataUrl,
-              baseArtworkUrl: effectiveImageUrl,
+              baseArtworkUrl: cleanBaseArtworkUrl, // Return the CLEAN base (text erased)
               mode: "text_layer"
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
