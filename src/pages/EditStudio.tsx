@@ -170,10 +170,11 @@ const EditStudio = () => {
     }
     
     if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
-      // Simplified text style instruction - avoid "remove" language
-      instructions.push(`Restyle the existing text typography to have a ${textStyle} ${selectedVariant.name} appearance. Apply ${selectedVariant.description || selectedVariant.name} font characteristics while keeping the same words visible.`);
+      // Use the detailed promptInstructions from the variant for accurate styling
+      const stylePrompt = selectedVariant.promptInstructions || selectedVariant.description || `${textStyle} ${selectedVariant.name} style`;
+      instructions.push(`TEXT TYPOGRAPHY TRANSFORMATION: First, carefully READ and identify the exact text/words currently shown on the album cover (artist name, song title, any other text). Then REPLACE the existing text typography with this EXACT style while keeping the same words: ${stylePrompt}. The text content (words) must remain identical - only the typography/font style changes.`);
     } else if (textStyle && textStyle !== currentState.textStyle) {
-      instructions.push(`Restyle the existing text typography to have a ${textStyle} appearance while keeping the same words visible.`);
+      instructions.push(`TEXT TYPOGRAPHY TRANSFORMATION: First, carefully READ and identify the exact text/words currently shown on the album cover. Then REPLACE the existing text typography with a ${textStyle} style while keeping the same words. The text content (words) must remain identical - only the typography/font style changes.`);
     }
     
     if (parentalAdvisory !== "none") {
