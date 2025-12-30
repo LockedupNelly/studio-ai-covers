@@ -45,13 +45,18 @@ Edit this album cover image with the following changes:
 
 ${instructions}
 
-CRITICAL TYPOGRAPHY GUIDELINES (if any text styling is requested):
-- FIRST: Carefully identify and READ all text currently visible on the cover (artist name, song title, any labels)
-- REMOVE/ERASE: Completely remove the existing lettering (inpaint it cleanly) so no remnants of the prior typography/effects remain
-- PRESERVE CONTENT: Keep the exact same words/text content (do NOT change what the text says)
-- RE-TYPESET: Recreate the text in the requested typography style precisely
-- If a style reference image is provided, match that style as closely as possible
-- Keep the text in the same general position/scale as before unless the style requires slight adjustment
+ABSOLUTELY CRITICAL - TEXT CONTENT RULES:
+1. NEVER ADD ANY NEW WORDS OR TEXT that is not already on the cover
+2. NEVER interpret style descriptions (like "chrome", "neon", "fire", etc.) as text to add - these are STYLE DESCRIPTORS ONLY
+3. The ONLY text on the final cover must be the EXACT words that were already on the original cover
+4. If the original says "HALF TIME SHOW" and "GRREGORY", the result MUST say ONLY "HALF TIME SHOW" and "GRREGORY" - nothing else
+
+TYPOGRAPHY WORKFLOW (if text styling is requested):
+- STEP 1: READ and identify ALL text currently visible on the cover (artist name, song title, any labels)
+- STEP 2: COMPLETELY ERASE/REMOVE the existing text (clean inpaint the background)
+- STEP 3: RE-CREATE the EXACT SAME WORDS in the new typography style
+- STEP 4: The style reference image shows the VISUAL STYLE to apply - NOT text content to copy
+- Keep text in the same general position/scale as the original
 
 GENERAL GUIDELINES:
 - Keep the same overall composition and layout
