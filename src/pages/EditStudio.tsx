@@ -288,6 +288,9 @@ const EditStudio = () => {
     return hasTextStyleChange && !hasVisualEdits;
   };
 
+  // Check if we have text metadata for text layer mode
+  const hasTextMetadata = !!(originalState.songTitle || originalState.artistName);
+
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
@@ -317,10 +320,14 @@ const EditStudio = () => {
       const hasTextStyleChange = !!(currentVariantId && currentVariantId !== currentState.textStyleVariantId);
       const textOnlyEdit = isTextOnlyEdit(hasTextStyleChange, !!mainColor);
       
+      // Only use text layer mode if we have text metadata AND it's a text-only edit
+      const useTextLayerMode = textOnlyEdit && hasTextMetadata && user;
+      
       let finalImageUrl: string;
       
-      if (textOnlyEdit && user) {
+      if (useTextLayerMode) {
         // ===== NON-DESTRUCTIVE TEXT LAYER MODE =====
+        console.log("Using non-destructive text layer mode", { songTitle: originalState.songTitle, artistName: originalState.artistName });
         toast.info("Using non-destructive text layer mode");
         
         const stylePrompt = selectedVariant?.promptInstructions || 
