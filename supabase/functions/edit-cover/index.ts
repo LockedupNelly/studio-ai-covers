@@ -6,8 +6,53 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[EDIT-COVER] ${step}${detailsStr}`);
+};
+
+type ExtractedText = {
+  items: Array<{
+    text: string;
+    location?: "top" | "upper" | "center" | "lower" | "bottom";
+    approxSize?: "small" | "medium" | "large";
+    notes?: string;
+  }>;
+};
+
+const normalizeText = (s: string) => s.replace(/\s+/g, " ").trim();
+
+const tryParseExtractedText = (raw: string): ExtractedText => {
+  const trimmed = String(raw ?? "").trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Text extraction did not return JSON");
+  }
+  const jsonCandidate = trimmed.slice(start, end + 1);
+  const parsed = JSON.parse(jsonCandidate) as ExtractedText;
+  if (!parsed || !Array.isArray(parsed.items)) {
+    throw new Error("Text extraction JSON missing items[]");
+  }
+
+  const seen = new Set<string>();
+  const items = parsed.items
+    .map((it) => ({
+      ...it,
+      text: normalizeText(String((it as any)?.text ?? "")),
+      location: (it as any)?.location,
+      approxSize: (it as any)?.approxSize,
+      notes: typeof (it as any)?.notes === "string" ? String((it as any).notes).slice(0, 120) : undefined,
+    }))
+    .filter((it) => it.text.length > 0)
+    // Deduplicate to prevent "IS HERE" getting duplicated by the model
+    .filter((it) => {
+      const key = `${it.text.toLowerCase()}|${it.location ?? ""}|${it.approxSize ?? ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+  return { items };
 };
 
 serve(async (req) => {
@@ -124,13 +169,14 @@ serve(async (req) => {
       return outUrl;
     };
 
-    const hasTextReplace = typeof instructions === "string" && instructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
+    const hasTextReplace =
+      typeof instructions === "string" && instructions.includes("TEXT TYPOGRAPHY FULL REPLACE");
 
     // Stage 0: Extract the exact text from the CURRENT cover (so we never add/remove words)
     let extractedTextJson: string | null = null;
     if (hasTextReplace) {
       logStep("Extracting on-cover text (for exact re-typeset)");
-      const extractionPrompt = `Return ONLY valid JSON (no markdown) describing ALL text visible on this album cover.
+      const extractionPrompt = `Return ONLY valid JSON (no markdown, no code fences) describing ALL text visible on this album cover.
 
 Schema:
 {
@@ -147,14 +193,17 @@ Schema:
 Rules:
 - Include EVERY text element (title, artist, labels).
 - Do NOT invent new words.
-- If the cover contains only one text element, return one item.
+- Do NOT repeat the same phrase twice.
 - If a word is unclear, make your best guess but DO NOT add extra words.
 
-Now extract the text.`;
+Now extract the text. Output JSON ONLY.`;
 
-      extractedTextJson = await callLovableText(extractionPrompt, imageUrl);
+      const raw = await callLovableText(extractionPrompt, imageUrl);
+      const extracted = tryParseExtractedText(raw);
+      extractedTextJson = JSON.stringify(extracted);
       logStep("Text extraction complete", {
-        extractedTextJsonPreview: (extractedTextJson ?? "").slice(0, 200),
+        items: extracted.items.length,
+        preview: extracted.items.slice(0, 4),
       });
     }
 
@@ -180,7 +229,9 @@ Output the edited image.`;
       stage1ImageUrl = await callLovableImageEdit(stage1Prompt, imageUrl, null);
     } catch (e) {
       // If stage1 fails, fall back to one-pass edit to avoid breaking the flow.
-      logStep("Stage1 failed; falling back to single-pass", { error: e instanceof Error ? e.message : String(e) });
+      logStep("Stage1 failed; falling back to single-pass", {
+        error: e instanceof Error ? e.message : String(e),
+      });
       stage1ImageUrl = await callLovableImageEdit(
         `You are an expert album cover art editor. Follow these instructions EXACTLY.\n\nREQUESTED EDITS:\n${instructions}\n\nCRITICAL: Never add new words. If restyling text, fully replace it (erase then redraw).\n\nOutput the edited image.`,
         imageUrl,
@@ -200,21 +251,25 @@ INPUT IMAGE:
 
 STYLE REFERENCE (if provided):
 - The style reference image shows ONLY the VISUAL TYPOGRAPHY STYLE.
-- IGNORE any words in the style reference (e.g., "SONG TITLE"). Never copy that text.
+- IGNORE any words in the style reference (e.g., \"SONG TITLE\"). Never copy that text.
 
-EXACT TEXT TO PLACE (USE ONLY THIS):
+EXACT TEXT TO PLACE (USE ONLY THIS JSON):
 ${extractedTextJson}
 
 RULES (ABSOLUTE):
-- Place ONLY the text contained in the JSON above. No extra words.
+- Place ONLY the text contained in the JSON above, exactly once per item.
 - Preserve exact spelling.
 - Use the requested typography style (from reference / instruction context).
 - Position text to match the original cover layout as closely as possible based on the location hints.
-- If the JSON contains multiple items, render each item separately.
+- DO NOT change the background artwork, lighting, subject, or composition at all — ONLY add the text.
 
 Now add the text onto the cover with the requested style.`;
 
-          return await callLovableImageEdit(stage2Prompt, stage1ImageUrl, styleReferenceImageUrl ?? null);
+          return await callLovableImageEdit(
+            stage2Prompt,
+            stage1ImageUrl,
+            styleReferenceImageUrl ?? null
+          );
         })()
       : stage1ImageUrl;
 
