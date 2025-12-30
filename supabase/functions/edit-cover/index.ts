@@ -548,73 +548,168 @@ Apply the visual changes now and output the edited image.`;
       }
     }
 
+    // Function to re-typeset text using OpenAI gpt-image-1 (same model as generate-cover)
+    const retypesetTextWithOpenAI = async (
+      cleanImageUrl: string,
+      textData: string,
+      styleRefUrl: string | null,
+      analysis: any
+    ): Promise<string> => {
+      if (!OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY is not configured for text re-typesetting");
+      }
+
+      logStep("Using OpenAI gpt-image-1 for text re-typesetting (same as generate-cover)");
+
+      // Parse the text data to get song title and artist
+      let titleText = "";
+      let artistText = "";
+      try {
+        const parsed = JSON.parse(textData);
+        if (parsed.items && Array.isArray(parsed.items)) {
+          for (const item of parsed.items) {
+            if (item.approxSize === "large" || item.location === "center") {
+              titleText = item.text;
+            } else if (item.approxSize === "medium" || item.location === "lower") {
+              artistText = item.text;
+            }
+          }
+          // Fallback: first item is title, second is artist
+          if (!titleText && parsed.items[0]) titleText = parsed.items[0].text;
+          if (!artistText && parsed.items[1]) artistText = parsed.items[1].text;
+        }
+      } catch (e) {
+        logStep("Failed to parse text data", { error: e instanceof Error ? e.message : String(e) });
+      }
+
+      // Get style guidance from the style reference if available
+      let styleDescription = "Modern, bold typography with artistic effects";
+      if (effectiveInstructions && effectiveInstructions.includes("TYPOGRAPHY STYLE:")) {
+        const styleMatch = effectiveInstructions.match(/TYPOGRAPHY STYLE:\s*([^\n]+)/);
+        if (styleMatch) {
+          styleDescription = styleMatch[1].trim();
+        }
+      }
+
+      // Build placement guidance from cover analysis
+      const placementGuidance = analysis?.safeTextZones?.length
+        ? `Position text in these areas: ${analysis.safeTextZones.join(', ')}. Avoid: ${analysis.avoidZones?.join(', ') || 'center subjects'}.`
+        : "Position title prominently, artist name smaller below or near title.";
+
+      const colorGuidance = analysis?.dominantColors?.length
+        ? `Use colors that complement the cover's palette: ${analysis.dominantColors.join(', ')}. The text should feel integrated with the artwork.`
+        : "Use colors sampled from the artwork for text. Make text feel designed-into the cover.";
+
+      // Use the SAME strict prompt structure as generate-cover
+      const retypesetPrompt = `You are adding typography to an album cover artwork. The base artwork is text-free.
+
+CRITICAL TEXT CONTENT (SPELL EXACTLY AS SHOWN - EACH LETTER MUST BE CORRECT):
+${titleText ? `- Song Title: "${titleText}" - This is the PRIMARY text, display it LARGE and PROMINENT` : ''}
+${artistText ? `- Artist Name: "${artistText}" - This is SECONDARY text, display it SMALLER, below or near the title` : ''}
+
+CRITICAL SPELLING RULES (FROM GENERATE-COVER - PROVEN TO WORK):
+${titleText ? `- The song title is "${titleText}" - spell each letter EXACTLY as shown above` : ''}
+${artistText ? `- The artist name is "${artistText}" - spell each letter EXACTLY as shown above` : ''}
+- Double-check EVERY letter before finalizing
+- Do NOT substitute similar-looking characters
+- Do NOT add, remove, or change ANY letters
+- If the title is "${titleText}", it must appear EXACTLY as "${titleText}" - not "${titleText?.split('').reverse().join('')}" or any variation
+
+TYPOGRAPHY STYLE:
+${styleDescription}
+${styleRefUrl ? '- Match the visual style shown in the style reference image (font effects, textures, treatments)' : ''}
+${styleRefUrl ? '- IGNORE any placeholder text in the style reference - only copy the VISUAL STYLE' : ''}
+
+TEXT PLACEMENT:
+${placementGuidance}
+
+COLOR INTEGRATION:
+${colorGuidance}
+
+FINAL REQUIREMENTS:
+1. The text "${titleText}" must be spelled EXACTLY as "${titleText}" - character for character
+2. The text "${artistText}" must be spelled EXACTLY as "${artistText}" - character for character
+3. Apply the typography style with professional effects (shadows, glows, gradients as appropriate)
+4. Integrate the text naturally into the artwork
+5. Do NOT modify the background artwork - ONLY add the text overlay
+6. Output a high-quality 1024x1024 album cover`;
+
+      logStep("Calling OpenAI gpt-image-1 with strict spelling rules", { 
+        titleText, 
+        artistText,
+        promptLength: retypesetPrompt.length 
+      });
+
+      const response = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: await (async () => {
+          // Fetch the clean image and convert to blob
+          const imageResponse = await fetch(cleanImageUrl);
+          const imageBlob = await imageResponse.blob();
+          
+          const formData = new FormData();
+          formData.append("model", "gpt-image-1");
+          formData.append("image", imageBlob, "cover.png");
+          formData.append("prompt", retypesetPrompt);
+          formData.append("size", "1024x1024");
+          formData.append("quality", "high");
+          
+          return formData;
+        })(),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logStep("OpenAI gpt-image-1 edit failed", { status: response.status, error: errorText });
+        throw new Error(`OpenAI image edit failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const resultB64 = data.data?.[0]?.b64_json;
+      
+      if (!resultB64) {
+        throw new Error("No image returned from OpenAI gpt-image-1");
+      }
+
+      // Upload to Supabase storage
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const fileName = `edited-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+      const imageBuffer = Uint8Array.from(atob(resultB64), c => c.charCodeAt(0));
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("covers")
+        .upload(fileName, imageBuffer, {
+          contentType: "image/png",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        logStep("Upload failed", { error: uploadError.message });
+        throw new Error(`Failed to upload edited cover: ${uploadError.message}`);
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("covers")
+        .getPublicUrl(fileName);
+
+      logStep("Text re-typeset with OpenAI gpt-image-1 complete", { url: publicUrlData.publicUrl });
+      return publicUrlData.publicUrl;
+    };
+
     const finalImageUrl = hasTextReplace
-      ? await (async () => {
-          logStep("Stage 2: Re-typesetting text with selected style and color integration");
-
-          const colorIntegrationRules = coverAnalysis?.dominantColors?.length
-            ? `COLOR INTEGRATION (MANDATORY - USE COVER'S COLOR PALETTE):
-The cover's dominant colors are: ${coverAnalysis.dominantColors.join(', ')}
-You MUST use these colors (or harmonious tones derived from them) for the text.
-The text should feel like it BELONGS in this artwork - use the cover's own colors.
-DO NOT use plain white, silver, grey, or colors that don't exist in the cover.
-Choose the most impactful color from the palette for the main text.`
-            : `COLOR INTEGRATION:
-Sample the dominant colors from the cover image and use them for the text.
-Avoid plain white or generic colors - use colors that exist in the artwork.`;
-
-          const placementRules = coverAnalysis?.safeTextZones?.length || coverAnalysis?.avoidZones?.length
-            ? `SMART TEXT PLACEMENT (MANDATORY):
-Subject is located: ${coverAnalysis?.subjectPosition || 'center'}
-SAFE zones for text: ${coverAnalysis?.safeTextZones?.join(', ') || 'lower-third'}
-AVOID placing text over: ${coverAnalysis?.avoidZones?.join(', ') || 'center subjects'}
-
-Position the song title in a SAFE zone. Do NOT obscure the main subject or important visual elements.`
-            : `TEXT PLACEMENT:
-Position text in the lower-third or edges of the image.
-Avoid covering faces or the main focal point of the artwork.`;
-
-          const stage2Prompt = `You are an expert typography compositor for album covers.
-
-INPUT IMAGE:
-- This image is now TEXT-FREE (all text was erased in Stage 1).
-- You need to ADD fresh typography onto it.
-
-STYLE REFERENCE (if provided):
-- The style reference image shows the VISUAL TYPOGRAPHY STYLE you should use.
-- IMPORTANT: IGNORE any placeholder words in the style reference (like "SONG TITLE" or "ARTIST"). 
-- Copy ONLY the visual style (font, effects, texture) NOT the words.
-
-${colorIntegrationRules}
-
-${placementRules}
-
-EXACT TEXT TO PLACE (from the original cover):
-${extractedTextJson}
-
-RULES (ABSOLUTE - FOLLOW EXACTLY):
-1. Place ONLY the text from the JSON above - no other words
-2. Preserve exact spelling from the JSON
-3. Apply the typography style from the style reference
-4. Use colors from the cover's palette (see COLOR INTEGRATION above)
-5. Position text in SAFE zones only (see SMART TEXT PLACEMENT above)
-6. Do NOT modify the background artwork at all - ONLY add the text overlay
-7. The text must feel designed-into the cover, not overlaid
-
-QUALITY PRESERVATION (MANDATORY):
-- Maintain the FULL RESOLUTION and DETAIL of the original image
-- Do NOT reduce image quality, add blur, artifacts, or lose fine details
-- The output must be as CRISP and HIGH-QUALITY as the input
-- Preserve sharp edges, textures, and micro-details from the original
-
-Add the text now with the requested typography style, integrated colors, and smart placement.`;
-
-          return await callLovableImageEdit(
-            stage2Prompt,
-            currentImageUrl,
-            effectiveStyleRefUrl ?? null
-          );
-        })()
+      ? await retypesetTextWithOpenAI(
+          currentImageUrl,
+          extractedTextJson || "{}",
+          effectiveStyleRefUrl ?? null,
+          coverAnalysis
+        )
       : currentImageUrl;
 
     clearTimeout(timeout);
