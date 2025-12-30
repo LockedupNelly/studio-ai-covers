@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -161,17 +161,19 @@ const EditStudio = () => {
     }
     
     if (mainColor) {
-      instructions.push(`Make the main/dominant color ${getColorValue(mainColor)}`);
+      // Be specific: only change text color, not the entire image
+      instructions.push(`Change the color of ALL text and typography on the cover to ${getColorValue(mainColor)}. Keep the background imagery and artwork colors the same.`);
     }
     
     if (accentColor) {
-      instructions.push(`Add ${getColorValue(accentColor)} as an accent color`);
+      instructions.push(`Add subtle ${getColorValue(accentColor)} accent highlights to smaller text elements or decorative details`);
     }
     
     if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
-      instructions.push(`CRITICAL: Remove all existing text from the cover and replace it with new text styled in a ${textStyle} ${selectedVariant.name} typography style. The new text should maintain the same content (artist name, song/album title) but with completely different font styling. Use ${selectedVariant.description || selectedVariant.name} typography characteristics.`);
+      // Simplified text style instruction - avoid "remove" language
+      instructions.push(`Restyle the existing text typography to have a ${textStyle} ${selectedVariant.name} appearance. Apply ${selectedVariant.description || selectedVariant.name} font characteristics while keeping the same words visible.`);
     } else if (textStyle && textStyle !== currentState.textStyle) {
-      instructions.push(`CRITICAL: Remove all existing text from the cover and replace it with new text styled in a ${textStyle} typography style. The new text should maintain the same content (artist name, song/album title) but with completely different font styling.`);
+      instructions.push(`Restyle the existing text typography to have a ${textStyle} appearance while keeping the same words visible.`);
     }
     
     if (parentalAdvisory !== "none") {
@@ -202,24 +204,8 @@ const EditStudio = () => {
     return instructions.join(". ");
   };
   
-  const saveEditedCover = async (newImageUrl: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      await supabase.functions.invoke("save-generation", {
-        body: {
-          prompt: originalState.prompt + " [Edited]",
-          genre: originalState.genre,
-          style: style,
-          mood: mood,
-          imageUrl: newImageUrl,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to save edited cover:", error);
-    }
-  };
+  // Removed - we don't save every edit to Previous Generations anymore
+  // Edits are tracked in the local editHistory state instead
   
   const deductCredit = async () => {
     if (hasUnlimitedGenerations) return true;
@@ -297,9 +283,6 @@ const EditStudio = () => {
           textStyle: textStyle || currentState.textStyle,
         });
         
-        // Save to profile
-        await saveEditedCover(data.imageUrl);
-        
         // Reset single-use options
         setMainColor("");
         setAccentColor("");
@@ -354,12 +337,21 @@ const EditStudio = () => {
     toast.info("Reverted to original");
   };
   
-  const handleRevertToEdited = () => {
-    if (editHistory.length > 1) {
-      const lastEditedIndex = editHistory.length - 1;
-      setImageUrl(editHistory[lastEditedIndex]);
-      setHistoryIndex(lastEditedIndex);
-      toast.info("Restored last edited version");
+  const handlePrevVersion = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setImageUrl(editHistory[newIndex]);
+      toast.info(newIndex === 0 ? "Viewing original" : `Viewing Edit ${newIndex}`);
+    }
+  };
+  
+  const handleNextVersion = () => {
+    if (historyIndex < editHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setImageUrl(editHistory[newIndex]);
+      toast.info(`Viewing Edit ${newIndex}`);
     }
   };
   
@@ -379,8 +371,10 @@ const EditStudio = () => {
     parentalAdvisory !== "none" || texture !== "none" || lighting !== "none" || 
     customInstructions.trim();
   
-  const canRevertToEdited = editHistory.length > 1 && historyIndex === 0;
+  const canGoPrev = historyIndex > 0;
+  const canGoNext = historyIndex < editHistory.length - 1;
   const isAtOriginal = historyIndex === 0;
+  const totalVersions = editHistory.length;
   
   if (loading) {
     return (
@@ -485,30 +479,47 @@ const EditStudio = () => {
                   </Button>
                 </div>
                 
-                {/* Revert buttons */}
-                <div className="flex gap-2">
+                {/* Version Navigation */}
+                {totalVersions > 1 && (
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      onClick={handlePrevVersion}
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground gap-1"
+                      disabled={isEditing || !canGoPrev}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-3">
+                      {isAtOriginal ? "Original" : `Edit ${historyIndex}`} / {totalVersions - 1} {totalVersions - 1 === 1 ? "edit" : "edits"}
+                    </span>
+                    <Button
+                      onClick={handleNextVersion}
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground gap-1"
+                      disabled={isEditing || !canGoNext}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Revert to original button */}
+                <div className="flex justify-center">
                   <Button
                     onClick={handleRevertToOriginal}
                     variant="ghost"
                     size="sm"
-                    className="flex-1 text-muted-foreground gap-1"
+                    className="text-muted-foreground gap-1"
                     disabled={isEditing || isAtOriginal}
                   >
                     <RotateCcw className="w-3 h-3" />
                     Revert to Original
                   </Button>
-                  {canRevertToEdited && (
-                    <Button
-                      onClick={handleRevertToEdited}
-                      variant="ghost"
-                      size="sm"
-                      className="flex-1 text-muted-foreground gap-1"
-                      disabled={isEditing}
-                    >
-                      <History className="w-3 h-3" />
-                      Restore Edited
-                    </Button>
-                  )}
                 </div>
               </div>
               
