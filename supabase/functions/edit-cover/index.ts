@@ -235,71 +235,106 @@ Now extract the text. Output JSON ONLY.`;
       }
     }
 
-    // Stage 1: Apply ALL requested edits, but ALWAYS remove existing typography completely when text restyle is requested.
-    const stage1Prompt = `You are an expert album cover art editor. Follow instructions EXACTLY.
+    // Separate visual instructions from text instructions for multi-stage processing
+    const hasVisualChanges = typeof instructions === "string" && (
+      instructions.includes("Visual Style:") ||
+      instructions.includes("Mood:") ||
+      instructions.includes("Lighting:") ||
+      instructions.includes("Texture:") ||
+      instructions.includes("Colors:")
+    );
 
-REQUESTED EDITS:
-${instructions}
+    let currentImageUrl = imageUrl;
 
-=== UNIVERSAL TYPOGRAPHY RULE (MANDATORY) ===
-If any text style change is requested, you MUST:
-1) COMPLETELY ERASE/INPAINT ALL existing text so none of the old typography, shine, embossing, glow, or effects remain.
-2) Leave the cover with NO TEXT at all after this stage.
+    // ===== STAGE 1A: DEDICATED TEXT ERASURE (only when text restyle is requested) =====
+    if (hasTextReplace) {
+      logStep("Stage 1A: Dedicated text erasure");
+      
+      const erasePrompt = `You are an image inpainting specialist. Your ONLY task is to COMPLETELY REMOVE ALL TEXT from this album cover.
 
-=== GENERAL ===
-- Apply non-text edits (visual style, mood, lighting, textures, etc.) to the whole artwork as requested.
-- Keep overall composition.
+CRITICAL INSTRUCTIONS:
+- ERASE every single letter, word, number, and character from the image
+- Use context-aware inpainting to seamlessly fill where text was with appropriate background content (extend the sky, texture, artwork, etc.)
+- The result MUST have ZERO visible text, typography, lettering, or characters remaining
+- Do NOT add any new text whatsoever
+- Do NOT change the artwork style, colors, mood, or composition - ONLY remove text
+- The output should look like a completely textless version of the original album art
 
-Output the edited image.`;
+Remove ALL text now and output the cleaned, text-free image.`;
 
-    let stage1ImageUrl: string;
-    try {
-      stage1ImageUrl = await callLovableImageEdit(stage1Prompt, imageUrl, null);
-    } catch (e) {
-      // If stage1 fails, fall back to one-pass edit to avoid breaking the flow.
-      logStep("Stage1 failed; falling back to single-pass", {
-        error: e instanceof Error ? e.message : String(e),
-      });
-      stage1ImageUrl = await callLovableImageEdit(
-        `You are an expert album cover art editor. Follow these instructions EXACTLY.\n\nREQUESTED EDITS:\n${instructions}\n\nCRITICAL: Never add new words. If restyling text, fully replace it (erase then redraw).\n\nOutput the edited image.`,
-        imageUrl,
-        styleReferenceImageUrl ?? null
-      );
+      try {
+        currentImageUrl = await callLovableImageEdit(erasePrompt, currentImageUrl, null);
+        logStep("Stage 1A complete: Text erased");
+      } catch (e) {
+        logStep("Stage 1A failed", { error: e instanceof Error ? e.message : String(e) });
+        throw new Error("Failed to erase text from cover");
+      }
     }
 
-    // Stage 2: If text restyle requested, re-typeset ONLY the extracted words in the selected style.
+    // ===== STAGE 1B: VISUAL STYLE CHANGES (only if requested, applied to text-free image) =====
+    if (hasVisualChanges) {
+      logStep("Stage 1B: Applying visual style changes");
+      
+      // Build visual-only instructions (exclude text-related parts)
+      const visualPrompt = `You are an expert album cover art editor. Apply the following visual changes to this artwork.
+
+REQUESTED VISUAL EDITS:
+${instructions}
+
+CRITICAL RULES:
+- Apply the visual style, mood, lighting, texture, and color changes as requested
+- Do NOT add any text or typography to the image
+- Keep the image completely text-free
+- Maintain the overall composition while applying the requested visual changes
+
+Apply the visual changes now and output the edited image.`;
+
+      try {
+        currentImageUrl = await callLovableImageEdit(visualPrompt, currentImageUrl, null);
+        logStep("Stage 1B complete: Visual changes applied");
+      } catch (e) {
+        logStep("Stage 1B failed; continuing with current image", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        // Continue with current image if visual changes fail
+      }
+    }
+
+    // ===== STAGE 2: RE-TYPESET TEXT (only when text restyle was requested) =====
     const finalImageUrl = hasTextReplace
       ? await (async () => {
-          logStep("Stage2: re-typesetting text with exact extracted words");
+          logStep("Stage 2: Re-typesetting text with selected style");
 
           const stage2Prompt = `You are an expert typography compositor for album covers.
 
 INPUT IMAGE:
-- This image should currently have NO TEXT (text was erased in Stage 1).
+- This image is now TEXT-FREE (all text was erased in Stage 1).
+- You need to ADD fresh typography onto it.
 
 STYLE REFERENCE (if provided):
-- The style reference image shows ONLY the VISUAL TYPOGRAPHY STYLE.
-- IGNORE any words in the style reference (e.g., \"SONG TITLE\"). Never copy that text.
+- The style reference image shows the VISUAL TYPOGRAPHY STYLE you should use.
+- IMPORTANT: IGNORE any placeholder words in the style reference (like "SONG TITLE" or "ARTIST"). 
+- Copy ONLY the visual style (font, effects, colors, texture) NOT the words.
 
-EXACT TEXT TO PLACE (USE ONLY THIS JSON):
+EXACT TEXT TO PLACE (from the original cover):
 ${extractedTextJson}
 
-RULES (ABSOLUTE):
-- Place ONLY the text contained in the JSON above, exactly once per item.
-- Preserve exact spelling.
-- Use the requested typography style (from reference / instruction context).
-- Position text to match the original cover layout as closely as possible based on the location hints.
-- DO NOT change the background artwork, lighting, subject, or composition at all — ONLY add the text.
+RULES (ABSOLUTE - FOLLOW EXACTLY):
+1. Place ONLY the text from the JSON above - no other words
+2. Preserve exact spelling from the JSON
+3. Apply the typography style from the style reference
+4. Position: song title in upper/center area (large), artist name in lower area (medium)
+5. Do NOT modify the background artwork at all - ONLY add the text overlay
 
-Now add the text onto the cover with the requested style.`;
+Add the text now with the requested typography style.`;
 
           return await callLovableImageEdit(
             stage2Prompt,
-            stage1ImageUrl,
+            currentImageUrl,
             styleReferenceImageUrl ?? null
           );
         })()
-      : stage1ImageUrl;
+      : currentImageUrl;
 
     logStep("Cover edited successfully");
 
