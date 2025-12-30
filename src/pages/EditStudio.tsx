@@ -172,9 +172,21 @@ const EditStudio = () => {
     if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
       // Use the detailed promptInstructions from the variant for accurate styling
       const stylePrompt = selectedVariant.promptInstructions || selectedVariant.description || `${textStyle} ${selectedVariant.name} style`;
-      instructions.push(`TEXT TYPOGRAPHY TRANSFORMATION: First, carefully READ and identify the exact text/words currently shown on the album cover (artist name, song title, any other text). Then REPLACE the existing text typography with this EXACT style while keeping the same words: ${stylePrompt}. The text content (words) must remain identical - only the typography/font style changes.`);
+      const colorRule = mainColor
+        ? `Use the explicitly requested text color (${getColorValue(mainColor)}).`
+        : "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
+
+      instructions.push(
+        `TEXT TYPOGRAPHY FULL REPLACE: First, carefully READ and identify the exact words currently shown on the album cover (artist name, song title, any other text). Then ERASE/INPAINT the existing lettering so none of the previous typography/effects remain. Then re-typeset the SAME words in this EXACT typography style: ${stylePrompt}. ${colorRule} Do not blend the old style with the new style—replace it completely.`
+      );
     } else if (textStyle && textStyle !== currentState.textStyle) {
-      instructions.push(`TEXT TYPOGRAPHY TRANSFORMATION: First, carefully READ and identify the exact text/words currently shown on the album cover. Then REPLACE the existing text typography with a ${textStyle} style while keeping the same words. The text content (words) must remain identical - only the typography/font style changes.`);
+      const colorRule = mainColor
+        ? `Use the explicitly requested text color (${getColorValue(mainColor)}).`
+        : "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
+
+      instructions.push(
+        `TEXT TYPOGRAPHY FULL REPLACE: First, carefully READ and identify the exact words currently shown on the album cover. Then ERASE/INPAINT the existing lettering so none of the previous typography/effects remain. Then re-typeset the SAME words in a ${textStyle} typography style. ${colorRule} Do not blend the old style with the new style—replace it completely.`
+      );
     }
     
     if (parentalAdvisory !== "none") {
@@ -256,10 +268,16 @@ const EditStudio = () => {
     }, 500);
     
     try {
+      const styleReferenceImageUrl =
+        textStyle && selectedVariant && textStyle !== currentState.textStyle
+          ? new URL(selectedVariant.previewImage, window.location.origin).toString()
+          : null;
+
       const { data, error } = await supabase.functions.invoke("edit-cover", {
         body: {
           imageUrl: imageUrl,
           instructions: instructions,
+          styleReferenceImageUrl,
         },
       });
       

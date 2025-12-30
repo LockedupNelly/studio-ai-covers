@@ -16,11 +16,12 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, instructions } = await req.json();
-    logStep("Request received", { 
-      instructions: instructions?.slice(0, 100), 
+    const { imageUrl, instructions, styleReferenceImageUrl } = await req.json();
+    logStep("Request received", {
+      instructions: instructions?.slice(0, 100),
       hasImage: !!imageUrl,
-      imageUrlPrefix: imageUrl?.slice(0, 50)
+      hasStyleRef: !!styleReferenceImageUrl,
+      imageUrlPrefix: imageUrl?.slice(0, 50),
     });
 
     if (!imageUrl || !instructions) {
@@ -38,16 +39,19 @@ serve(async (req) => {
     logStep("Editing cover art with Lovable AI (image edit mode)");
 
     // Build a comprehensive prompt for accurate album cover editing
-    const editPrompt = `You are an expert album cover art editor specializing in typography and visual effects. Edit this album cover image with the following changes:
+    const editPrompt = `You are an expert album cover art editor specializing in typography and visual effects.
+
+Edit this album cover image with the following changes:
 
 ${instructions}
 
-CRITICAL TYPOGRAPHY GUIDELINES (if text styling is requested):
+CRITICAL TYPOGRAPHY GUIDELINES (if any text styling is requested):
 - FIRST: Carefully identify and READ all text currently visible on the cover (artist name, song title, any labels)
-- PRESERVE: Keep the exact same words/text content - do NOT change what the text says
-- TRANSFORM: Apply the new typography style PRECISELY as described to the existing text
-- The typography style description is DETAILED and SPECIFIC - follow it exactly
-- The new text should be in the same general position as the original text
+- REMOVE/ERASE: Completely remove the existing lettering (inpaint it cleanly) so no remnants of the prior typography/effects remain
+- PRESERVE CONTENT: Keep the exact same words/text content (do NOT change what the text says)
+- RE-TYPESET: Recreate the text in the requested typography style precisely
+- If a style reference image is provided, match that style as closely as possible
+- Keep the text in the same general position/scale as before unless the style requires slight adjustment
 
 GENERAL GUIDELINES:
 - Keep the same overall composition and layout
@@ -79,18 +83,26 @@ Generate the edited version of this image now.`;
               content: [
                 {
                   type: "text",
-                  text: editPrompt
+                  text: editPrompt,
                 },
+                ...(styleReferenceImageUrl
+                  ? [
+                      {
+                        type: "image_url",
+                        image_url: { url: styleReferenceImageUrl },
+                      },
+                    ]
+                  : []),
                 {
                   type: "image_url",
                   image_url: {
-                    url: imageUrl
-                  }
-                }
-              ]
-            }
+                    url: imageUrl,
+                  },
+                },
+              ],
+            },
           ],
-          modalities: ["image", "text"]
+          modalities: ["image", "text"],
         }),
         signal: controller.signal,
       });
