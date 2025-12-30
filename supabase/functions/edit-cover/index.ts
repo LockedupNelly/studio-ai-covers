@@ -548,25 +548,16 @@ Apply the visual changes now and output the edited image.`;
       }
     }
 
-    // Function to re-typeset text using OpenAI gpt-image-1 (same model as generate-cover)
-    const retypesetTextWithOpenAI = async (
-      cleanImageUrl: string,
-      textData: string,
-      styleRefUrl: string | null,
-      analysis: any,
-      fullStylePrompt: string | null // Pass the FULL detailed style prompt directly
-    ): Promise<string> => {
-      if (!OPENAI_API_KEY) {
-        throw new Error("OPENAI_API_KEY is not configured for text re-typesetting");
-      }
-
-      logStep("Using OpenAI gpt-image-1 for text re-typesetting (same as generate-cover)");
+    // Stage 2: Re-typeset text using Gemini (callLovableImageEdit) - PRESERVES ARTWORK
+    // This approach was working correctly for artwork preservation
+    if (hasTextReplace) {
+      logStep("Stage 2: Re-typesetting text with Gemini (artwork-preserving approach)");
 
       // Parse the text data to get song title and artist
       let titleText = "";
       let artistText = "";
       try {
-        const parsed = JSON.parse(textData);
+        const parsed = JSON.parse(extractedTextJson || "{}");
         if (parsed.items && Array.isArray(parsed.items)) {
           for (const item of parsed.items) {
             if (item.approxSize === "large" || item.location === "center") {
@@ -583,138 +574,90 @@ Apply the visual changes now and output the edited image.`;
         logStep("Failed to parse text data", { error: e instanceof Error ? e.message : String(e) });
       }
 
-      // Use the FULL detailed style prompt passed in, not a truncated version
+      // Get the full style prompt from typography if available
+      const fullStylePrompt = typography?.stylePrompt || null;
       const styleDescription = fullStylePrompt || "Modern, bold typography with artistic effects";
       
       logStep("Style description for re-typesetting", { 
+        titleText,
+        artistText,
         styleDescriptionLength: styleDescription.length,
         styleDescriptionPreview: styleDescription.slice(0, 200) 
       });
 
       // Build placement guidance from cover analysis
-      const placementGuidance = analysis?.safeTextZones?.length
-        ? `Position text in these areas: ${analysis.safeTextZones.join(', ')}. Avoid: ${analysis.avoidZones?.join(', ') || 'center subjects'}.`
+      const placementGuidance = coverAnalysis?.safeTextZones?.length
+        ? `Position text in these areas: ${coverAnalysis.safeTextZones.join(', ')}. Avoid: ${coverAnalysis.avoidZones?.join(', ') || 'center subjects'}.`
         : "Position title prominently, artist name smaller below or near title.";
 
-      const colorGuidance = analysis?.dominantColors?.length
-        ? `Use colors that complement the cover's palette: ${analysis.dominantColors.join(', ')}. The text should feel integrated with the artwork.`
+      const colorGuidance = coverAnalysis?.dominantColors?.length
+        ? `Use colors that complement the cover's palette: ${coverAnalysis.dominantColors.join(', ')}. The text should feel integrated with the artwork.`
         : "Use colors sampled from the artwork for text. Make text feel designed-into the cover.";
 
-      // Use the SAME strict prompt structure as generate-cover
-      const retypesetPrompt = `You are adding typography to an album cover artwork. The base artwork is text-free.
+      // CRITICAL: Use EDIT prompt that explicitly tells Gemini to preserve the artwork
+      const retypesetPrompt = `EDIT THIS ALBUM COVER - ADD TEXT ONLY:
 
-CRITICAL TEXT CONTENT (SPELL EXACTLY AS SHOWN - EACH LETTER MUST BE CORRECT):
-${titleText ? `- Song Title: "${titleText}" - This is the PRIMARY text, display it LARGE and PROMINENT` : ''}
-${artistText ? `- Artist Name: "${artistText}" - This is SECONDARY text, display it SMALLER, below or near the title` : ''}
+You are EDITING this existing album cover artwork by adding typography text on top.
+DO NOT modify, regenerate, or change the background artwork in ANY way.
+The artwork must remain EXACTLY as shown - you are ONLY adding text overlay.
 
-CRITICAL SPELLING RULES (FROM GENERATE-COVER - PROVEN TO WORK):
-${titleText ? `- The song title is "${titleText}" - spell each letter EXACTLY as shown above` : ''}
-${artistText ? `- The artist name is "${artistText}" - spell each letter EXACTLY as shown above` : ''}
+===== CRITICAL TEXT TO ADD (SPELL EXACTLY) =====
+${titleText ? `SONG TITLE: "${titleText}"
+- Spell it EXACTLY as: ${titleText.split('').join('-')}
+- This is the PRIMARY text - display it LARGE and PROMINENT` : ''}
+${artistText ? `
+ARTIST NAME: "${artistText}"  
+- Spell it EXACTLY as: ${artistText.split('').join('-')}
+- This is SECONDARY text - display it SMALLER, below or near the title` : ''}
+
+===== SPELLING VERIFICATION =====
+${titleText ? `- Title must read: "${titleText}" - EXACTLY ${titleText.length} characters` : ''}
+${artistText ? `- Artist must read: "${artistText}" - EXACTLY ${artistText.length} characters` : ''}
 - Double-check EVERY letter before finalizing
 - Do NOT substitute similar-looking characters
 - Do NOT add, remove, or change ANY letters
-- If the title is "${titleText}", it must appear EXACTLY as "${titleText}" - not "${titleText?.split('').reverse().join('')}" or any variation
 
-TYPOGRAPHY STYLE:
+===== TYPOGRAPHY STYLE =====
 ${styleDescription}
-${styleRefUrl ? '- Match the visual style shown in the style reference image (font effects, textures, treatments)' : ''}
-${styleRefUrl ? '- IGNORE any placeholder text in the style reference - only copy the VISUAL STYLE' : ''}
+${effectiveStyleRefUrl ? '- Match the visual style shown in the style reference image' : ''}
+${effectiveStyleRefUrl ? '- Copy ONLY the typography style, NOT any text content from the reference' : ''}
 
-TEXT PLACEMENT:
+===== TEXT PLACEMENT =====
 ${placementGuidance}
 
-COLOR INTEGRATION:
+===== COLOR INTEGRATION =====
 ${colorGuidance}
 
-FINAL REQUIREMENTS:
-1. The text "${titleText}" must be spelled EXACTLY as "${titleText}" - character for character
-2. The text "${artistText}" must be spelled EXACTLY as "${artistText}" - character for character
-3. Apply the typography style with professional effects (shadows, glows, gradients as appropriate)
-4. Integrate the text naturally into the artwork
-5. Do NOT modify the background artwork - ONLY add the text overlay
-6. Output a high-quality 1024x1024 album cover`;
+===== CRITICAL REQUIREMENTS =====
+1. PRESERVE the background artwork EXACTLY as shown - DO NOT regenerate or modify it
+2. ONLY add the text overlay on top of the existing artwork
+3. The text "${titleText}" must appear EXACTLY as written - verify each letter
+4. The text "${artistText}" must appear EXACTLY as written - verify each letter
+5. Apply the typography style with professional effects (shadows, glows, gradients)
+6. Make the text feel naturally integrated with the artwork's lighting and colors
 
-      logStep("Calling OpenAI gpt-image-1 with strict spelling rules", { 
+OUTPUT: The same album cover artwork with the styled text overlay added.`;
+
+      logStep("Calling Gemini for text re-typesetting (artwork-preserving)", { 
         titleText, 
         artistText,
         promptLength: retypesetPrompt.length 
       });
 
-      const response = await fetch("https://api.openai.com/v1/images/edits", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: await (async () => {
-          // Fetch the clean image and convert to blob
-          const imageResponse = await fetch(cleanImageUrl);
-          const imageBlob = await imageResponse.blob();
-          
-          const formData = new FormData();
-          formData.append("model", "gpt-image-1");
-          formData.append("image", imageBlob, "cover.png");
-          formData.append("prompt", retypesetPrompt);
-          formData.append("size", "1024x1024");
-          formData.append("quality", "high");
-          
-          return formData;
-        })(),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logStep("OpenAI gpt-image-1 edit failed", { status: response.status, error: errorText });
-        throw new Error(`OpenAI image edit failed: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const resultB64 = data.data?.[0]?.b64_json;
-      
-      if (!resultB64) {
-        throw new Error("No image returned from OpenAI gpt-image-1");
-      }
-
-      // Upload to Supabase storage
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const fileName = `edited-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-      const imageBuffer = Uint8Array.from(atob(resultB64), c => c.charCodeAt(0));
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("covers")
-        .upload(fileName, imageBuffer, {
-          contentType: "image/png",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        logStep("Upload failed", { error: uploadError.message });
-        throw new Error(`Failed to upload edited cover: ${uploadError.message}`);
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("covers")
-        .getPublicUrl(fileName);
-
-      logStep("Text re-typeset with OpenAI gpt-image-1 complete", { url: publicUrlData.publicUrl });
-      return publicUrlData.publicUrl;
-    };
-
-    // Get the full style prompt from typography if available
-    const fullStylePrompt = typography?.stylePrompt || null;
-    
-    const finalImageUrl = hasTextReplace
-      ? await retypesetTextWithOpenAI(
+      try {
+        currentImageUrl = await callLovableImageEdit(
+          retypesetPrompt,
           currentImageUrl,
-          extractedTextJson || "{}",
-          effectiveStyleRefUrl ?? null,
-          coverAnalysis,
-          fullStylePrompt
-        )
-      : currentImageUrl;
+          effectiveStyleRefUrl ?? null
+        );
+        logStep("Stage 2 complete: Text re-typeset with Gemini");
+      } catch (e) {
+        logStep("Stage 2 failed", { error: e instanceof Error ? e.message : String(e) });
+        throw new Error("Failed to add text to cover");
+      }
+    }
+
+    const finalImageUrl = currentImageUrl;
 
     clearTimeout(timeout);
     logStep("Cover edited successfully");
