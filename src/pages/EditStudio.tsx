@@ -5,13 +5,13 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -63,44 +63,56 @@ const textStyles = [
   { id: "retro", name: "Retro" },
 ];
 
-// Parental Advisory sticker options (placeholders)
+// Parental Advisory sticker options with colors
 const parentalAdvisoryOptions = [
-  { id: "none", name: "None", preview: null },
-  { id: "explicit-black", name: "Explicit (Black)", preview: "/stickers/pa-explicit-black.png" },
-  { id: "explicit-white", name: "Explicit (White)", preview: "/stickers/pa-explicit-white.png" },
-  { id: "clean", name: "Clean Version", preview: "/stickers/pa-clean.png" },
+  { id: "none", name: "None", color: "transparent", border: true },
+  { id: "explicit-black", name: "Explicit", color: "#000000", textColor: "#FFFFFF" },
+  { id: "explicit-white", name: "Explicit", color: "#FFFFFF", textColor: "#000000" },
+  { id: "clean", name: "Clean", color: "#333333", textColor: "#FFFFFF" },
 ];
 
-// Texture overlay options (placeholders)
+// Texture overlay options with gradient previews
 const textureOptions = [
-  { id: "none", name: "None", preview: null },
-  { id: "grain", name: "Film Grain", preview: "/textures/grain.png" },
-  { id: "vintage", name: "Vintage Paper", preview: "/textures/vintage.png" },
-  { id: "noise", name: "Noise", preview: "/textures/noise.png" },
-  { id: "scratches", name: "Scratches", preview: "/textures/scratches.png" },
+  { id: "none", name: "None", gradient: "transparent" },
+  { id: "grain", name: "Grain", gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
+  { id: "vintage", name: "Vintage", gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
+  { id: "noise", name: "Noise", gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
+  { id: "scratches", name: "Scratches", gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
 ];
 
-// Light leak options (placeholders)
-const lightLeakOptions = [
-  { id: "none", name: "None", preview: null },
-  { id: "warm", name: "Warm Glow", preview: "/lightleaks/warm.png" },
-  { id: "cool", name: "Cool Blue", preview: "/lightleaks/cool.png" },
-  { id: "rainbow", name: "Rainbow", preview: "/lightleaks/rainbow.png" },
-  { id: "sunset", name: "Sunset", preview: "/lightleaks/sunset.png" },
+// Light/Lighting options with gradient previews
+const lightingOptions = [
+  { id: "none", name: "None", gradient: "transparent" },
+  { id: "warm", name: "Warm", gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
+  { id: "cool", name: "Cool", gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
+  { id: "rainbow", name: "Rainbow", gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
+  { id: "sunset", name: "Sunset", gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
 ];
 
 const EditStudio = () => {
   const { user, loading } = useAuth();
+  const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
   
   // Get passed state from navigation
   const passedState = location.state as EditState | null;
   
-  const [imageUrl, setImageUrl] = useState<string>(passedState?.imageUrl || "");
-  const [originalImageUrl] = useState<string>(passedState?.imageUrl || "");
+  // Original values that came from generation
+  const [originalState] = useState({
+    imageUrl: passedState?.imageUrl || "",
+    style: passedState?.style || "None",
+    mood: passedState?.mood || "None",
+    textStyle: passedState?.textStyle || "",
+    genre: passedState?.genre || "",
+    prompt: passedState?.prompt || "",
+  });
   
-  // Editing options
+  // Current values (track what's been "applied")
+  const [currentState, setCurrentState] = useState({ ...originalState });
+  
+  // Working/pending values
+  const [imageUrl, setImageUrl] = useState<string>(passedState?.imageUrl || "");
   const [style, setStyle] = useState(passedState?.style || "None");
   const [mood, setMood] = useState(passedState?.mood || "None");
   const [textStyle, setTextStyle] = useState(passedState?.textStyle || "");
@@ -108,8 +120,12 @@ const EditStudio = () => {
   const [accentColor, setAccentColor] = useState("");
   const [parentalAdvisory, setParentalAdvisory] = useState("none");
   const [texture, setTexture] = useState("none");
-  const [lightLeak, setLightLeak] = useState("none");
+  const [lighting, setLighting] = useState("none");
   const [customInstructions, setCustomInstructions] = useState("");
+  
+  // Version history
+  const [editHistory, setEditHistory] = useState<string[]>([passedState?.imageUrl || ""]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   
   // Text style variant
   const [showVariantDialog, setShowVariantDialog] = useState(false);
@@ -119,7 +135,6 @@ const EditStudio = () => {
   // Progress state
   const [isEditing, setIsEditing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -137,11 +152,11 @@ const EditStudio = () => {
   const buildEditInstructions = () => {
     const instructions: string[] = [];
     
-    if (style && style !== "None") {
+    if (style && style !== "None" && style !== currentState.style) {
       instructions.push(`Change the visual style to ${style}`);
     }
     
-    if (mood && mood !== "None") {
+    if (mood && mood !== "None" && mood !== currentState.mood) {
       instructions.push(`Adjust the mood/vibe to feel more ${mood}`);
     }
     
@@ -153,30 +168,30 @@ const EditStudio = () => {
       instructions.push(`Add ${getColorValue(accentColor)} as an accent color`);
     }
     
-    if (textStyle && selectedVariant) {
-      instructions.push(`Restyle the text/typography to match a ${textStyle} ${selectedVariant.name} style`);
-    } else if (textStyle) {
-      instructions.push(`Restyle the text/typography to be more ${textStyle}`);
+    if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
+      instructions.push(`CRITICAL: Remove all existing text from the cover and replace it with new text styled in a ${textStyle} ${selectedVariant.name} typography style. The new text should maintain the same content (artist name, song/album title) but with completely different font styling. Use ${selectedVariant.description || selectedVariant.name} typography characteristics.`);
+    } else if (textStyle && textStyle !== currentState.textStyle) {
+      instructions.push(`CRITICAL: Remove all existing text from the cover and replace it with new text styled in a ${textStyle} typography style. The new text should maintain the same content (artist name, song/album title) but with completely different font styling.`);
     }
     
     if (parentalAdvisory !== "none") {
       const paOption = parentalAdvisoryOptions.find(p => p.id === parentalAdvisory);
       if (paOption) {
-        instructions.push(`Add a ${paOption.name} parental advisory sticker in the bottom corner`);
+        instructions.push(`Add a ${paOption.name} parental advisory sticker in the bottom-right corner of the cover`);
       }
     }
     
     if (texture !== "none") {
       const textureOption = textureOptions.find(t => t.id === texture);
       if (textureOption) {
-        instructions.push(`Apply a ${textureOption.name} texture overlay to the entire image`);
+        instructions.push(`Apply a subtle ${textureOption.name} texture overlay across the entire image`);
       }
     }
     
-    if (lightLeak !== "none") {
-      const lightLeakOption = lightLeakOptions.find(l => l.id === lightLeak);
-      if (lightLeakOption) {
-        instructions.push(`Add a ${lightLeakOption.name} light leak effect`);
+    if (lighting !== "none") {
+      const lightingOption = lightingOptions.find(l => l.id === lighting);
+      if (lightingOption) {
+        instructions.push(`Add a ${lightingOption.name} lighting effect / light leak to enhance the atmosphere`);
       }
     }
     
@@ -187,6 +202,49 @@ const EditStudio = () => {
     return instructions.join(". ");
   };
   
+  const saveEditedCover = async (newImageUrl: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      await supabase.functions.invoke("save-generation", {
+        body: {
+          prompt: originalState.prompt + " [Edited]",
+          genre: originalState.genre,
+          style: style,
+          mood: mood,
+          imageUrl: newImageUrl,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to save edited cover:", error);
+    }
+  };
+  
+  const deductCredit = async () => {
+    if (hasUnlimitedGenerations) return true;
+    
+    if (credits === null || credits < 1) {
+      toast.error("Insufficient credits", { description: "You need 1 credit to apply edits" });
+      return false;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("user_credits")
+        .update({ credits: credits - 1 })
+        .eq("user_id", user?.id);
+      
+      if (error) throw error;
+      refetchCredits();
+      return true;
+    } catch (error) {
+      console.error("Failed to deduct credit:", error);
+      toast.error("Failed to process credit");
+      return false;
+    }
+  };
+  
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
@@ -194,6 +252,10 @@ const EditStudio = () => {
       toast.error("No changes selected", { description: "Please select at least one edit to apply" });
       return;
     }
+    
+    // Check and deduct credit first
+    const creditOk = await deductCredit();
+    if (!creditOk) return;
     
     setIsEditing(true);
     setProgress(0);
@@ -209,7 +271,7 @@ const EditStudio = () => {
     try {
       const { data, error } = await supabase.functions.invoke("edit-cover", {
         body: {
-          imageUrl: originalImageUrl,
+          imageUrl: imageUrl,
           instructions: instructions,
         },
       });
@@ -218,14 +280,42 @@ const EditStudio = () => {
       
       if (data?.imageUrl) {
         setProgress(100);
-        setEditedImageUrl(data.imageUrl);
+        
+        // Update history
+        const newHistory = [...editHistory.slice(0, historyIndex + 1), data.imageUrl];
+        setEditHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+        
         setImageUrl(data.imageUrl);
-        toast.success("Edits applied!", { description: "Your cover has been updated" });
+        
+        // Update current state to reflect what was applied
+        setCurrentState({
+          ...currentState,
+          imageUrl: data.imageUrl,
+          style: style !== "None" ? style : currentState.style,
+          mood: mood !== "None" ? mood : currentState.mood,
+          textStyle: textStyle || currentState.textStyle,
+        });
+        
+        // Save to profile
+        await saveEditedCover(data.imageUrl);
+        
+        // Reset single-use options
+        setMainColor("");
+        setAccentColor("");
+        setParentalAdvisory("none");
+        setTexture("none");
+        setLighting("none");
+        setCustomInstructions("");
+        
+        toast.success("Edits applied!", { description: "Your cover has been updated and saved" });
       } else {
         throw new Error("No image returned from edit");
       }
     } catch (error) {
       console.error("Edit error:", error);
+      // Refund credit on failure
+      refetchCredits();
       toast.error("Edit failed", { 
         description: error instanceof Error ? error.message : "Could not apply edits" 
       });
@@ -236,11 +326,10 @@ const EditStudio = () => {
   };
   
   const handleDownload = async () => {
-    const downloadUrl = editedImageUrl || imageUrl;
-    if (!downloadUrl) return;
+    if (!imageUrl) return;
     
     try {
-      const res = await fetch(downloadUrl);
+      const res = await fetch(imageUrl);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -256,19 +345,22 @@ const EditStudio = () => {
     }
   };
   
-  const handleReset = () => {
-    setStyle("None");
-    setMood("None");
-    setTextStyle("");
-    setMainColor("");
-    setAccentColor("");
-    setParentalAdvisory("none");
-    setTexture("none");
-    setLightLeak("none");
-    setCustomInstructions("");
-    setSelectedVariant(null);
-    setImageUrl(originalImageUrl);
-    setEditedImageUrl(null);
+  const handleRevertToOriginal = () => {
+    setImageUrl(originalState.imageUrl);
+    setStyle(originalState.style);
+    setMood(originalState.mood);
+    setTextStyle(originalState.textStyle);
+    setHistoryIndex(0);
+    toast.info("Reverted to original");
+  };
+  
+  const handleRevertToEdited = () => {
+    if (editHistory.length > 1) {
+      const lastEditedIndex = editHistory.length - 1;
+      setImageUrl(editHistory[lastEditedIndex]);
+      setHistoryIndex(lastEditedIndex);
+      toast.info("Restored last edited version");
+    }
   };
   
   const handleVariantSelect = (variant: TextStyleVariant) => {
@@ -280,8 +372,15 @@ const EditStudio = () => {
     setPendingStyleId(null);
   };
   
-  const hasChanges = style !== "None" || mood !== "None" || textStyle || mainColor || accentColor || 
-    parentalAdvisory !== "none" || texture !== "none" || lightLeak !== "none" || customInstructions.trim();
+  const hasChanges = (style !== currentState.style && style !== "None") || 
+    (mood !== currentState.mood && mood !== "None") || 
+    (textStyle && textStyle !== currentState.textStyle) || 
+    mainColor || accentColor || 
+    parentalAdvisory !== "none" || texture !== "none" || lighting !== "none" || 
+    customInstructions.trim();
+  
+  const canRevertToEdited = editHistory.length > 1 && historyIndex === 0;
+  const isAtOriginal = historyIndex === 0;
   
   if (loading) {
     return (
@@ -311,6 +410,10 @@ const EditStudio = () => {
                 <h1 className="font-display text-3xl tracking-wide">EDIT STUDIO</h1>
                 <p className="text-muted-foreground text-sm">Finalize your cover with custom edits</p>
               </div>
+              <div className="flex items-center gap-2 text-sm bg-secondary px-3 py-1.5 rounded-lg">
+                <Coins className="w-4 h-4 text-primary" />
+                <span>{hasUnlimitedGenerations ? "Unlimited" : `${credits ?? 0} credits`}</span>
+              </div>
             </div>
             
             {/* Main Layout: Cover on left, Options on right */}
@@ -327,6 +430,14 @@ const EditStudio = () => {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
+                    </div>
+                  )}
+                  
+                  {/* Version indicator */}
+                  {editHistory.length > 1 && (
+                    <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
+                      <History className="w-3 h-3" />
+                      {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
                     </div>
                   )}
                   
@@ -359,7 +470,7 @@ const EditStudio = () => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        Apply Edits
+                        Apply Edits (1 credit)
                       </>
                     )}
                   </Button>
@@ -374,50 +485,76 @@ const EditStudio = () => {
                   </Button>
                 </div>
                 
-                <Button
-                  onClick={handleReset}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  disabled={isEditing}
-                >
-                  Reset All Changes
-                </Button>
+                {/* Revert buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleRevertToOriginal}
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 text-muted-foreground gap-1"
+                    disabled={isEditing || isAtOriginal}
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Revert to Original
+                  </Button>
+                  {canRevertToEdited && (
+                    <Button
+                      onClick={handleRevertToEdited}
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 text-muted-foreground gap-1"
+                      disabled={isEditing}
+                    >
+                      <History className="w-3 h-3" />
+                      Restore Edited
+                    </Button>
+                  )}
+                </div>
               </div>
               
-              {/* Right: Editing Options */}
-              <div className="space-y-6">
-                {/* Style & Mood */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+              {/* Right: Editing Options - Tighter layout */}
+              <div className="space-y-3">
+                {/* Style & Mood - Combined row */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                     <Palette className="w-4 h-4 text-primary" />
                     Style & Mood
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Visual Style</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Visual Style</Label>
                       <Select value={style} onValueChange={setStyle} disabled={isEditing}>
-                        <SelectTrigger className="bg-secondary">
+                        <SelectTrigger className="bg-secondary h-9">
                           <SelectValue placeholder="Select style" />
                         </SelectTrigger>
                         <SelectContent>
                           {visualStyles.map(s => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                              {s === currentState.style && s !== "None" && (
+                                <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                              )}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Mood / Vibe</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Mood / Vibe</Label>
                       <Select value={mood} onValueChange={setMood} disabled={isEditing}>
-                        <SelectTrigger className="bg-secondary">
+                        <SelectTrigger className="bg-secondary h-9">
                           <SelectValue placeholder="Select mood" />
                         </SelectTrigger>
                         <SelectContent>
                           {moodOptions.map(m => (
-                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                            <SelectItem key={m} value={m}>
+                              {m}
+                              {m === currentState.mood && m !== "None" && (
+                                <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                              )}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -425,42 +562,33 @@ const EditStudio = () => {
                   </div>
                 </div>
                 
-                {/* Colors */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+                {/* Colors - Compact */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                     <Sun className="w-4 h-4 text-primary" />
                     Colors
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                      <ColorPickerPopover
-                        value={mainColor}
-                        onChange={setMainColor}
-                        label="Main Color"
-                      />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
+                      <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                      <ColorPickerPopover
-                        value={accentColor}
-                        onChange={setAccentColor}
-                        label="Accent Color"
-                      />
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
+                      <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
                     </div>
                   </div>
                 </div>
                 
-                {/* Text Styling */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+                {/* Text Styling - Compact horizontal */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                     <Type className="w-4 h-4 text-primary" />
                     Text Styling
                   </div>
                   
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {textStyles.map(ts => (
                       <button
                         key={ts.id}
@@ -474,20 +602,20 @@ const EditStudio = () => {
                           }
                         }}
                         disabled={isEditing}
-                        className={`relative px-4 py-2 rounded-lg border transition-all ${
+                        className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs ${
                           textStyle === ts.id
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-secondary border-border hover:border-primary/50"
                         }`}
                       >
-                        <span className="text-sm font-medium">
+                        <span className="font-medium">
                           {ts.name}
-                          {selectedVariant && textStyle === ts.id && (
-                            <span className="ml-1 text-xs opacity-80">({selectedVariant.name})</span>
+                          {ts.id === currentState.textStyle && (
+                            <span className="ml-1 opacity-60">• current</span>
                           )}
                         </span>
                         {hasVariants(ts.id) && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-destructive text-destructive-foreground">
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold bg-destructive text-destructive-foreground">
                             +
                           </span>
                         )}
@@ -496,101 +624,121 @@ const EditStudio = () => {
                     {textStyle && (
                       <button
                         onClick={() => { setTextStyle(""); setSelectedVariant(null); }}
-                        className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+                        className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
                       >
                         Clear
                       </button>
                     )}
                   </div>
+                  {selectedVariant && (
+                    <p className="text-xs text-muted-foreground mt-2">Variant: {selectedVariant.name}</p>
+                  )}
                 </div>
                 
-                {/* Parental Advisory */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+                {/* Visual selectors row: Textures + Lighting */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Textures - Visual squares */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                      <Layers className="w-4 h-4 text-primary" />
+                      Texture
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {textureOptions.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => setTexture(t.id)}
+                          disabled={isEditing}
+                          title={t.name}
+                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                            texture === t.id
+                              ? "border-primary ring-1 ring-primary"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                          style={{ background: t.id === "none" ? "var(--secondary)" : t.gradient }}
+                        >
+                          {t.id === "none" && (
+                            <span className="text-[10px] text-muted-foreground">None</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Lighting - Visual squares */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                      <Zap className="w-4 h-4 text-primary" />
+                      Lighting
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {lightingOptions.map(l => (
+                        <button
+                          key={l.id}
+                          onClick={() => setLighting(l.id)}
+                          disabled={isEditing}
+                          title={l.name}
+                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                            lighting === l.id
+                              ? "border-primary ring-1 ring-primary"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                          style={{ background: l.id === "none" ? "var(--secondary)" : l.gradient }}
+                        >
+                          {l.id === "none" && (
+                            <span className="text-[10px] text-muted-foreground">None</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Parental Advisory - Visual rectangles */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                     <Check className="w-4 h-4 text-primary" />
-                    Parental Advisory Sticker
+                    Parental Advisory
                   </div>
                   
-                  <RadioGroup
-                    value={parentalAdvisory}
-                    onValueChange={setParentalAdvisory}
-                    className="grid grid-cols-2 gap-3"
-                    disabled={isEditing}
-                  >
+                  <div className="flex gap-2">
                     {parentalAdvisoryOptions.map(pa => (
-                      <div key={pa.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={pa.id} id={`pa-${pa.id}`} />
-                        <Label htmlFor={`pa-${pa.id}`} className="cursor-pointer text-sm">
-                          {pa.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                
-                {/* Textures */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
-                    <Layers className="w-4 h-4 text-primary" />
-                    Texture Overlay
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {textureOptions.map(t => (
                       <button
-                        key={t.id}
-                        onClick={() => setTexture(t.id)}
+                        key={pa.id}
+                        onClick={() => setParentalAdvisory(pa.id)}
                         disabled={isEditing}
-                        className={`px-4 py-2 rounded-lg border transition-all text-sm ${
-                          texture === t.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary border-border hover:border-primary/50"
+                        title={pa.name}
+                        className={`h-8 px-3 rounded border-2 transition-all flex items-center justify-center text-[9px] font-bold uppercase tracking-wide ${
+                          parentalAdvisory === pa.id
+                            ? "border-primary ring-1 ring-primary"
+                            : "border-border hover:border-primary/50"
                         }`}
+                        style={{ 
+                          backgroundColor: pa.id === "none" ? "var(--secondary)" : pa.color,
+                          color: pa.textColor || "var(--muted-foreground)"
+                        }}
                       >
-                        {t.name}
+                        {pa.id === "none" ? "None" : pa.name}
                       </button>
                     ))}
                   </div>
                 </div>
                 
-                {/* Light Leaks */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
-                    <Zap className="w-4 h-4 text-primary" />
-                    Light Leak Effect
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {lightLeakOptions.map(l => (
-                      <button
-                        key={l.id}
-                        onClick={() => setLightLeak(l.id)}
-                        disabled={isEditing}
-                        className={`px-4 py-2 rounded-lg border transition-all text-sm ${
-                          lightLeak === l.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary border-border hover:border-primary/50"
-                        }`}
-                      >
-                        {l.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Custom Instructions */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
+                {/* Custom Instructions - Compact */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-2">
                     <Sparkles className="w-4 h-4 text-primary" />
                     Custom Instructions
                   </div>
                   
                   <Textarea
-                    placeholder="Describe any other edits you'd like... (e.g., 'Make the background darker', 'Add more contrast', 'Change the font to something bolder')"
+                    placeholder="Describe any other edits... (e.g., 'Make background darker', 'Add more contrast')"
                     value={customInstructions}
                     onChange={(e) => setCustomInstructions(e.target.value)}
                     disabled={isEditing}
-                    className="bg-secondary min-h-[100px]"
+                    className="bg-secondary min-h-[60px] text-sm"
                   />
                 </div>
               </div>
