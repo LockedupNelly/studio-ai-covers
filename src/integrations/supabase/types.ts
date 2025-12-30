@@ -47,6 +47,7 @@ export type Database = {
       generations: {
         Row: {
           artist_name: string | null
+          cover_analysis: Json | null
           created_at: string
           genre: string
           id: string
@@ -59,6 +60,7 @@ export type Database = {
         }
         Insert: {
           artist_name?: string | null
+          cover_analysis?: Json | null
           created_at?: string
           genre: string
           id?: string
@@ -71,6 +73,7 @@ export type Database = {
         }
         Update: {
           artist_name?: string | null
+          cover_analysis?: Json | null
           created_at?: string
           genre?: string
           id?: string

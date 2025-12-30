@@ -61,7 +61,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, instructions, styleReferenceImageUrl, songTitle, artistName } = await req.json();
+    const { imageUrl, instructions, styleReferenceImageUrl, songTitle, artistName, coverAnalysis } = await req.json();
     logStep("Request received", {
       instructions: instructions?.slice(0, 100),
       hasImage: !!imageUrl,
@@ -69,6 +69,7 @@ serve(async (req) => {
       imageUrlPrefix: imageUrl?.slice(0, 50),
       songTitle,
       artistName,
+      hasCoverAnalysis: !!coverAnalysis,
     });
 
     if (!imageUrl || !instructions) {
@@ -303,7 +304,31 @@ Apply the visual changes now and output the edited image.`;
     // ===== STAGE 2: RE-TYPESET TEXT (only when text restyle was requested) =====
     const finalImageUrl = hasTextReplace
       ? await (async () => {
-          logStep("Stage 2: Re-typesetting text with selected style");
+          logStep("Stage 2: Re-typesetting text with selected style and color integration");
+
+          // Build color integration rules from cover analysis
+          const colorIntegrationRules = coverAnalysis?.dominantColors?.length
+            ? `COLOR INTEGRATION (MANDATORY - USE COVER'S COLOR PALETTE):
+The cover's dominant colors are: ${coverAnalysis.dominantColors.join(', ')}
+You MUST use these colors (or harmonious tones derived from them) for the text.
+The text should feel like it BELONGS in this artwork - use the cover's own colors.
+DO NOT use plain white, silver, grey, or colors that don't exist in the cover.
+Choose the most impactful color from the palette for the main text.`
+            : `COLOR INTEGRATION:
+Sample the dominant colors from the cover image and use them for the text.
+Avoid plain white or generic colors - use colors that exist in the artwork.`;
+
+          // Build smart placement rules from cover analysis
+          const placementRules = coverAnalysis?.safeTextZones?.length || coverAnalysis?.avoidZones?.length
+            ? `SMART TEXT PLACEMENT (MANDATORY):
+Subject is located: ${coverAnalysis?.subjectPosition || 'center'}
+SAFE zones for text: ${coverAnalysis?.safeTextZones?.join(', ') || 'lower-third'}
+AVOID placing text over: ${coverAnalysis?.avoidZones?.join(', ') || 'center subjects'}
+
+Position the song title in a SAFE zone. Do NOT obscure the main subject or important visual elements.`
+            : `TEXT PLACEMENT:
+Position text in the lower-third or edges of the image.
+Avoid covering faces or the main focal point of the artwork.`;
 
           const stage2Prompt = `You are an expert typography compositor for album covers.
 
@@ -314,7 +339,11 @@ INPUT IMAGE:
 STYLE REFERENCE (if provided):
 - The style reference image shows the VISUAL TYPOGRAPHY STYLE you should use.
 - IMPORTANT: IGNORE any placeholder words in the style reference (like "SONG TITLE" or "ARTIST"). 
-- Copy ONLY the visual style (font, effects, colors, texture) NOT the words.
+- Copy ONLY the visual style (font, effects, texture) NOT the words.
+
+${colorIntegrationRules}
+
+${placementRules}
 
 EXACT TEXT TO PLACE (from the original cover):
 ${extractedTextJson}
@@ -323,10 +352,12 @@ RULES (ABSOLUTE - FOLLOW EXACTLY):
 1. Place ONLY the text from the JSON above - no other words
 2. Preserve exact spelling from the JSON
 3. Apply the typography style from the style reference
-4. Position: song title in upper/center area (large), artist name in lower area (medium)
-5. Do NOT modify the background artwork at all - ONLY add the text overlay
+4. Use colors from the cover's palette (see COLOR INTEGRATION above)
+5. Position text in SAFE zones only (see SMART TEXT PLACEMENT above)
+6. Do NOT modify the background artwork at all - ONLY add the text overlay
+7. The text must feel designed-into the cover, not overlaid
 
-Add the text now with the requested typography style.`;
+Add the text now with the requested typography style, integrated colors, and smart placement.`;
 
           return await callLovableImageEdit(
             stage2Prompt,

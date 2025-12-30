@@ -269,6 +269,105 @@ serve(async (req) => {
       throw new Error("Failed to generate image after retries");
     };
 
+    // Helper function to analyze cover composition for color/placement intelligence
+    const analyzeCoverComposition = async (coverImageBase64: string): Promise<{
+      dominantColors: string[];
+      subjectPosition: string;
+      safeTextZones: string[];
+      avoidZones: string[];
+      mood: string;
+    }> => {
+      logStep("Analyzing cover composition for text placement intelligence");
+      
+      const analysisPrompt = `Analyze this album cover artwork and provide composition data for intelligent text placement.
+
+Return ONLY valid JSON (no markdown, no code fences) with this exact schema:
+{
+  "dominantColors": ["#HEX color_name", "#HEX color_name", "#HEX color_name"],
+  "subjectPosition": "where the main subject/focal point is (e.g. center, upper-center, left-third)",
+  "safeTextZones": ["areas safe for text placement (e.g. lower-third, top-edge, corners)"],
+  "avoidZones": ["areas to avoid placing text (e.g. center - face, upper-right - key detail)"],
+  "mood": "one-line mood description"
+}
+
+RULES:
+- dominantColors: Extract 3-4 prominent colors from the artwork with HEX codes and descriptive names (e.g. "#FF6B00 fire orange")
+- subjectPosition: Where is the main visual subject located?
+- safeTextZones: Where can text be placed WITHOUT obscuring important visual elements?
+- avoidZones: Where should text NEVER be placed (faces, key subjects, important details)?
+- mood: Brief mood/atmosphere description
+
+Output JSON ONLY.`;
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: analysisPrompt },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: coverImageBase64.startsWith("data:") 
+                        ? coverImageBase64 
+                        : `data:image/png;base64,${coverImageBase64}`,
+                      detail: "high"
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 500,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Vision API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        
+        // Parse JSON from response
+        const start = content.indexOf("{");
+        const end = content.lastIndexOf("}");
+        if (start === -1 || end === -1) throw new Error("No JSON in response");
+        
+        const parsed = JSON.parse(content.slice(start, end + 1));
+        logStep("Cover composition analyzed", { 
+          colors: parsed.dominantColors?.length,
+          subject: parsed.subjectPosition 
+        });
+        
+        return {
+          dominantColors: parsed.dominantColors || ["#FFFFFF white"],
+          subjectPosition: parsed.subjectPosition || "center",
+          safeTextZones: parsed.safeTextZones || ["lower-third"],
+          avoidZones: parsed.avoidZones || [],
+          mood: parsed.mood || "atmospheric",
+        };
+      } catch (e) {
+        logStep("Composition analysis failed, using defaults", { 
+          error: e instanceof Error ? e.message : String(e) 
+        });
+        return {
+          dominantColors: ["#FFFFFF white", "#000000 black"],
+          subjectPosition: "center",
+          safeTextZones: ["lower-third", "top-edge"],
+          avoidZones: ["center"],
+          mood: "atmospheric",
+        };
+      }
+    };
+
     // Helper function to analyze cover with GPT-5 vision for text styling
     const analyzeForTextStyling = async (coverImageBase64: string, userTextStyle?: string): Promise<string> => {
       logStep("PASS 2: Analyzing cover for optimal text styling", { userTextStyle: userTextStyle?.slice(0, 100) });
@@ -361,6 +460,13 @@ Choose a distinctive, impactful text style that matches the cover's energy.`;
     // ========== 3-PASS GENERATION PIPELINE ==========
     let imageUrl: string;
     let finalImageUrl: string;
+    let coverAnalysis: {
+      dominantColors: string[];
+      subjectPosition: string;
+      safeTextZones: string[];
+      avoidZones: string[];
+      mood: string;
+    } | null = null;
 
     try {
       // ===== PASS 1: Generate cover WITHOUT text =====
@@ -450,6 +556,10 @@ ${description}
 
       const pass1Image = await makeImageRequest(pass1Prompt);
       logStep("PASS 1 complete: Cover artwork generated");
+
+      // ===== COMPOSITION ANALYSIS: Analyze cover for color/placement intelligence =====
+      coverAnalysis = await analyzeCoverComposition(pass1Image);
+      logStep("Composition analysis complete", { colors: coverAnalysis.dominantColors, safeZones: coverAnalysis.safeTextZones });
 
       // If no song title, just return the text-free cover
       if (!songTitle) {
@@ -692,6 +802,7 @@ NEVER ignore the user's selected text style.
           image_url: imageUrl,
           song_title: songTitle || null,
           artist_name: artistName || null,
+          cover_analysis: coverAnalysis,
         });
 
         if (genInsertErr) {

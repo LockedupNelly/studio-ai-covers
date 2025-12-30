@@ -21,6 +21,13 @@ interface Generation {
   created_at: string;
   song_title?: string | null;
   artist_name?: string | null;
+  cover_analysis?: {
+    dominantColors: string[];
+    subjectPosition: string;
+    safeTextZones: string[];
+    avoidZones: string[];
+    mood: string;
+  } | null;
 }
 
 const Profile = () => {
@@ -381,6 +388,7 @@ const Profile = () => {
                               prompt: gen.prompt,
                               songTitle: gen.song_title,
                               artistName: gen.artist_name,
+                              coverAnalysis: gen.cover_analysis,
                             } 
                           })}
                         >

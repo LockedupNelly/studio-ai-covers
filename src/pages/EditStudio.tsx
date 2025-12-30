@@ -16,6 +16,14 @@ import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopov
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 
+interface CoverAnalysis {
+  dominantColors: string[];
+  subjectPosition: string;
+  safeTextZones: string[];
+  avoidZones: string[];
+  mood: string;
+}
+
 interface EditState {
   imageUrl: string;
   genre?: string;
@@ -25,6 +33,7 @@ interface EditState {
   prompt?: string;
   songTitle?: string | null;
   artistName?: string | null;
+  coverAnalysis?: CoverAnalysis | null;
 }
 
 // Visual Style options
@@ -110,6 +119,7 @@ const EditStudio = () => {
     prompt: passedState?.prompt || "",
     songTitle: passedState?.songTitle || null,
     artistName: passedState?.artistName || null,
+    coverAnalysis: passedState?.coverAnalysis || null,
   });
   
   // Current values (track what's been "applied")
@@ -285,6 +295,8 @@ const EditStudio = () => {
           // Pass song metadata so edit-cover doesn't need to extract text from the image
           songTitle: originalState.songTitle,
           artistName: originalState.artistName,
+          // Pass cover analysis for color integration and smart placement
+          coverAnalysis: originalState.coverAnalysis,
         },
       });
       
