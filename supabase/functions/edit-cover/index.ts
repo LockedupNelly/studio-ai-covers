@@ -236,16 +236,48 @@ Now extract the text. Output JSON ONLY.`;
       }
     }
 
-    // Separate visual instructions from text instructions for multi-stage processing
+    // Detect if visual changes (non-text) are requested
     const hasVisualChanges = typeof instructions === "string" && (
-      instructions.includes("Visual Style:") ||
-      instructions.includes("Mood:") ||
-      instructions.includes("Lighting:") ||
-      instructions.includes("Texture:") ||
-      instructions.includes("Colors:")
+      instructions.toLowerCase().includes("visual style") ||
+      instructions.toLowerCase().includes("mood") ||
+      instructions.toLowerCase().includes("lighting") ||
+      instructions.toLowerCase().includes("texture") ||
+      instructions.toLowerCase().includes("color") ||
+      instructions.toLowerCase().includes("accent") ||
+      instructions.toLowerCase().includes("change") ||
+      instructions.toLowerCase().includes("add") ||
+      instructions.toLowerCase().includes("make")
     );
+    
+    // Check if this is a simple edit (not text replace, but has visual instructions)
+    const isSimpleEdit = !hasTextReplace && hasVisualChanges;
 
     let currentImageUrl = imageUrl;
+
+    // ===== SIMPLE EDIT PATH: Apply general edit instructions directly =====
+    if (isSimpleEdit) {
+      logStep("Simple edit: Applying visual changes directly");
+      
+      const simpleEditPrompt = `You are an expert album cover art editor. Apply the following changes to this artwork:
+
+${instructions}
+
+CRITICAL RULES:
+- Apply the requested changes accurately and visibly
+- Maintain the overall composition and mood unless explicitly asked to change it
+- Keep all existing text EXACTLY as it appears (same position, same words)
+- Make the changes impactful and noticeable
+
+Apply the edits now and output the modified image.`;
+
+      try {
+        currentImageUrl = await callLovableImageEdit(simpleEditPrompt, currentImageUrl, null);
+        logStep("Simple edit complete");
+      } catch (e) {
+        logStep("Simple edit failed", { error: e instanceof Error ? e.message : String(e) });
+        throw new Error("Failed to apply edits to cover");
+      }
+    }
 
     // ===== STAGE 1A: DEDICATED TEXT ERASURE (only when text restyle is requested) =====
     if (hasTextReplace) {
@@ -272,8 +304,8 @@ Remove ALL text now and output the cleaned, text-free image.`;
       }
     }
 
-    // ===== STAGE 1B: VISUAL STYLE CHANGES (only if requested, applied to text-free image) =====
-    if (hasVisualChanges) {
+    // ===== STAGE 1B: VISUAL STYLE CHANGES (only for text replace path with additional visual changes) =====
+    if (hasTextReplace && hasVisualChanges) {
       logStep("Stage 1B: Applying visual style changes");
       
       // Build visual-only instructions (exclude text-related parts)
