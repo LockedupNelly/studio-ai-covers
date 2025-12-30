@@ -115,6 +115,7 @@ const EditStudio = () => {
     style: passedState?.style || "None",
     mood: passedState?.mood || "None",
     textStyle: passedState?.textStyle || "",
+    textStyleVariantId: null as string | null, // e.g., "creative-3"
     genre: passedState?.genre || "",
     prompt: passedState?.prompt || "",
     songTitle: passedState?.songTitle || null,
@@ -183,7 +184,11 @@ const EditStudio = () => {
       instructions.push(`Add ${getColorValue(accentColor)} accent highlights and color accents throughout the cover artwork - this includes lighting effects, glows, color grading, decorative elements, and design details. Make the accent color visibly present in the overall design aesthetic.`);
     }
     
-    if (textStyle && selectedVariant && textStyle !== currentState.textStyle) {
+    // Check if text style variant changed (compare full variant ID, not just category)
+    const currentVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
+    const hasTextStyleChange = currentVariantId && currentVariantId !== currentState.textStyleVariantId;
+    
+    if (textStyle && selectedVariant && hasTextStyleChange) {
       // Use the detailed promptInstructions from the variant for accurate styling
       const stylePrompt = selectedVariant.promptInstructions || selectedVariant.description || `${textStyle} ${selectedVariant.name} style`;
       const colorRule = mainColor
@@ -193,7 +198,8 @@ const EditStudio = () => {
       instructions.push(
         `TEXT TYPOGRAPHY FULL REPLACE: First, carefully READ and identify the exact words currently shown on the album cover (artist name, song title, any other text). Then ERASE/INPAINT the existing lettering so none of the previous typography/effects remain. Then re-typeset the SAME words in this EXACT typography style: ${stylePrompt}. ${colorRule} Do not blend the old style with the new style—replace it completely.`
       );
-    } else if (textStyle && textStyle !== currentState.textStyle) {
+    } else if (textStyle && !selectedVariant && textStyle !== currentState.textStyle) {
+      // Fallback for text style without variant
       const colorRule = mainColor
         ? `Use the explicitly requested text color (${getColorValue(mainColor)}).`
         : "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
@@ -313,12 +319,14 @@ const EditStudio = () => {
         setImageUrl(data.imageUrl);
         
         // Update current state to reflect what was applied
+        const appliedVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
         setCurrentState({
           ...currentState,
           imageUrl: data.imageUrl,
           style: style !== "None" ? style : currentState.style,
           mood: mood !== "None" ? mood : currentState.mood,
           textStyle: textStyle || currentState.textStyle,
+          textStyleVariantId: appliedVariantId || currentState.textStyleVariantId,
         });
         
         // Reset single-use options
@@ -402,9 +410,13 @@ const EditStudio = () => {
     setPendingStyleId(null);
   };
   
+  // Compare full variant ID for text style changes (e.g., "creative-3" !== "creative-5")
+  const currentVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
+  const hasTextStyleVariantChange = currentVariantId && currentVariantId !== currentState.textStyleVariantId;
+  
   const hasChanges = (style !== currentState.style && style !== "None") || 
     (mood !== currentState.mood && mood !== "None") || 
-    (textStyle && textStyle !== currentState.textStyle) || 
+    hasTextStyleVariantChange || 
     mainColor || accentColor || 
     parentalAdvisory !== "none" || texture !== "none" || lighting !== "none" || 
     customInstructions.trim();
