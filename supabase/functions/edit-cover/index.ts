@@ -553,7 +553,8 @@ Apply the visual changes now and output the edited image.`;
       cleanImageUrl: string,
       textData: string,
       styleRefUrl: string | null,
-      analysis: any
+      analysis: any,
+      fullStylePrompt: string | null // Pass the FULL detailed style prompt directly
     ): Promise<string> => {
       if (!OPENAI_API_KEY) {
         throw new Error("OPENAI_API_KEY is not configured for text re-typesetting");
@@ -582,14 +583,13 @@ Apply the visual changes now and output the edited image.`;
         logStep("Failed to parse text data", { error: e instanceof Error ? e.message : String(e) });
       }
 
-      // Get style guidance from the style reference if available
-      let styleDescription = "Modern, bold typography with artistic effects";
-      if (effectiveInstructions && effectiveInstructions.includes("TYPOGRAPHY STYLE:")) {
-        const styleMatch = effectiveInstructions.match(/TYPOGRAPHY STYLE:\s*([^\n]+)/);
-        if (styleMatch) {
-          styleDescription = styleMatch[1].trim();
-        }
-      }
+      // Use the FULL detailed style prompt passed in, not a truncated version
+      const styleDescription = fullStylePrompt || "Modern, bold typography with artistic effects";
+      
+      logStep("Style description for re-typesetting", { 
+        styleDescriptionLength: styleDescription.length,
+        styleDescriptionPreview: styleDescription.slice(0, 200) 
+      });
 
       // Build placement guidance from cover analysis
       const placementGuidance = analysis?.safeTextZones?.length
@@ -703,12 +703,16 @@ FINAL REQUIREMENTS:
       return publicUrlData.publicUrl;
     };
 
+    // Get the full style prompt from typography if available
+    const fullStylePrompt = typography?.stylePrompt || null;
+    
     const finalImageUrl = hasTextReplace
       ? await retypesetTextWithOpenAI(
           currentImageUrl,
           extractedTextJson || "{}",
           effectiveStyleRefUrl ?? null,
-          coverAnalysis
+          coverAnalysis,
+          fullStylePrompt
         )
       : currentImageUrl;
 
