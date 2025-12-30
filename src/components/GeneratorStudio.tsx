@@ -1169,7 +1169,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             variant="outline"
                             size="sm"
                             className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                            onClick={() => setShowEditCoverDialog(true)}
+                            onClick={() => navigate("/edit-studio", {
+                              state: {
+                                imageUrl: upscaledImageUrl || generatedImage,
+                                genre,
+                                style,
+                                mood,
+                                textStyle,
+                              }
+                            })}
                             disabled={isGenerating}
                           >
                             Edit Cover
