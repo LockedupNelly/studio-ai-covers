@@ -276,9 +276,17 @@ Rules:
       // Generate transparent text layer with OpenAI
       const textLayerPrompt = `Generate a TRANSPARENT PNG image (1024x1024) containing ONLY typography text - NO background, NO artwork.
 
-TEXT TO RENDER:
-${title ? `- Main title: "${title}"` : ''}
-${artist ? `- Artist name: "${artist}"` : ''}
+TEXT TO RENDER (EXACTLY - NO DUPLICATES):
+${title ? `- SONG TITLE: "${title}" - Spell as: ${title.split('').join('-')}` : ''}
+${artist ? `- ARTIST NAME: "${artist}" - Spell as: ${artist.split('').join('-')}` : ''}
+
+CRITICAL ANTI-DUPLICATE RULES:
+- Render EXACTLY ONE instance of the song title (if provided)
+- Render EXACTLY ONE instance of the artist name (if provided)
+- Do NOT repeat or duplicate any text
+- Do NOT add any extra text, labels, or words
+- Do NOT add "Song Title", "Artist Name", or any other labels
+- The ONLY text on the image should be the exact title and artist provided above
 
 TYPOGRAPHY STYLE:
 ${stylePrompt}
@@ -288,13 +296,16 @@ ${placementGuidance}
 INTEGRATION & EFFECTS:
 ${colorGuidance}
 - Add appropriate drop shadows, outer glows, or subtle gradients ON THE TEXT ITSELF
-- The text effects should make it look like the text belongs on this artwork
+- The text effects should make it look like the text belongs on album artwork
 - DO NOT add any background - the image must be 100% transparent except for the text and its effects
 
-CRITICAL REQUIREMENTS:
-1. Output a PNG with TRANSPARENT background (alpha channel)
-2. ONLY render the text and its effects - nothing else
-3. Text must be readable and professional, but constrained to the specified boxes`;
+VERIFICATION BEFORE OUTPUT:
+1. Count the instances of "${title || ''}" - must be EXACTLY 1 (or 0 if no title provided)
+2. Count the instances of "${artist || ''}" - must be EXACTLY 1 (or 0 if no artist provided)  
+3. Verify the text is spelled correctly letter by letter
+4. Confirm the background is fully transparent (no solid colors, no artwork)
+
+OUTPUT: A transparent PNG with only the styled text overlay.`;
 
 
       const openAIResponse = await fetch("https://api.openai.com/v1/images/generations", {
@@ -338,41 +349,77 @@ CRITICAL REQUIREMENTS:
     let effectiveInstructions = instructions;
     let effectiveStyleRefUrl = styleReferenceImageUrl;
 
-    // ===== TEXT LAYER MODE: Convert to legacy mode with proper instructions =====
+    // ===== TEXT LAYER MODE: Generate transparent text layer and return for client compositing =====
     if (editMode === "text_layer") {
-      logStep("TEXT LAYER MODE: Converting to legacy inpaint mode");
+      logStep("TEXT LAYER MODE: Generating transparent text layer for non-destructive edit");
       
       const title = typography?.songTitle || songTitle || null;
       const artist = typography?.artistName || artistName || null;
       const stylePrompt = typography?.stylePrompt || "Modern, clean typography";
       const styleRefUrl = typography?.styleReferenceImageUrl || styleReferenceImageUrl || null;
+      const analysis = typography?.coverAnalysis || coverAnalysis || null;
       
-      // Convert text_layer request to legacy instructions format
-      // This ensures the legacy mode has the proper text replacement instructions
-      if (title || artist) {
-        logStep("Converting text_layer to legacy with text metadata", { title, artist });
+      if (!title && !artist) {
+        logStep("TEXT LAYER MODE: No text metadata provided, cannot generate text layer");
+        return new Response(
+          JSON.stringify({ error: "Text layer mode requires songTitle or artistName" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      logStep("TEXT LAYER MODE: Generating text layer", { title, artist, stylePromptLength: stylePrompt?.length });
+      
+      // Step 1: Check if we need to create a clean base artwork (text removed)
+      // If baseArtworkUrl already looks clean (no visible text), we reuse it
+      // Otherwise, we do a one-time text erasure
+      let cleanBaseUrl = baseArtworkUrl || effectiveImageUrl;
+      
+      // For the first text-only edit, we need to erase existing text from the base
+      // After that, the frontend will pass the clean baseArtworkUrl
+      if (!baseArtworkUrl) {
+        logStep("TEXT LAYER MODE: No clean base provided, erasing text from current image");
         
-        // Override variables for legacy mode
-        effectiveSongTitle = title;
-        effectiveArtistName = artist;
-        effectiveInstructions = `TEXT TYPOGRAPHY FULL REPLACE: Re-style all text on this album cover.
+        const erasePrompt = `You are an image inpainting specialist. COMPLETELY REMOVE ALL TEXT from this album cover.
+ERASE every letter, word, and character. Use context-aware inpainting to fill where text was.
+The result must have ZERO visible text remaining. Do NOT add any new text.
+Keep the artwork style, colors, mood, and composition exactly the same - ONLY remove text.
+Maintain FULL RESOLUTION and DETAIL. Output the cleaned, text-free album art.`;
 
-TYPOGRAPHY STYLE: ${stylePrompt}
-
-The song title is "${title || 'unknown'}" and artist is "${artist || 'unknown'}".
-
-CRITICAL RULES:
-- Keep the EXACT same text content - do not change any words
-- Only change the visual style/typography of the text
-- Preserve the artwork/background as much as possible
-- Apply the new typography style to all text elements`;
-        
-        // Also use the style reference if provided
-        if (styleRefUrl) {
-          effectiveStyleRefUrl = styleRefUrl;
+        try {
+          cleanBaseUrl = await callLovableImageEdit(erasePrompt, effectiveImageUrl, null);
+          logStep("TEXT LAYER MODE: Base artwork cleaned (text removed)");
+        } catch (e) {
+          logStep("TEXT LAYER MODE: Text erasure failed", { error: e instanceof Error ? e.message : String(e) });
+          throw new Error("Failed to prepare base artwork for text layer");
         }
-      } else {
-        logStep("Text layer mode has no text metadata, will extract from image");
+      }
+      
+      // Step 2: Generate transparent text layer using OpenAI gpt-image-1
+      try {
+        const textLayerUrl = await generateTransparentTextLayer(
+          cleanBaseUrl,
+          title,
+          artist,
+          stylePrompt,
+          styleRefUrl,
+          analysis
+        );
+        
+        logStep("TEXT LAYER MODE: Text layer generated successfully");
+        
+        clearTimeout(timeout);
+        
+        // Return the text layer mode response for client-side compositing
+        return new Response(JSON.stringify({ 
+          mode: "text_layer",
+          baseArtworkUrl: cleanBaseUrl,
+          textLayerUrl: textLayerUrl,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        logStep("TEXT LAYER MODE: Text layer generation failed", { error: e instanceof Error ? e.message : String(e) });
+        throw new Error(`Failed to generate text layer: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
