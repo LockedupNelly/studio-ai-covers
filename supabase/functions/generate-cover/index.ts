@@ -538,31 +538,92 @@ Emotional Narrative: ${genreDirection.narrative}
           if (paletteRes.ok) {
             const paletteJson = await paletteRes.json();
             const content = paletteJson?.choices?.[0]?.message?.content;
+            logStep("Pass 1.5 raw Gemini response", { content: content?.substring?.(0, 500) || content });
+            
             if (typeof content === "string") {
+              // Strip markdown code blocks if present (```json ... ``` or ``` ... ```)
+              let cleanedContent = content.trim();
+              if (cleanedContent.startsWith("```")) {
+                cleanedContent = cleanedContent
+                  .replace(/^```(?:json)?\s*/i, "")
+                  .replace(/```\s*$/, "")
+                  .trim();
+                logStep("Stripped markdown from Gemini response", { cleanedContent: cleanedContent.substring(0, 300) });
+              }
+              
               try {
-                const parsed = JSON.parse(content);
+                const parsed = JSON.parse(cleanedContent);
                 if (
                   parsed?.titleColorHex &&
                   parsed?.artistColorHex &&
                   parsed?.shadowRgba
                 ) {
-                  paletteGuidance = {
-                    titleColorHex: String(parsed.titleColorHex),
-                    artistColorHex: String(parsed.artistColorHex),
-                    shadowRgba: String(parsed.shadowRgba),
-                    accentHex: parsed.accentHex ? String(parsed.accentHex) : undefined,
-                  };
-                  logStep("Palette guidance extracted", paletteGuidance);
+                  // Validate hex format
+                  const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+                  const isValidTitle = hexRegex.test(parsed.titleColorHex);
+                  const isValidArtist = hexRegex.test(parsed.artistColorHex);
+                  
+                  if (isValidTitle && isValidArtist) {
+                    paletteGuidance = {
+                      titleColorHex: String(parsed.titleColorHex),
+                      artistColorHex: String(parsed.artistColorHex),
+                      shadowRgba: String(parsed.shadowRgba),
+                      accentHex: parsed.accentHex ? String(parsed.accentHex) : undefined,
+                    };
+                    logStep("Palette guidance extracted successfully", paletteGuidance);
+                  } else {
+                    logStep("Invalid hex format in parsed colors", { titleColorHex: parsed.titleColorHex, artistColorHex: parsed.artistColorHex });
+                  }
+                } else {
+                  logStep("Missing required palette fields", { parsed });
                 }
-              } catch {
-                // Ignore parse failures; we'll fall back to prompt-only guidance.
+              } catch (parseError) {
+                logStep("JSON parse failed, attempting regex fallback", { 
+                  error: parseError instanceof Error ? parseError.message : String(parseError),
+                  content: cleanedContent.substring(0, 200)
+                });
+                
+                // Fallback: Extract colors using regex
+                const hexMatch = (key: string) => {
+                  const regex = new RegExp(`"${key}"\\s*:\\s*"(#[0-9A-Fa-f]{6})"`, "i");
+                  const match = cleanedContent.match(regex);
+                  return match ? match[1] : null;
+                };
+                const rgbaMatch = () => {
+                  const regex = /"shadowRgba"\s*:\s*"(rgba?\([^)]+\))"/i;
+                  const match = cleanedContent.match(regex);
+                  return match ? match[1] : null;
+                };
+                
+                const titleHex = hexMatch("titleColorHex");
+                const artistHex = hexMatch("artistColorHex");
+                const shadow = rgbaMatch();
+                const accentHex = hexMatch("accentHex");
+                
+                if (titleHex && artistHex && shadow) {
+                  paletteGuidance = {
+                    titleColorHex: titleHex,
+                    artistColorHex: artistHex,
+                    shadowRgba: shadow,
+                    accentHex: accentHex || undefined,
+                  };
+                  logStep("Palette guidance extracted via regex fallback", paletteGuidance);
+                } else {
+                  logStep("Regex fallback also failed", { titleHex, artistHex, shadow });
+                }
               }
+            } else {
+              logStep("Gemini content was not a string", { contentType: typeof content });
             }
+          } else {
+            const errorText = await paletteRes.text();
+            logStep("Palette API request failed", { status: paletteRes.status, error: errorText.substring(0, 300) });
           }
         }
       } catch (e) {
-        logStep("Palette analysis failed (continuing)", {
+        logStep("Palette analysis exception (continuing)", {
           error: e instanceof Error ? e.message : String(e),
+          stack: e instanceof Error ? e.stack?.substring(0, 300) : undefined,
         });
       }
 
