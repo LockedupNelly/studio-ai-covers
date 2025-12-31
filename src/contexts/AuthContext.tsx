@@ -52,11 +52,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // THEN check for existing session
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        console.log("[AuthContext] getSession", { hasSession: !!session });
+    // THEN check for existing session with timeout
+    const getSessionWithTimeout = async () => {
+      try {
+        const timeoutPromise = new Promise<{ data: { session: null }, error: null }>((resolve) => {
+          setTimeout(() => {
+            console.warn("[AuthContext] getSession timed out after 5s");
+            resolve({ data: { session: null }, error: null });
+          }, 5000);
+        });
+
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        if (error) {
+          console.error("[AuthContext] getSession error", error);
+        }
+        
+        console.log("[AuthContext] getSession", { hasSession: !!session, userId: session?.user?.id });
         didSettle = true;
         setSession(session);
         setUser(session?.user ?? null);
@@ -66,16 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session && window.location.hash) {
           window.history.replaceState(null, "", window.location.pathname);
         }
-      })
-      .catch((err) => {
-        console.error("[AuthContext] getSession error", err);
+      } catch (err) {
+        console.error("[AuthContext] getSession exception", err);
         didSettle = true;
         setLoading(false);
-        toast.error("Auth error", { description: "Could not initialize login. Please refresh." });
-      })
-      .finally(() => {
+      } finally {
         window.clearTimeout(safetyTimeout);
-      });
+      }
+    };
+
+    getSessionWithTimeout();
 
     return () => {
       window.clearTimeout(safetyTimeout);
