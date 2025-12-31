@@ -159,18 +159,116 @@ serve(async (req) => {
       },
     };
 
-    // ========== VISUAL STYLE MODIFIERS ==========
-    const styleModifiers: Record<string, string> = {
-      "Realism": "Photorealistic, cinematic realism, natural lighting.",
-      "3D Render": "Ultra-detailed 3D realism, cinematic lighting, physical materials.",
-      "Illustration": "Painterly textures, artistic clarity, controlled lighting.",
-      "Anime": "Cinematic anime aesthetic, dramatic lighting, depth of field, expressive motion.",
-      "Fine Art": "Gallery-quality composition, painterly lighting, dramatic framing.",
-      "Abstract": "Symbolic imagery, expressive color and form.",
-      "Minimalist": "Strong negative space, single dominant focal element.",
-      "Cinematic": "Film still aesthetic, motion, atmosphere, dramatic lighting.",
-      "Retro": "Vintage color grading, nostalgic texture, analog feel.",
-    };
+  // ========== VISUAL STYLE MODIFIERS (HIGHLY DETAILED) ==========
+  const styleModifiers: Record<string, string> = {
+    "Realism": `PHOTOREALISTIC PHOTOGRAPHY - This MUST look like a real photograph taken with a professional camera.
+- Shot on RED V-RAPTOR or ARRI ALEXA 65 digital cinema camera
+- Real human skin with visible pores, fine hairs, imperfections, subsurface scattering
+- Real-world physics: accurate shadows, reflections, light falloff, lens distortion
+- Shallow depth of field with bokeh (f/1.4 - f/2.8 aperture)
+- Natural available light or professional studio lighting with visible light sources
+- Photographic grain and sensor noise at high ISO
+- Real fabric textures, real metal, real glass with accurate refraction
+- NO illustration, NO painting, NO digital art, NO CGI look
+- Must be indistinguishable from a photograph taken in the real world
+- Reference: Annie Leibovitz, Peter Lindbergh, Tim Walker photography`,
+
+    "3D Render": `HYPER-REALISTIC 3D CGI RENDER - Professional Octane/Redshift/V-Ray quality.
+- Ultra-detailed physically-based rendering (PBR) with realistic materials
+- Subsurface scattering on skin, caustics on glass, accurate metal reflectivity
+- Global illumination with realistic light bounce and ambient occlusion
+- High-poly geometry with no visible polygons or artifacts
+- Volumetric lighting, god rays, atmospheric haze
+- Perfect surface detail: scratches, dust, fingerprints, wear patterns
+- HDRI environment lighting with realistic reflections
+- Clean, polished aesthetic typical of high-end 3D visualization
+- Reference: Pixar, Blur Studio, Digital Domain quality
+- Distinct from photography: perfect, idealized, impossibly clean surfaces`,
+
+    "Illustration": `TRADITIONAL ILLUSTRATION - Hand-painted artistic quality.
+- Visible brushstrokes, paint texture, artistic mark-making
+- Oil painting, gouache, or watercolor aesthetic
+- Loose, expressive linework with intentional imperfection
+- Rich color layering with visible underpainting
+- Artistic color choices: non-photographic, stylized palette
+- Traditional illustration composition with strong graphic shapes
+- NO photorealism, NO 3D render look, NO digital perfection
+- Painterly blending and color mixing visible in the work
+- Reference: Drew Struzan, James Jean, Sachin Teng, Jon Foster
+- Must look like it was painted by a human artist with physical media`,
+
+    "Anime": `JAPANESE ANIME/MANGA AESTHETIC - High-quality anime production style.
+- Clean cel-shaded look with flat color areas and sharp shadow edges
+- Distinctive anime eye style: large, expressive, with detailed highlights
+- Bold black outlines with varying line weight
+- Simplified features with stylized proportions
+- Dynamic poses and exaggerated expressions
+- Gradient shading on hair with distinct highlight sections
+- Speed lines, motion blur for action
+- Sakura petals, sparkles, atmospheric particles
+- Reference: Studio Ghibli, Makoto Shinkai, MAPPA, Ufotable quality
+- Vibrant, saturated colors with anime-specific color theory`,
+
+    "Fine Art": `MUSEUM-QUALITY FINE ART - Classical painting techniques.
+- Chiaroscuro lighting with dramatic light/shadow contrast
+- Rich, deep blacks and luminous highlights
+- Classical composition: rule of thirds, golden ratio, triangular composition
+- Oil painting texture with visible canvas weave
+- Renaissance/Baroque color palette: deep reds, golds, earth tones
+- Masterful handling of fabric folds, skin tones, atmospheric perspective
+- Rembrandt lighting, Caravaggio shadows
+- Gallery-worthy gravitas and emotional depth
+- Reference: Rembrandt, Caravaggio, John Singer Sargent, Bouguereau
+- Must look like a painting from a museum collection`,
+
+    "Abstract": `ABSTRACT EXPRESSIONISM - Non-representational artistic expression.
+- Bold geometric shapes, organic forms, or pure color fields
+- Emphasis on color, texture, and composition over representation
+- Gestural brushwork, drips, splatters, or precise hard-edge geometry
+- Emotional and psychological impact through pure visual elements
+- Color theory: complementary tensions, harmonious gradients
+- NO recognizable faces or objects rendered realistically
+- Shapes, lines, and colors as the primary subject matter
+- Reference: Kandinsky, Rothko, Pollock, Basquiat, Mondrian
+- Symbolic, evocative imagery that suggests rather than depicts
+- Strong emphasis on texture and surface quality`,
+
+    "Minimalist": `ULTRA-MINIMALIST DESIGN - Maximum impact with minimum elements.
+- Vast negative space (60-80% of the image should be empty)
+- Single dominant focal element, perfectly positioned
+- Extremely limited color palette: 1-3 colors maximum
+- Clean, geometric shapes with precise edges
+- No texture, no noise, no gradients (unless central to the concept)
+- Swiss design principles: grid-based, functional beauty
+- Typography-forward if text is present
+- Reference: Massimo Vignelli, Dieter Rams, Japanese minimalism
+- Whitespace is intentional and meaningful
+- Every element must be essential - remove everything else`,
+
+    "Cinematic": `HOLLYWOOD MOVIE POSTER / FILM STILL - Blockbuster production value.
+- Anamorphic lens characteristics: horizontal lens flares, oval bokeh
+- Cinematic aspect ratio composition (even in square format)
+- Film-grade color grading: teal and orange, or distinctive color palette
+- Dramatic three-point lighting with strong key, fill, and rim lights
+- Depth layers: foreground, midground, background with atmospheric haze
+- Motion blur suggesting action or movement
+- Lens artifacts: flares, chromatic aberration, subtle vignetting
+- Reference: Roger Deakins, Emmanuel Lubezki, Janusz Kamiński cinematography
+- Epic scale with tiny figures against vast environments OR intimate close-ups
+- Must feel like a frame from a $200M film production`,
+
+    "Retro": `VINTAGE/RETRO AESTHETIC - Nostalgic analog era feeling.
+- Film grain: heavy, visible, authentic to 1970s-1990s film stocks
+- Color palette: faded, warm, with lifted blacks and crushed highlights
+- Kodachrome, Ektachrome, or Polaroid color science
+- Light leaks, lens flares, dust and scratches
+- Halftone printing dots, CMYK registration errors
+- VHS tracking lines, analog video artifacts
+- Vintage typography and graphic design sensibilities
+- Reference: 1970s album covers, 1980s movie posters, 1990s music videos
+- Warm amber tones, magenta shifts, cyan shadows
+- Must feel authentically from a past era, not modern retro-filtered`,
+  };
 
     // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
     const moodLayers: Record<string, string> = {
