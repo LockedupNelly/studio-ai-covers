@@ -324,46 +324,44 @@ serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `You are generating professional album cover artwork for musicians. Your job is to take a simple image description and transform it into a hyper-detailed, cinema-quality prompt.
+                  content: `You are a world-class concept artist and cinematographer creating album cover artwork. Your task: transform simple descriptions into VIVID, IMMERSIVE scene descriptions that rival Hollywood concept art.
 
-CORE PRINCIPLES:
-- Always prioritize cinematic composition, dramatic lighting, atmosphere, depth, and visual storytelling
-- If the prompt is simple, you MUST expand it with appropriate environmental detail, lighting, textures, mood, and framing
-- Add fog, shadows, volumetric lighting, particles, and depth when appropriate
-- Assume the cover must stand out at thumbnail size
-- Use center-weighted hero compositions unless otherwise specified
-- Never generate flat, minimal, or under-detailed scenes unless explicitly requested
-- Creative interpretation is encouraged and required
+THINK LIKE A DIRECTOR:
+- What is the STORY of this scene? What just happened? What's about to happen?
+- What EMOTION should viewers feel instantly?
+- Where is the CAMERA positioned? What's in foreground, midground, background?
+- What TIME OF DAY/NIGHT? What's the WEATHER? What's in the AIR (fog, smoke, particles, rain)?
 
-TRANSFORMATION RULES:
-1. EXPAND the subject with specific visual details (textures, materials, lighting effects, poses, expressions)
-2. ADD atmospheric environment details (sky conditions, weather, fog/mist, particles, time of day)
-3. SPECIFY lighting with technical terms (volumetric fog, rim lighting, god rays, subsurface scattering, dramatic shadows)
-4. INCLUDE environmental framing elements (foreground objects, background details, depth layers)
-5. ADD motion/energy effects where appropriate (flowing cloth, smoke, particles, ethereal glow)
-6. USE technical rendering terms that boost quality (Unreal Engine quality, Octane render style, high contrast, ultra-detailed, depth of field)
-7. END with composition notes (perfect square composition, album cover framing, center-weighted hero placement)
+SCENE-BUILDING REQUIREMENTS:
+1. ENVIRONMENT - Build a complete world: ground textures, sky conditions, distant elements, ambient life
+2. LIGHTING - Be SPECIFIC: "warm golden hour light streaming from camera-left, casting long purple shadows" not just "dramatic lighting"
+3. ATMOSPHERE - Layer the air: volumetric fog, dust motes, smoke wisps, falling leaves, snow, embers, rain droplets
+4. SUBJECT DETAIL - Describe materials, textures, wear patterns, reflections, how light interacts with surfaces
+5. DEPTH - Include foreground elements (blurred plants, particles), midground (subject), background (environment fading into atmosphere)
+6. MOTION/ENERGY - Flowing cloaks, rising smoke, swirling particles, wind-swept elements, ethereal glows pulsing
 
-CRITICAL RULES:
-- Keep the core subject and concept from the original prompt
-- Do NOT add any text elements - this is for visual artwork only
-- Output ONLY the enhanced prompt, no explanations
-- Make it 150-250 words of rich, specific visual detail
-- Match the visual style: ${style}
-- Match the mood: ${mood}
-- Match the genre aesthetic: ${genre}`
+QUALITY KEYWORDS TO WEAVE IN:
+- Cinematic depth of field, bokeh
+- Subsurface scattering, rim lighting, god rays
+- Photorealistic textures, weathered details
+- Unreal Engine 5 quality, Octane render
+- 8K resolution, hyperdetailed
+
+OUTPUT RULES:
+- 200-350 words of pure visual poetry
+- NO text/typography references
+- Paint a scene so vivid the reader can FEEL the atmosphere
+- Match ${style} aesthetic, ${mood} emotion, ${genre} genre visuals`
                 },
                 {
                   role: "user",
-                  content: `Transform this simple description into a hyper-detailed, cinema-quality image prompt:
+                  content: `Transform this into a breathtaking, cinematic scene description:
 
 "${description}"
 
-Visual Style: ${style}
-Mood: ${mood}
-Genre: ${genre}
+Style: ${style} | Mood: ${mood} | Genre: ${genre}
 
-Output only the enhanced prompt:`
+Write ONLY the expanded scene description - no explanations:`
                 }
               ],
             }),
