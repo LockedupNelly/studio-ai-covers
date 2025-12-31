@@ -305,50 +305,87 @@ serve(async (req) => {
     try {
       const startTime = Date.now();
 
+      // ===== PASS 0: PROMPT EXPANSION (Transform simple description into cinema-quality prompt) =====
+      logStep("PASS 0: Starting prompt expansion with AI");
+      
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      let expandedDescription = description; // Fallback to original if expansion fails
+      
+      if (LOVABLE_API_KEY) {
+        try {
+          const expansionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "system",
+                  content: `You are an expert prompt engineer for AI image generation. Your job is to take a simple image description and transform it into a hyper-detailed, cinema-quality prompt that will produce stunning, professional artwork.
+
+TRANSFORMATION RULES:
+1. EXPAND the subject with specific visual details (textures, materials, lighting effects, poses, expressions)
+2. ADD atmospheric environment details (sky conditions, weather, fog/mist, particles, time of day)
+3. SPECIFY lighting with technical terms (volumetric fog, rim lighting, god rays, subsurface scattering, dramatic shadows)
+4. INCLUDE environmental framing elements (foreground objects, background details, depth layers)
+5. ADD motion/energy effects where appropriate (flowing cloth, smoke, particles, ethereal glow)
+6. USE technical rendering terms that boost quality (Unreal Engine quality, Octane render style, high contrast, ultra-detailed, depth of field)
+7. END with composition notes (perfect square composition, album cover framing)
+
+CRITICAL RULES:
+- Keep the core subject and concept from the original prompt
+- Do NOT add any text elements - this is for visual artwork only
+- Output ONLY the enhanced prompt, no explanations
+- Make it 150-250 words of rich, specific visual detail
+- Match the visual style: ${style}
+- Match the mood: ${mood}
+- Match the genre aesthetic: ${genre}`
+                },
+                {
+                  role: "user",
+                  content: `Transform this simple description into a hyper-detailed, cinema-quality image prompt:
+
+"${description}"
+
+Visual Style: ${style}
+Mood: ${mood}
+Genre: ${genre}
+
+Output only the enhanced prompt:`
+                }
+              ],
+            }),
+          });
+
+          if (expansionResponse.ok) {
+            const expansionData = await expansionResponse.json();
+            const expandedContent = expansionData.choices?.[0]?.message?.content;
+            if (expandedContent && expandedContent.length > 50) {
+              expandedDescription = expandedContent.trim();
+              logStep("PASS 0 complete: Prompt expanded", { 
+                originalLength: description.length, 
+                expandedLength: expandedDescription.length,
+                preview: expandedDescription.slice(0, 100) + "..."
+              });
+            }
+          } else {
+            logStep("PASS 0 warning: Expansion API failed, using original", { status: expansionResponse.status });
+          }
+        } catch (expansionError) {
+          logStep("PASS 0 warning: Expansion failed, using original", { error: expansionError instanceof Error ? expansionError.message : String(expansionError) });
+        }
+      } else {
+        logStep("PASS 0 skipped: No LOVABLE_API_KEY available");
+      }
+
       // ===== PASS 1: ARTWORK ONLY (No Text) =====
-      const artworkPrompt = `Create an EXCEPTIONALLY DETAILED, PROFESSIONAL album cover artwork for a ${genre} song. This MUST be AAA-quality, hyper-detailed, visually stunning artwork that rivals the best professional album covers ever made.
+      const artworkPrompt = `Create an EXCEPTIONALLY DETAILED, PROFESSIONAL album cover artwork for a ${genre} song. This MUST be AAA-quality, hyper-detailed, visually stunning artwork.
 
-===== CORE VISION =====
-${description}
-
-===== MANDATORY SCENE ENRICHMENT (APPLY ALL) =====
-Take the core vision above and DRAMATICALLY ENHANCE IT with these elements:
-
-**1. ATMOSPHERIC ENVIRONMENT (REQUIRED):**
-- Add a DRAMATIC SKY: stormy clouds, moonlight breaking through, sunset gradients, cosmic nebulas, or weather effects appropriate to the mood
-- Include VOLUMETRIC ATMOSPHERE: visible fog layers, mist, haze, smoke, dust particles, or light beams cutting through atmosphere
-- Create DEPTH with visible environment layers: detailed foreground, rich midground, expansive background
-- Weather/particle effects: rain, snow, floating debris, ash, embers, leaves, or energy particles where appropriate
-
-**2. LIGHTING COMPLEXITY (REQUIRED):**
-- Use MULTIPLE LIGHT SOURCES: moonlight + practical lights, sunset + rim lights, neon + ambient
-- Add DRAMATIC RIM LIGHTING on subject edges to separate from background
-- Include VOLUMETRIC GOD RAYS or light beams where atmosphere allows
-- Add GLOWING ACCENT ELEMENTS: glowing eyes, luminescent objects, fire, neon, bioluminescence
-- Cast realistic SHADOWS that ground elements in the scene
-- Use SUBSURFACE SCATTERING on translucent materials (skin, leaves, fabric edges)
-
-**3. SCENE POPULATION (REQUIRED):**
-- Add SUPPORTING ELEMENTS that enrich the scene: additional objects, creatures, environmental details
-- Include FOREGROUND FRAMING ELEMENTS: tree branches, debris, particles, objects that create depth
-- Add BACKGROUND ACTIVITY: distant elements, horizon details, sky objects (moon, stars, birds, bats)
-- Create TEXTURE VARIETY: combine smooth and rough, organic and geometric, near and far
-
-**4. MATERIAL RICHNESS (REQUIRED):**
-- Every surface should have DISTINCT MATERIAL PROPERTIES: reflection, roughness, translucency
-- Add WEATHERING AND WEAR where appropriate: rust, moss, cracks, patina, scratches
-- Include FABRIC/CLOTHING DETAILS: flowing capes, tattered edges, wind-affected cloth
-- Show ENVIRONMENTAL INTERACTION: reflections in puddles, shadows on surfaces, light on faces
-
-**5. COMPOSITIONAL DRAMA (REQUIRED):**
-- Use DYNAMIC CAMERA ANGLES: slightly low looking up (hero shot), or dramatic Dutch angle
-- Create SCALE and GRANDEUR: make scenes feel epic, vast, or intensely intimate
-- Lead the eye with COMPOSITIONAL LINES toward focal points
-- Balance NEGATIVE SPACE for text placement in lower third while keeping scene rich
-
-===== GENRE: ${genre} =====
-Visual Direction: ${genreDirection.visual}
-Emotional Narrative: ${genreDirection.narrative}
+===== VISION (AI-ENHANCED) =====
+${expandedDescription}
 
 ===== VISUAL STYLE: ${style} =====
 ${visualStyle}
@@ -356,26 +393,20 @@ ${visualStyle}
 ===== MOOD: ${mood} =====
 ${moodStyle}
 
-===== QUALITY BENCHMARK =====
-This must match or EXCEED ChatGPT/DALL-E 3 quality. Think:
-- Concept art for AAA video games (Blizzard, Naughty Dog, FromSoftware quality)
-- Hollywood movie poster artwork
-- Premium music industry album covers ($10,000+ commission quality)
-- ArtStation trending front page quality
-- Every single pixel should be intentional and refined
+===== GENRE: ${genre} =====
+Visual Direction: ${genreDirection.visual}
+Emotional Narrative: ${genreDirection.narrative}
 
-===== ABSOLUTE RULES =====
-- DO NOT include ANY text, letters, words, or typography
-- This is ARTWORK ONLY - completely text-free
-- Reserve lower 30% for text overlay (but still include atmospheric elements there)
-- HYPER-DETAILED: zoom in and every area should have rich detail
-- POLISHED: no artifacts, no lazy areas, no generic elements
-
-===== TECHNICAL =====
-- 1:1 square aspect ratio (1024x1024)
+===== TECHNICAL REQUIREMENTS =====
+- Volumetric fog and atmospheric depth
+- Cinematic lighting with high contrast
+- Ultra-detailed textures and materials
+- Realistic depth of field
+- Unreal Engine 5 / Octane render quality
+- Perfect square composition (1024x1024)
+- Album cover framing
 - Edge-to-edge artwork, NO borders
-- MAXIMUM QUALITY AND DETAIL
-- NO TEXT WHATSOEVER`;
+- NO TEXT, NO LETTERS, NO WORDS - artwork only`;
 
       logStep("PASS 1: Starting artwork-only generation");
 
