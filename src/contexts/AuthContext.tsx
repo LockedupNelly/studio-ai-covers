@@ -33,7 +33,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[AuthContext] onAuthStateChange", { event, hasSession: !!session });
+      console.log("[AuthContext] onAuthStateChange", { 
+        event, 
+        hasSession: !!session,
+        userId: session?.user?.id,
+        currentPath: window.location.pathname,
+        currentHash: window.location.hash ? 'has hash' : 'no hash'
+      });
       didSettle = true;
       setSession(session);
       setUser(session?.user ?? null);
@@ -41,6 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Clean up URL hash after OAuth callback
       if (event === "SIGNED_IN" && window.location.hash) {
+        console.log("[AuthContext] Cleaning up hash after SIGNED_IN");
         window.history.replaceState(null, "", window.location.pathname);
       }
     });
