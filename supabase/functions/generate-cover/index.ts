@@ -306,14 +306,49 @@ serve(async (req) => {
       const startTime = Date.now();
 
       // ===== PASS 1: ARTWORK ONLY (No Text) =====
-      const artworkPrompt = `Create a professional album cover artwork for a ${genre} song.
+      const artworkPrompt = `Create an EXCEPTIONALLY DETAILED, PROFESSIONAL album cover artwork for a ${genre} song. This MUST be AAA-quality, hyper-detailed, visually stunning artwork that rivals the best professional album covers ever made.
 
-===== ARTWORK VISION =====
+===== CORE VISION =====
 ${description}
 
+===== MANDATORY SCENE ENRICHMENT (APPLY ALL) =====
+Take the core vision above and DRAMATICALLY ENHANCE IT with these elements:
+
+**1. ATMOSPHERIC ENVIRONMENT (REQUIRED):**
+- Add a DRAMATIC SKY: stormy clouds, moonlight breaking through, sunset gradients, cosmic nebulas, or weather effects appropriate to the mood
+- Include VOLUMETRIC ATMOSPHERE: visible fog layers, mist, haze, smoke, dust particles, or light beams cutting through atmosphere
+- Create DEPTH with visible environment layers: detailed foreground, rich midground, expansive background
+- Weather/particle effects: rain, snow, floating debris, ash, embers, leaves, or energy particles where appropriate
+
+**2. LIGHTING COMPLEXITY (REQUIRED):**
+- Use MULTIPLE LIGHT SOURCES: moonlight + practical lights, sunset + rim lights, neon + ambient
+- Add DRAMATIC RIM LIGHTING on subject edges to separate from background
+- Include VOLUMETRIC GOD RAYS or light beams where atmosphere allows
+- Add GLOWING ACCENT ELEMENTS: glowing eyes, luminescent objects, fire, neon, bioluminescence
+- Cast realistic SHADOWS that ground elements in the scene
+- Use SUBSURFACE SCATTERING on translucent materials (skin, leaves, fabric edges)
+
+**3. SCENE POPULATION (REQUIRED):**
+- Add SUPPORTING ELEMENTS that enrich the scene: additional objects, creatures, environmental details
+- Include FOREGROUND FRAMING ELEMENTS: tree branches, debris, particles, objects that create depth
+- Add BACKGROUND ACTIVITY: distant elements, horizon details, sky objects (moon, stars, birds, bats)
+- Create TEXTURE VARIETY: combine smooth and rough, organic and geometric, near and far
+
+**4. MATERIAL RICHNESS (REQUIRED):**
+- Every surface should have DISTINCT MATERIAL PROPERTIES: reflection, roughness, translucency
+- Add WEATHERING AND WEAR where appropriate: rust, moss, cracks, patina, scratches
+- Include FABRIC/CLOTHING DETAILS: flowing capes, tattered edges, wind-affected cloth
+- Show ENVIRONMENTAL INTERACTION: reflections in puddles, shadows on surfaces, light on faces
+
+**5. COMPOSITIONAL DRAMA (REQUIRED):**
+- Use DYNAMIC CAMERA ANGLES: slightly low looking up (hero shot), or dramatic Dutch angle
+- Create SCALE and GRANDEUR: make scenes feel epic, vast, or intensely intimate
+- Lead the eye with COMPOSITIONAL LINES toward focal points
+- Balance NEGATIVE SPACE for text placement in lower third while keeping scene rich
+
 ===== GENRE: ${genre} =====
-Visual: ${genreDirection.visual}
-Narrative: ${genreDirection.narrative}
+Visual Direction: ${genreDirection.visual}
+Emotional Narrative: ${genreDirection.narrative}
 
 ===== VISUAL STYLE: ${style} =====
 ${visualStyle}
@@ -321,19 +356,25 @@ ${visualStyle}
 ===== MOOD: ${mood} =====
 ${moodStyle}
 
-===== CRITICAL RULES =====
+===== QUALITY BENCHMARK =====
+This must match or EXCEED ChatGPT/DALL-E 3 quality. Think:
+- Concept art for AAA video games (Blizzard, Naughty Dog, FromSoftware quality)
+- Hollywood movie poster artwork
+- Premium music industry album covers ($10,000+ commission quality)
+- ArtStation trending front page quality
+- Every single pixel should be intentional and refined
+
+===== ABSOLUTE RULES =====
 - DO NOT include ANY text, letters, words, or typography
 - This is ARTWORK ONLY - completely text-free
-- Focus 100% on the visual composition, lighting, and atmosphere
-- Leave space in the lower third for text to be added later
-- Cinematic, dramatic, polished professional quality
-- Strong central composition with clear focal point
-- Dramatic lighting with atmospheric depth
+- Reserve lower 30% for text overlay (but still include atmospheric elements there)
+- HYPER-DETAILED: zoom in and every area should have rich detail
+- POLISHED: no artifacts, no lazy areas, no generic elements
 
 ===== TECHNICAL =====
 - 1:1 square aspect ratio (1024x1024)
 - Edge-to-edge artwork, NO borders
-- Ultra high quality
+- MAXIMUM QUALITY AND DETAIL
 - NO TEXT WHATSOEVER`;
 
       logStep("PASS 1: Starting artwork-only generation");
