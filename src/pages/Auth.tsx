@@ -26,9 +26,21 @@ const Auth = () => {
   // Redirect if already logged in - use useEffect to avoid render-time navigation
   useEffect(() => {
     if (!loading && user) {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   }, [user, loading, navigate]);
+
+  // If we're in the middle of an OAuth callback (URL has hash with access_token), show loading
+  const isOAuthCallback = window.location.hash.includes('access_token') || 
+                          window.location.hash.includes('error');
+  
+  if (isOAuthCallback) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
