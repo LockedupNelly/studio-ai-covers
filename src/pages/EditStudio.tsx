@@ -12,7 +12,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Type, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -155,6 +155,10 @@ const EditStudio = () => {
   // Progress state
   const [isEditing, setIsEditing] = useState(false);
   const [progress, setProgress] = useState(0);
+  
+  // Upscale state
+  const [isUpscaling, setIsUpscaling] = useState(false);
+  const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -500,22 +504,50 @@ const EditStudio = () => {
   };
   
   const handleDownload = async () => {
-    if (!imageUrl) return;
+    const imageToDownload = upscaledImageUrl || imageUrl;
+    if (!imageToDownload) return;
     
     try {
-      const res = await fetch(imageUrl);
+      const res = await fetch(imageToDownload);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "cover-art-final.png";
+      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art-final.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success("Downloaded!", { description: "Your final cover has been saved" });
+      toast.success("Downloaded!", { description: upscaledImageUrl ? "4K HD cover saved" : "Your final cover has been saved" });
     } catch (error) {
       toast.error("Download failed");
+    }
+  };
+  
+  const handleUpscale = async () => {
+    if (!imageUrl || isUpscaling) return;
+    
+    setIsUpscaling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("upscale-cover", {
+        body: { imageUrl },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.imageUrl) {
+        setUpscaledImageUrl(data.imageUrl);
+        toast.success("Cover upscaled to 4K HD!", {
+          description: "Your cover is now 4096x4096 resolution.",
+        });
+      }
+    } catch (err) {
+      console.error("Upscale error:", err);
+      toast.error("Upscale failed", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    } finally {
+      setIsUpscaling(false);
     }
   };
   
@@ -661,7 +693,7 @@ const EditStudio = () => {
                 <div className="flex gap-3">
                   <Button
                     onClick={handleApplyEdits}
-                    disabled={isEditing || !hasChanges}
+                    disabled={isEditing || isUpscaling || !hasChanges}
                     className="flex-1 gap-2"
                     size="lg"
                   >
@@ -682,10 +714,23 @@ const EditStudio = () => {
                     variant="outline"
                     size="lg"
                     className="gap-2"
+                    disabled={isEditing || isUpscaling}
                   >
                     <Download className="w-4 h-4" />
-                    Download
+                    {upscaledImageUrl ? "Download 4K" : "Download"}
                   </Button>
+                  {!upscaledImageUrl && (
+                    <Button
+                      onClick={handleUpscale}
+                      variant="outline"
+                      size="lg"
+                      className="gap-2"
+                      disabled={isEditing || isUpscaling}
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                      {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
+                    </Button>
+                  )}
                 </div>
                 
                 {/* Version Navigation */}
@@ -801,59 +846,6 @@ const EditStudio = () => {
                   </div>
                 </div>
                 
-                {/* Text Styling - Compact horizontal */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                    <Type className="w-4 h-4 text-primary" />
-                    Text Styling
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1.5">
-                    {textStyles.map(ts => (
-                      <button
-                        key={ts.id}
-                        onClick={() => {
-                          if (hasVariants(ts.id)) {
-                            setPendingStyleId(ts.id);
-                            setShowVariantDialog(true);
-                          } else {
-                            setTextStyle(ts.id);
-                            setSelectedVariant(null);
-                          }
-                        }}
-                        disabled={isEditing}
-                        className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs ${
-                          textStyle === ts.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <span className="font-medium">
-                          {ts.name}
-                          {ts.id === currentState.textStyle && (
-                            <span className="ml-1 opacity-60">• current</span>
-                          )}
-                        </span>
-                        {hasVariants(ts.id) && (
-                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold bg-destructive text-destructive-foreground">
-                            +
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                    {textStyle && (
-                      <button
-                        onClick={() => { setTextStyle(""); setSelectedVariant(null); }}
-                        className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  {selectedVariant && (
-                    <p className="text-xs text-muted-foreground mt-2">Variant: {selectedVariant.name}</p>
-                  )}
-                </div>
                 
                 {/* Visual selectors row: Textures + Lighting */}
                 <div className="grid grid-cols-2 gap-3">
