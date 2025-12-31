@@ -506,12 +506,13 @@ Emotional Narrative: ${genreDirection.narrative}
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "google/gemini-2.5-flash",
+                model: "openai/gpt-5-mini",
+                max_completion_tokens: 300,
                 messages: [
                   {
                     role: "system",
                     content:
-                      "You are a senior album-cover typography art director. Your job is to pick text colors that FEEL LIT BY the artwork and belong in the scene while remaining readable at thumbnail size.",
+                      "You are a senior album-cover typography art director. Return strict JSON only.",
                   },
                   {
                     role: "user",
@@ -519,7 +520,7 @@ Emotional Narrative: ${genreDirection.narrative}
                       {
                         type: "text",
                         text:
-                          "Analyze the artwork. Return STRICT JSON only (no markdown) with keys: titleColorHex, artistColorHex, shadowRgba, accentHex.\n\nRules:\n- Colors must be derived from the artwork palette (dominant light / glow / key color).\n- Avoid generic beige/ivory defaults unless the scene lighting is actually warm-white.\n- Ensure readable contrast with subtle shadow (shadowRgba).\n- If the scene has a strong colored light (e.g., green glow), tint the text toward that hue.\n- Hex must be #RRGGBB. shadowRgba must be rgba(r,g,b,a).",
+                          "Analyze the artwork and return STRICT JSON only (no markdown) with keys: titleColorHex, artistColorHex, shadowRgba, accentHex.\n\nRules:\n- Colors must be derived from the artwork palette (dominant light / glow / key color).\n- Avoid generic beige/ivory defaults unless the scene lighting is actually warm-white.\n- Ensure readable contrast with subtle shadow (shadowRgba).\n- If the scene has a strong colored light (e.g., green glow), tint the text toward that hue.\n- Hex must be #RRGGBB. shadowRgba must be rgba(r,g,b,a).",
                       },
                       {
                         type: "image_url",
@@ -530,7 +531,6 @@ Emotional Narrative: ${genreDirection.narrative}
                     ],
                   },
                 ],
-                modalities: ["image", "text"],
               }),
             }
           );
