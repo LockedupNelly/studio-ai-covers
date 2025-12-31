@@ -1,9 +1,7 @@
-import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { AddOnExamplesDialog } from "@/components/AddOnExamplesDialog";
 import { toast } from "sonner";
 
 interface AddOn {
@@ -110,10 +108,9 @@ const row3: AddOn[] = [
 interface AddOnCardProps {
   addOn: AddOn;
   onAddToCart: (addOn: AddOn) => void;
-  onSeeExamples: (addOn: AddOn) => void;
 }
 
-const AddOnCard = ({ addOn, onAddToCart, onSeeExamples }: AddOnCardProps) => (
+const AddOnCard = ({ addOn, onAddToCart }: AddOnCardProps) => (
   <div className="bg-card rounded-xl border border-border overflow-hidden group hover:border-primary transition-colors">
     {/* Square Image Container */}
     <div className="relative aspect-square bg-secondary overflow-hidden">
@@ -122,12 +119,6 @@ const AddOnCard = ({ addOn, onAddToCart, onSeeExamples }: AddOnCardProps) => (
         alt={addOn.title}
         className="w-full h-full object-cover"
       />
-      <button
-        onClick={() => onSeeExamples(addOn)}
-        className="absolute top-2 right-2 bg-background/90 text-foreground text-[10px] font-semibold px-2 py-1 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
-      >
-        See examples
-      </button>
     </div>
 
     {/* Content */}
@@ -152,11 +143,6 @@ const AddOnCard = ({ addOn, onAddToCart, onSeeExamples }: AddOnCardProps) => (
 
 const AddOns = () => {
   const { addItem } = useCart();
-  const [examplesDialog, setExamplesDialog] = useState<{ open: boolean; addOn: AddOn | null }>({
-    open: false,
-    addOn: null,
-  });
-
   const handleAddToCart = (addOn: AddOn) => {
     addItem({
       id: addOn.id,
@@ -182,10 +168,6 @@ const AddOns = () => {
     });
   };
 
-  const handleSeeExamples = (addOn: AddOn) => {
-    setExamplesDialog({ open: true, addOn });
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -209,7 +191,6 @@ const AddOns = () => {
                 key={addOn.id} 
                 addOn={addOn} 
                 onAddToCart={handleAddToCart}
-                onSeeExamples={handleSeeExamples}
               />
             ))}
           </div>
@@ -221,7 +202,6 @@ const AddOns = () => {
                 key={addOn.id} 
                 addOn={addOn} 
                 onAddToCart={handleAddToCart}
-                onSeeExamples={handleSeeExamples}
               />
             ))}
           </div>
@@ -233,7 +213,6 @@ const AddOns = () => {
                 key={addOn.id} 
                 addOn={addOn} 
                 onAddToCart={handleAddToCart}
-                onSeeExamples={handleSeeExamples}
               />
             ))}
           </div>
@@ -241,16 +220,6 @@ const AddOns = () => {
       </main>
 
       <Footer />
-
-      {/* Examples Dialog */}
-      {examplesDialog.addOn && (
-        <AddOnExamplesDialog
-          open={examplesDialog.open}
-          onOpenChange={(open) => setExamplesDialog({ ...examplesDialog, open })}
-          title={examplesDialog.addOn.title}
-          mainImage={examplesDialog.addOn.image}
-        />
-      )}
     </div>
   );
 };
