@@ -33,62 +33,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[AuthContext] onAuthStateChange", { 
-        event, 
+      console.log("[AuthContext] onAuthStateChange", {
+        event,
         hasSession: !!session,
         userId: session?.user?.id,
         currentPath: window.location.pathname,
-        currentHash: window.location.hash ? 'has hash' : 'no hash'
+        currentSearch: window.location.search,
       });
+
       didSettle = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Clean up URL hash after OAuth callback
-      if (event === "SIGNED_IN" && window.location.hash) {
-        console.log("[AuthContext] Cleaning up hash after SIGNED_IN");
-        window.history.replaceState(null, "", window.location.pathname);
+      // Clean up OAuth params after callback
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("code") || url.searchParams.has("error")) {
+        url.searchParams.delete("code");
+        url.searchParams.delete("error");
+        url.searchParams.delete("error_description");
+        window.history.replaceState(null, "", url.pathname + url.search);
       }
     });
 
-    // THEN check for existing session with timeout
-    const getSessionWithTimeout = async () => {
-      try {
-        const timeoutPromise = new Promise<{ data: { session: null }, error: null }>((resolve) => {
-          setTimeout(() => {
-            console.warn("[AuthContext] getSession timed out after 5s");
-            resolve({ data: { session: null }, error: null });
-          }, 5000);
+    // 1) If we have an OAuth `code` in the URL, exchange it for a session ourselves.
+    // This avoids relying on implicit URL detection, which can hang in some environments.
+    const url = new URL(window.location.href);
+    const oauthCode = url.searchParams.get("code");
+    if (oauthCode) {
+      console.log("[AuthContext] Found OAuth code in URL; exchanging for session");
+      supabase.auth
+        .exchangeCodeForSession(oauthCode)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[AuthContext] exchangeCodeForSession error", error);
+            toast.error("Login error", { description: error.message });
+            return;
+          }
+
+          didSettle = true;
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          setLoading(false);
+
+          // Clean URL
+          url.searchParams.delete("code");
+          window.history.replaceState(null, "", url.pathname + url.search);
+        })
+        .catch((err) => {
+          console.error("[AuthContext] exchangeCodeForSession exception", err);
+          didSettle = true;
+          setLoading(false);
+        })
+        .finally(() => {
+          window.clearTimeout(safetyTimeout);
         });
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
-        
-        if (error) {
-          console.error("[AuthContext] getSession error", error);
-        }
-        
-        console.log("[AuthContext] getSession", { hasSession: !!session, userId: session?.user?.id });
-        didSettle = true;
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Clean up URL hash on initial load if user is already signed in
-        if (session && window.location.hash) {
-          window.history.replaceState(null, "", window.location.pathname);
-        }
-      } catch (err) {
-        console.error("[AuthContext] getSession exception", err);
-        didSettle = true;
-        setLoading(false);
-      } finally {
+      return () => {
         window.clearTimeout(safetyTimeout);
-      }
-    };
+        subscription.unsubscribe();
+      };
+    }
 
-    getSessionWithTimeout();
+    // 2) Otherwise, try reading the stored session directly (fast + avoids hanging getSession)
+    try {
+      const storageKey = (supabase.auth as any)?.storageKey ?? "supabase.auth.token";
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const stored = JSON.parse(raw);
+        const storedSession = stored?.access_token ? (stored as Session) : null;
+        console.log("[AuthContext] localStorage session", { hasSession: !!storedSession });
+        didSettle = true;
+        setSession(storedSession);
+        setUser(storedSession?.user ?? null);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.warn("[AuthContext] Failed reading stored session", err);
+    } finally {
+      window.clearTimeout(safetyTimeout);
+      if (!didSettle) setLoading(false);
+    }
 
     return () => {
       window.clearTimeout(safetyTimeout);
