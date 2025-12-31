@@ -69,13 +69,13 @@ serve(async (req) => {
       auth: REPLICATE_API_KEY,
     });
 
-    // Use Real-ESRGAN for 4x upscaling
+    // Use Real-ESRGAN for 2x upscaling (1024 -> 2048)
     const output = await replicate.run(
       "nightmareai/real-esrgan:f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa",
       {
         input: {
           image: imageUrl,
-          scale: 4,
+          scale: 2,
           face_enhance: false,
         }
       }
