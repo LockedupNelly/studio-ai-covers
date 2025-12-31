@@ -709,72 +709,6 @@ NEVER ignore the user's selected text style.
       }
 
       imageUrl = finalImageUrl;
-
-      // ===== AUTO-UPSCALE: Create 4K HD version =====
-      logStep("Starting auto-upscale to 4K HD");
-      logStep("Starting auto-upscale to 4K HD");
-      
-      try {
-        const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-        if (!REPLICATE_API_KEY) {
-          logStep("REPLICATE_API_KEY not configured, skipping upscale");
-        } else {
-          const Replicate = (await import("https://esm.sh/replicate@0.25.2")).default;
-          const replicate = new Replicate({ auth: REPLICATE_API_KEY });
-          
-          logStep("Calling Replicate Real-ESRGAN 4x upscale", { inputUrl: imageUrl.substring(0, 80) });
-          
-          const upscaleOutput = await replicate.run(
-            "nightmareai/real-esrgan:f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa",
-            {
-              input: {
-                image: imageUrl,
-                scale: 4,
-                face_enhance: false,
-              }
-            }
-          );
-          
-          if (upscaleOutput) {
-            const upscaledImageUrl = upscaleOutput as string;
-            logStep("Upscale complete, uploading HD version to storage");
-            
-            // Fetch and upload HD image to Supabase Storage
-            const hdImageResponse = await fetch(upscaledImageUrl);
-            if (hdImageResponse.ok) {
-              const hdImageBlob = await hdImageResponse.blob();
-              const hdFileName = `${userId || "anon"}/hd-${Date.now()}.png`;
-              
-              const { error: hdUploadError } = await supabaseClient.storage
-                .from("covers")
-                .upload(hdFileName, hdImageBlob, {
-                  contentType: "image/png",
-                  upsert: true,
-                });
-              
-              if (hdUploadError) {
-                logStep("HD upload failed, using Replicate URL", { error: hdUploadError.message });
-                hdImageUrl = upscaledImageUrl;
-              } else {
-                const { data: hdPublicUrl } = supabaseClient.storage
-                  .from("covers")
-                  .getPublicUrl(hdFileName);
-                hdImageUrl = hdPublicUrl.publicUrl;
-                logStep("HD image uploaded to storage", { url: hdImageUrl });
-              }
-            } else {
-              logStep("Failed to fetch upscaled image, using Replicate URL");
-              hdImageUrl = upscaledImageUrl;
-            }
-          } else {
-            logStep("Upscale returned no output");
-          }
-        }
-      } catch (upscaleErr) {
-        logStep("Upscale error (non-blocking)", { 
-          error: upscaleErr instanceof Error ? upscaleErr.message : String(upscaleErr) 
-        });
-      }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Unknown error";
 
@@ -882,7 +816,7 @@ NEVER ignore the user's selected text style.
       }
     }
 
-    return new Response(JSON.stringify({ imageUrl: hdImageUrl || imageUrl, originalImageUrl: imageUrl, hdImageUrl, coverAnalysis }), {
+    return new Response(JSON.stringify({ imageUrl, coverAnalysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
