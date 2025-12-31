@@ -485,79 +485,94 @@ Emotional Narrative: ${genreDirection.narrative}
 
       // ===== PASS 2: ADD TEXT WITH VISION =====
       // Use gpt-image-1 with image input to add styled text with DEEP integration
-      const textPrompt = `You are looking at an album cover artwork. Your task is to add professional typography that feels PAINTED INTO the scene, not overlaid on top.
+      const textPrompt = `You are generating professional album cover typography for musicians.
+
+The goal is for the text to feel PAINTED INTO the artwork, not overlaid on top.
 
 ===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
 Song Title: "${songTitle || 'Untitled'}"
 Artist Name: "${artistName || ''}"
 
-${textStyleInstructions ? `===== CRITICAL: TEXT TYPOGRAPHY DESIGN (HIGHEST PRIORITY) =====
-**MANDATORY TEXT STYLE - FOLLOW EXACTLY:**
+===== MANDATORY RENDER ORDER (CRITICAL – DO NOT IGNORE) =====
+1. Analyze the background artwork and identify:
+   - Primary light source direction
+   - Secondary ambient light color
+   - Atmospheric density (fog, haze, smoke, particles)
+
+2. Conceptually place the text INTO the scene as if it exists physically in that environment
+
+3. Apply lighting, atmosphere, grain, and depth effects AFTER the text is placed
+
+4. Finalize edge treatment last so the text appears affected by the environment
+
+${textStyleInstructions ? `===== CRITICAL: TYPOGRAPHY IDENTITY (NON-NEGOTIABLE) =====
 ${textStyleInstructions}
 
-You MUST replicate this EXACT text style with high fidelity:
-- Match the EXACT letterforms, stroke weights, and shapes described
-- Match the EXACT effects (blur, glow, distortion, metallic, chrome, etc.)
-- Match the EXACT texture and surface quality
-- The typography style is NON-NEGOTIABLE - execute it precisely
-` : `===== TEXT STYLING =====
+TYPOGRAPHY IDENTITY RULES:
+- Letterform identity must remain recognizable
+- Stroke structure, shapes, and proportions must match the style exactly
+- Overall typography style must match the reference with high fidelity
+
+ENVIRONMENTAL INTERACTION IS REQUIRED:
+- Minor edge erosion, lighting bleed, atmospheric softness is allowed
+- Text may slightly warp, fade, or soften where it meets fog, light, or shadow
+- These effects must look intentional, cinematic, and professional
+` : `===== TYPOGRAPHY STYLING =====
 Design professional, album-ready typography that fits the ${genre} aesthetic.
 The text should have depth, dimension, effects, and feel integrated with the scene.
 `}
 
-===== CRITICAL: DEEP VISUAL INTEGRATION (DO NOT SKIP) =====
-The text must feel like it BELONGS in the artwork, not pasted on top. Apply ALL of these:
+===== DEEP VISUAL INTEGRATION (REQUIRED) =====
 
-**1. LIGHTING INTEGRATION:**
-- Study the light sources in the artwork (where is light coming from?)
-- Text must have shadows/highlights that match the SAME light direction
-- If artwork has rim lighting, text gets rim lighting from the same angle
-- If artwork has warm glow, text picks up that warm ambient light
-- Text surfaces should reflect the scene's lighting conditions
+**1. LIGHTING INTEGRATION**
+- Match the exact light direction of the scene
+- Apply consistent highlights and shadows on the text
+- If the scene has rim lighting, the text must also receive rim lighting
+- Text must reflect the same ambient color temperature as the environment
 
-**2. ATMOSPHERIC INTEGRATION:**
-- If the scene has fog/haze/mist, text should be slightly affected by it
-- If there's dust/particles in the air, some may pass in front of text
-- Match the overall atmosphere (moody = text has subtle depth haze)
-- Text should exist IN the environment, not floating above it
+**2. ATMOSPHERIC INTEGRATION**
+- If fog, haze, or smoke exists, it must subtly affect the text
+- Atmospheric depth may slightly reduce contrast in distant text areas
+- Text must feel like it exists inside the air, not above it
 
-**3. DEPTH/LAYER INTEGRATION:**
-- Text can have foreground elements partially overlapping it (subtle)
-- Small particles, fog wisps, or lighting effects can pass OVER parts of the text
-- This creates depth and makes text feel embedded in the scene
-- Don't over-do it - text should remain readable
+**3. DEPTH & OCCLUSION (MANDATORY)**
+- At least one environmental element (fog wisp, shadow, light ray, grain) MUST partially overlap the text
+- This overlap must be subtle and preserve readability
+- This step anchors the text into the scene and is required
 
-**4. SURFACE/TEXTURE MATCHING:**
-- If artwork is gritty/distressed, text should have complementary wear
-- If artwork is sleek/polished, text should be clean with matching finish
-- If artwork has film grain, text should appear through that same grain
-- Match the overall "material quality" of the artwork
+**4. SURFACE & TEXTURE MATCHING**
+- Text surface must match the artwork's material quality
+- Gritty artwork = textured or distressed text
+- Clean artwork = smooth but still scene-affected text
+- Apply the same grain, noise, or film texture as the artwork
 
-**5. COLOR TEMPERATURE HARMONY:**
-- Text color MUST be derived from the artwork's existing palette
-- Cool-toned artwork = cool-toned text (not warm orange on blue scene)
-- Warm-toned artwork = warm-toned text (not cool blue on warm scene)
-- Text should feel like it was painted by the same artist
+**5. COLOR HARMONY**
+- Text color must be derived from the artwork's existing palette
+- Cool scenes = cool text tones
+- Warm scenes = warm text tones
+- No unrelated or artificial color choices
 
-**6. EDGE TREATMENT:**
-- Text edges should NOT be perfectly sharp against the background
-- Subtle glow, shadow softness, or atmospheric blending at edges
-- The text should "breathe" with the artwork, not cut against it
+**6. EDGE TREATMENT**
+- Text edges must NOT be perfectly sharp
+- Slight softness, glow, or atmospheric blending is required
+- Edges should breathe with the scene
 
 ===== TEXT PLACEMENT =====
-- Position text in the lower third of the image
-- Size: 30-35% of image area maximum
-- Text must feel DESIGNED INTO the artwork, not overlaid
+- Place text in the lower third unless composition demands otherwise
+- Text size: 25-35% of composition width for visibility at thumbnail size
+- Text should feel intentionally composed, not mathematically centered
+- Prioritize visual impact and balance over strict size rules
 
-===== PRESERVE THE ARTWORK =====
-- Keep ALL elements of the original artwork intact
-- Only ADD text - do not modify the artwork itself
-- The final result should be the same artwork with beautiful integrated text
+===== ARTWORK PRESERVATION =====
+- Do NOT alter the main subjects or composition
+- You MAY allow fog, light, grain, or atmosphere to interact with the text area
+- The final result must look like one unified artwork
 
 ===== TECHNICAL =====
 - 1:1 square (1024x1024)
 - Song title: "${songTitle || 'Untitled'}" (spell each letter correctly)
-- Artist name: "${artistName || ''}" (spell each letter correctly)`;
+- Artist name: "${artistName || ''}" (spell each letter correctly)
+- Professional album cover quality`;
 
       logStep("PASS 2: Adding text with vision input");
 
