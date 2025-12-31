@@ -193,13 +193,13 @@ serve(async (req) => {
     const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
     const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
 
-    // Helper function to make image generation request
-    const makeImageRequest = async (promptText: string, maxRetries = 2): Promise<string> => {
+    // Helper function to make artwork generation request (no text)
+    const makeArtworkRequest = async (promptText: string, maxRetries = 2): Promise<string> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        logStep(`Generation attempt ${attempt}/${maxRetries}`);
+        logStep(`Artwork generation attempt ${attempt}/${maxRetries}`);
         
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 120_000);
+        const timeout = setTimeout(() => controller.abort(), 90_000);
 
         let response: Response;
         try {
@@ -221,7 +221,7 @@ serve(async (req) => {
         } catch (e) {
           clearTimeout(timeout);
           if (e instanceof DOMException && e.name === "AbortError") {
-            logStep("Request timed out", { attempt });
+            logStep("Artwork request timed out", { attempt });
             if (attempt === maxRetries) throw new Error("Generation timed out. Please try again.");
             continue;
           }
@@ -232,7 +232,7 @@ serve(async (req) => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          logStep("OpenAI API error", { status: response.status, error: errorText });
+          logStep("OpenAI API error (artwork)", { status: response.status, error: errorText });
           if (response.status === 429) throw new Error("RATE_LIMIT");
           if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
           
@@ -245,11 +245,9 @@ serve(async (req) => {
         }
 
         const data = await response.json();
-        logStep("OpenAI response received", { hasData: !!data?.data?.[0] });
-        
         const imageData = data.data?.[0];
         if (!imageData) {
-          if (attempt === maxRetries) throw new Error("Failed to generate image. Please try again.");
+          if (attempt === maxRetries) throw new Error("Failed to generate artwork. Please try again.");
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
@@ -259,221 +257,170 @@ serve(async (req) => {
           : imageData.url;
 
         if (!imageUrl) {
-          if (attempt === maxRetries) throw new Error("Failed to generate image. Please try again.");
+          if (attempt === maxRetries) throw new Error("Failed to generate artwork. Please try again.");
           continue;
         }
 
-        logStep("Image generated successfully", { urlPrefix: imageUrl.slice(0, 50) });
+        logStep("Artwork generated successfully");
         return imageUrl;
       }
-      throw new Error("Failed to generate image after retries");
+      throw new Error("Failed to generate artwork after retries");
     };
 
-    // Helper function to analyze cover composition for color/placement intelligence
-    const analyzeCoverComposition = async (coverImageBase64: string): Promise<{
-      dominantColors: string[];
-      subjectPosition: string;
-      safeTextZones: string[];
-      avoidZones: string[];
-      mood: string;
-    }> => {
-      logStep("Analyzing cover composition for text placement intelligence");
-      
-      const analysisPrompt = `Analyze this album cover artwork and provide composition data for intelligent text placement.
+    // Helper function to generate text layer with transparent background
+    const makeTextLayerRequest = async (
+      songTitle: string,
+      artistName: string | null,
+      textStyle: string | null,
+      genreHint: string,
+      moodHint: string,
+      maxRetries = 2
+    ): Promise<string> => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        logStep(`Text layer generation attempt ${attempt}/${maxRetries}`);
+        
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90_000);
 
-Return ONLY valid JSON (no markdown, no code fences) with this exact schema:
-{
-  "dominantColors": ["#HEX color_name", "#HEX color_name", "#HEX color_name"],
-  "subjectPosition": "where the main subject/focal point is (e.g. center, upper-center, left-third)",
-  "safeTextZones": ["areas safe for text placement (e.g. lower-third, top-edge, corners)"],
-  "avoidZones": ["areas to avoid placing text (e.g. center - face, upper-right - key detail)"],
-  "mood": "one-line mood description"
-}
+        const textLayerPrompt = `Create ONLY typography on a completely transparent background. This is for an album cover.
 
-RULES:
-- dominantColors: Extract 3-4 prominent colors from the artwork with HEX codes and descriptive names (e.g. "#FF6B00 fire orange")
-- subjectPosition: Where is the main visual subject located?
-- safeTextZones: Where can text be placed WITHOUT obscuring important visual elements?
-- avoidZones: Where should text NEVER be placed (faces, key subjects, important details)?
-- mood: Brief mood/atmosphere description
+TEXT CONTENT (SPELL EXACTLY - EACH LETTER MUST BE CORRECT):
+- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
+- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
 
-Output JSON ONLY.`;
+${textStyle ? `===== MANDATORY TEXT STYLE (FOLLOW EXACTLY) =====
+${textStyle}
 
-      try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: analysisPrompt },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: coverImageBase64.startsWith("data:") 
-                        ? coverImageBase64 
-                        : `data:image/png;base64,${coverImageBase64}`,
-                      detail: "high"
-                    }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 500,
-          }),
-        });
+You MUST create text that matches this style description exactly. The font style, weight, texture, and effects described above MUST be followed.` : `===== TEXT STYLE GUIDELINES =====
+Create professional, album-ready typography that fits a ${genreHint} ${moodHint} aesthetic.
+Use bold, impactful fonts with depth and texture.
+Add appropriate effects: shadows, glow, metallic shine, distress, or other effects that fit the genre.`}
+
+CRITICAL REQUIREMENTS:
+- TRANSPARENT BACKGROUND ONLY - no imagery, no patterns, no colors behind the text
+- The text should have depth, dimension, and visual impact
+- Include shadows, highlights, and effects that give the text substance
+- Text should be centered and well-composed for album cover use
+- Ultra high quality, maximum detail on the text itself
+- The background MUST be completely transparent (PNG with alpha)
+
+FORBIDDEN:
+- Any background color, gradient, or pattern
+- Any imagery behind the text
+- Plain flat text without effects
+- Misspelled words
+
+SPELLING CHECK:
+- Song title is "${songTitle}" - verify each letter
+- Artist name is "${artistName || ''}" - verify each letter`;
+
+        let response: Response;
+        try {
+          response = await fetch("https://api.openai.com/v1/images/generations", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-image-1",
+              prompt: textLayerPrompt,
+              n: 1,
+              size: "1024x1024",
+              quality: "high",
+              background: "transparent",
+              output_format: "png",
+            }),
+            signal: controller.signal,
+          });
+        } catch (e) {
+          clearTimeout(timeout);
+          if (e instanceof DOMException && e.name === "AbortError") {
+            logStep("Text layer request timed out", { attempt });
+            if (attempt === maxRetries) throw new Error("Text generation timed out. Please try again.");
+            continue;
+          }
+          throw e;
+        } finally {
+          clearTimeout(timeout);
+        }
 
         if (!response.ok) {
-          throw new Error(`Vision API error: ${response.status}`);
+          const errorText = await response.text();
+          logStep("OpenAI API error (text layer)", { status: response.status, error: errorText });
+          if (response.status === 429) throw new Error("RATE_LIMIT");
+          if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
+          
+          if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
+            throw new Error("CONTENT_MODERATED");
+          }
+          
+          if (attempt === maxRetries) throw new Error(`OpenAI API error: ${response.status}`);
+          continue;
         }
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        
-        // Parse JSON from response
-        const start = content.indexOf("{");
-        const end = content.lastIndexOf("}");
-        if (start === -1 || end === -1) throw new Error("No JSON in response");
-        
-        const parsed = JSON.parse(content.slice(start, end + 1));
-        logStep("Cover composition analyzed", { 
-          colors: parsed.dominantColors?.length,
-          subject: parsed.subjectPosition 
-        });
-        
-        return {
-          dominantColors: parsed.dominantColors || ["#FFFFFF white"],
-          subjectPosition: parsed.subjectPosition || "center",
-          safeTextZones: parsed.safeTextZones || ["lower-third"],
-          avoidZones: parsed.avoidZones || [],
-          mood: parsed.mood || "atmospheric",
-        };
-      } catch (e) {
-        logStep("Composition analysis failed, using defaults", { 
-          error: e instanceof Error ? e.message : String(e) 
-        });
-        return {
-          dominantColors: ["#FFFFFF white", "#000000 black"],
-          subjectPosition: "center",
-          safeTextZones: ["lower-third", "top-edge"],
-          avoidZones: ["center"],
-          mood: "atmospheric",
-        };
+        const imageData = data.data?.[0];
+        if (!imageData) {
+          if (attempt === maxRetries) throw new Error("Failed to generate text layer. Please try again.");
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        const imageUrl = imageData.b64_json 
+          ? `data:image/png;base64,${imageData.b64_json}`
+          : imageData.url;
+
+        if (!imageUrl) {
+          if (attempt === maxRetries) throw new Error("Failed to generate text layer. Please try again.");
+          continue;
+        }
+
+        logStep("Text layer generated successfully");
+        return imageUrl;
       }
+      throw new Error("Failed to generate text layer after retries");
     };
 
-    // Helper function to analyze cover with GPT-5 vision for text styling
-    const analyzeForTextStyling = async (coverImageBase64: string, userTextStyle?: string): Promise<string> => {
-      logStep("PASS 2: Analyzing cover for optimal text styling", { userTextStyle: userTextStyle?.slice(0, 100) });
+    // Helper function to composite two images using Canvas API
+    const compositeImages = async (artworkBase64: string, textLayerBase64: string): Promise<string> => {
+      logStep("Compositing artwork and text layer");
       
-      const analysisPrompt = userTextStyle 
-        ? `You are analyzing an album cover to determine how to integrate text that MUST match a specific style.
+      // For Deno, we need to use a different approach since OffscreenCanvas isn't available
+      // We'll return both images and let the client composite them
+      // OR use the final pass approach
+      
+      // Actually, let's use a final compositing pass with gpt-image-1 for best quality
+      const compositePrompt = `You are compositing two layers into a final album cover.
 
-===== MANDATORY TEXT STYLE (USER SELECTED - MUST FOLLOW EXACTLY) =====
-"${userTextStyle}"
+LAYER 1 (BACKGROUND): The artwork/background image
+LAYER 2 (FOREGROUND): The text overlay with transparent background
 
-The user has explicitly chosen this text style. You MUST honor this choice exactly. Your job is to:
-1. PRESERVE the exact font style, weight, and characteristics described above
-2. Adapt the COLOR PALETTE from the cover image to apply to this text style
-3. Determine how scene elements (lighting, weather, particles) should interact with this specific text style
-4. Suggest material/texture integration that matches both the style AND the cover
+Your job is to:
+1. Place the text layer EXACTLY as it appears over the artwork
+2. Ensure the text integrates naturally with lighting and atmosphere
+3. Add subtle interactions: the text should pick up ambient light from the scene
+4. Maintain the exact spelling and positioning of the text
+5. Do NOT modify the artwork or text - just composite them together with natural integration
 
-Analyze the cover image and respond with specific instructions that:
-- KEEP the typography style exactly as described: "${userTextStyle}"
-- ADAPT colors from the image (list 2-3 specific colors from the cover to use)
-- DESCRIBE how the scene's lighting should affect this text style
-- SPECIFY environmental interactions (rain, sparks, fog, etc. touching the text)
-- EXPLAIN the text's integration method (embossed, carved, painted, glowing, etc.)
+OUTPUT: A perfect 1024x1024 album cover with the text integrated into the scene.`;
 
-CRITICAL: Do not change the fundamental text style. If the user chose "Bold distressed uppercase with splatter texture" - the output MUST be bold, distressed, uppercase with splatter. Only adapt the colors and scene integration.
-
-Respond with a detailed paragraph starting with the exact text style, then color adaptation, then integration details.`
-        : `You are analyzing an album cover to determine the PERFECT text styling that will feel naturally integrated.
-
-Analyze the image and determine:
-1. The dominant color palette (extract 3-4 key colors with descriptions)
-2. The overall mood and aesthetic
-3. What material/texture would text naturally be made of in this scene
-4. How light sources in the image would affect text
-5. What font style best matches the aesthetic (be specific: bold vs thin, serif vs sans, distressed vs clean, etc.)
-
-Respond with a detailed, specific paragraph describing EXACTLY how the text should appear, including:
-- Font style characteristics (bold condensed, elegant serif, grunge sans-serif, hand-painted, etc.)
-- Primary text color (from the image's color palette) 
-- Secondary/accent colors for effects
-- Material/texture the text should appear to be (metallic, stone, neon, graffiti, paint, etc.)
-- Effects (glow, shadow, emboss, distress, weathering, splatter, etc.)
-- How scene elements should interact with text (rain drops, sparks, light flares, fog wisps)
-- Specific integration details (text appearing carved, painted, projected, burning, etc.)
-
-Be extremely specific and creative. The goal is text that looks like it was PHOTOGRAPHED in the scene, not added in post.
-Choose a distinctive, impactful text style that matches the cover's energy.`;
-
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: analysisPrompt },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: coverImageBase64.startsWith("data:") 
-                      ? coverImageBase64 
-                      : `data:image/png;base64,${coverImageBase64}`,
-                    detail: "high"
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 500,
-        }),
+      // For now, return both images for client-side compositing (faster)
+      // The client already has useTextLayerCompositing hook
+      return JSON.stringify({
+        artworkUrl: artworkBase64,
+        textLayerUrl: textLayerBase64,
+        needsCompositing: true,
       });
-
-      if (!response.ok) {
-        const error = await response.text();
-        logStep("Vision analysis error", { error });
-        // Fallback to generic styling based on genre/mood
-        return `Use colors that complement a ${mood} ${genre} aesthetic. Text should be bold, cinematic, and integrated into the scene with appropriate shadows and lighting effects.`;
-      }
-
-      const data = await response.json();
-      const analysis = data.choices?.[0]?.message?.content || "";
-      logStep("Text styling analysis complete", { preview: analysis.slice(0, 100) });
-      return analysis;
     };
 
-    // ========== 3-PASS GENERATION PIPELINE ==========
+    // ========== PARALLEL GENERATION PIPELINE ==========
     let imageUrl: string;
     let finalImageUrl: string;
-    let hdImageUrl: string | null = null;
-    let coverAnalysis: {
-      dominantColors: string[];
-      subjectPosition: string;
-      safeTextZones: string[];
-      avoidZones: string[];
-      mood: string;
-    } | null = null;
 
     try {
-      // ===== PASS 1: Generate cover WITHOUT text =====
-      logStep("PASS 1: Generating cover art without text");
-      
-      const pass1Prompt = `SYSTEM ROLE:
+      // Build the artwork prompt (no text)
+      const artworkPrompt = `SYSTEM ROLE:
 You are generating professional, high-end album cover artwork intended for commercial music distribution.
 IMPORTANT: DO NOT include ANY text, titles, or typography in this image. Generate ONLY the visual artwork/background.
 
@@ -555,128 +502,41 @@ ${description}
 - NO TEXT, NO TYPOGRAPHY, NO LETTERS - artwork only
 - Leave compositional space for text integration (typically lower third)`;
 
-      const pass1Image = await makeImageRequest(pass1Prompt);
-      logStep("PASS 1 complete: Cover artwork generated");
-
-      // ===== COMPOSITION ANALYSIS: Analyze cover for color/placement intelligence =====
-      coverAnalysis = await analyzeCoverComposition(pass1Image);
-      logStep("Composition analysis complete", { colors: coverAnalysis.dominantColors, safeZones: coverAnalysis.safeTextZones });
-
-      // If no song title, just return the text-free cover
+      // If no song title, just generate artwork
       if (!songTitle) {
-        logStep("No song title provided, returning text-free cover");
-        imageUrl = pass1Image;
+        logStep("No song title provided, generating artwork only");
+        const artwork = await makeArtworkRequest(artworkPrompt);
+        imageUrl = artwork;
       } else {
-        // ===== PASS 2: Analyze cover for text styling =====
-        const textStylingAnalysis = await analyzeForTextStyling(pass1Image, textStyleInstructions || undefined);
-        logStep("PASS 2 complete: Text styling analyzed");
+        // ===== PARALLEL GENERATION: Artwork + Text Layer simultaneously =====
+        logStep("Starting PARALLEL generation: Artwork + Text Layer");
+        const startTime = Date.now();
 
-        // ===== PASS 3: Generate final cover with integrated styled text =====
-        logStep("PASS 3: Generating final cover with integrated text");
-        
-        // Build text style section - user's selected style takes precedence
-        const textStyleSection = textStyleInstructions 
-          ? `===== MANDATORY TEXT STYLE (USER SELECTED - FOLLOW EXACTLY) =====
-The user has explicitly chosen this text style. You MUST create text that matches this description:
-"${textStyleInstructions}"
+        const [artworkResult, textLayerResult] = await Promise.all([
+          makeArtworkRequest(artworkPrompt),
+          makeTextLayerRequest(songTitle, artistName, textStyleInstructions, genre, mood),
+        ]);
 
-This is NON-NEGOTIABLE. The font style, weight, texture, and effects described above MUST be followed.
-Do not deviate from this style. Do not simplify it. Replicate it exactly.
+        const parallelTime = Date.now() - startTime;
+        logStep("PARALLEL generation complete", { timeMs: parallelTime });
 
-===== COLOR & INTEGRATION ADAPTATION (FROM AI ANALYSIS) =====
-Apply these colors and integration details TO the mandatory text style above:
-${textStylingAnalysis}`
-          : `===== AI-DETERMINED TEXT STYLING (FOLLOW EXACTLY) =====
-${textStylingAnalysis}`;
-
-        const pass3Prompt = `SYSTEM ROLE:
-You are generating professional, high-end album cover artwork intended for commercial music distribution.
-You must recreate the visual aesthetic and scene from the reference while adding perfectly integrated typography.
-
-===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
-The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
-The result should look like a finished, high-budget album cover created by an experienced designer.
-
-Always prioritize:
-- Strong central or iconographic composition
-- Clear focal hierarchy
-- Cinematic lighting (backlighting, rim light, directional light, high contrast)
-- Realistic materials and textures
-- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
-- Mood-driven color grading
-- Album-safe framing
-- Strong thumbnail legibility
-
-===== GENRE-SPECIFIC DIRECTION: ${genre} =====
-Visual intent: ${genreDirection.visual}
-Narrative bias: ${genreDirection.narrative}
-
-===== VISUAL STYLE: ${style} =====
-${visualStyle}
-
-===== MOOD/ATMOSPHERE: ${mood} =====
-${moodStyle}
-
-===== USER'S CREATIVE VISION =====
-${description}
-
-${textStyleSection}
-
-===== TEXT INTEGRATION CONTRACT (MANDATORY) =====
-Text must be treated as a physical object inside the scene, not an overlay.
-
-TEXT CONTENT (SPELL EXACTLY - EACH WORD MUST BE SPELLED CORRECTLY):
-- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
-- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
-- Each text element appears ONCE only — no duplication
-
-CRITICAL SPELLING RULES:
-- The song title is "${songTitle}" - spell each letter exactly as shown
-- The artist name is "${artistName || ''}" - spell each letter exactly as shown
-- Double-check every letter before finalizing
-- Do not substitute similar-looking characters
-- Do not add or remove any letters
-
-FORBIDDEN:
-- Flat overlay text
-- Poster-style typography  
-- Text floating in empty space
-- Clean, stamped, or UI-like lettering
-- Text unaffected by lighting, weather, or perspective
-- Generic white or black text
-- Ignoring the user's selected text style
-
-REQUIRED:
-- Text must match the user's selected style EXACTLY (font, weight, effects, texture)
-- Text must exist as part of the environment
-- Text must interact with light, shadow, depth, weather, and motion
-- Text must show wear, texture, imperfections, and perspective distortion
-- Text must be partially affected by atmosphere (rain, sparks, fog, smoke)
-- Text colors must come from the cover's existing color palette
-- Text must feel like it was PHOTOGRAPHED in the scene, not added in post-production
-
-===== TEXT CAMERA RULE =====
-Camera angle, depth of field, and framing must acknowledge the text as part of the scene.
-Text should share perspective distortion and focus falloff with surrounding elements.
-
-===== NEGATIVE CONSTRAINTS =====
-Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures.
-Never use plain white, plain black, or generic colored text. Always use styled, integrated typography.
-NEVER ignore the user's selected text style.
-
-===== TECHNICAL REQUIREMENTS =====
-- EXACT 1:1 square aspect ratio (1024x1024)
-- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
-- Ultra high resolution, maximum detail and texture
-- Professional streaming platform quality (Spotify, Apple Music, etc.)`;
-        const pass3Image = await makeImageRequest(pass3Prompt);
-        logStep("PASS 3 complete: Final integrated cover generated");
-        imageUrl = pass3Image;
+        // Return both images for client-side compositing
+        // This is faster than server-side compositing and uses the existing hook
+        imageUrl = JSON.stringify({
+          artworkUrl: artworkResult,
+          textLayerUrl: textLayerResult,
+          needsCompositing: true,
+        });
       }
 
-      // Upload to storage
+      // Upload to storage (background task for speed)
       finalImageUrl = imageUrl;
-      if (imageUrl.startsWith("data:image")) {
+      
+      // Check if it's a composite result or single image
+      const isCompositeResult = imageUrl.startsWith("{") && imageUrl.includes("needsCompositing");
+      
+      if (!isCompositeResult && imageUrl.startsWith("data:image")) {
+        // Single image - upload normally
         try {
           const base64Data = imageUrl.split(",")[1];
           const mimeMatch = imageUrl.match(/data:([^;]+);/);
@@ -706,9 +566,41 @@ NEVER ignore the user's selected text style.
             error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
           });
         }
-      }
+        imageUrl = finalImageUrl;
+      } else if (isCompositeResult) {
+        // Composite result - upload both images in background
+        const compositeData = JSON.parse(imageUrl);
+        
+        // Use EdgeRuntime.waitUntil for background upload
+        const uploadBothImages = async () => {
+          try {
+            const artworkBase64 = compositeData.artworkUrl.split(",")[1];
+            const textBase64 = compositeData.textLayerUrl.split(",")[1];
+            
+            const timestamp = Date.now();
+            const artworkFileName = `${userId || "anon"}/${timestamp}-artwork.png`;
+            const textFileName = `${userId || "anon"}/${timestamp}-text.png`;
 
-      imageUrl = finalImageUrl;
+            const artworkBytes = Uint8Array.from(atob(artworkBase64), c => c.charCodeAt(0));
+            const textBytes = Uint8Array.from(atob(textBase64), c => c.charCodeAt(0));
+
+            await Promise.all([
+              supabaseClient.storage.from("covers").upload(artworkFileName, artworkBytes, { contentType: "image/png", upsert: true }),
+              supabaseClient.storage.from("covers").upload(textFileName, textBytes, { contentType: "image/png", upsert: true }),
+            ]);
+
+            const { data: artworkUrl } = supabaseClient.storage.from("covers").getPublicUrl(artworkFileName);
+            const { data: textUrl } = supabaseClient.storage.from("covers").getPublicUrl(textFileName);
+
+            logStep("Both images uploaded to storage", { artworkUrl: artworkUrl.publicUrl, textUrl: textUrl.publicUrl });
+          } catch (e) {
+            logStep("Background upload error", { error: e instanceof Error ? e.message : String(e) });
+          }
+        };
+
+        // Start background upload without awaiting
+        uploadBothImages().catch(e => logStep("Background upload failed", { error: e }));
+      }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Unknown error";
 
@@ -747,7 +639,7 @@ NEVER ignore the user's selected text style.
       );
     }
 
-    logStep("Generation complete (3-pass pipeline)");
+    logStep("Generation complete (parallel pipeline)");
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
@@ -791,34 +683,74 @@ NEVER ignore the user's selected text style.
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
-    // Best-effort: persist generation for history (now includes song_title and artist_name)
-    if (userId) {
-      try {
-        const { error: genInsertErr } = await supabaseClient.from("generations").insert({
-          user_id: userId,
-          prompt: typeof prompt === "string" ? prompt : "",
-          genre: typeof genre === "string" ? genre : "",
-          style: typeof style === "string" ? style : "",
-          mood: typeof mood === "string" ? mood : "",
-          image_url: imageUrl,
-          song_title: songTitle || null,
-          artist_name: artistName || null,
-          cover_analysis: coverAnalysis,
-        });
+    // Parse the result to determine response format
+    const isCompositeResult = imageUrl.startsWith("{") && imageUrl.includes("needsCompositing");
+    
+    if (isCompositeResult) {
+      const compositeData = JSON.parse(imageUrl);
+      
+      // Best-effort: persist generation for history
+      if (userId) {
+        try {
+          const { error: genInsertErr } = await supabaseClient.from("generations").insert({
+            user_id: userId,
+            prompt: typeof prompt === "string" ? prompt : "",
+            genre: typeof genre === "string" ? genre : "",
+            style: typeof style === "string" ? style : "",
+            mood: typeof mood === "string" ? mood : "",
+            image_url: compositeData.artworkUrl.slice(0, 100) + "...", // Truncate for storage
+            song_title: songTitle || null,
+            artist_name: artistName || null,
+            cover_analysis: null,
+          });
 
-        if (genInsertErr) {
-          logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
-        } else {
-          logStep("Generation saved", { songTitle, artistName });
+          if (genInsertErr) {
+            logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
+          } else {
+            logStep("Generation saved", { songTitle, artistName });
+          }
+        } catch (e) {
+          logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
         }
-      } catch (e) {
-        logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
       }
-    }
 
-    return new Response(JSON.stringify({ imageUrl, coverAnalysis }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      return new Response(JSON.stringify({
+        artworkUrl: compositeData.artworkUrl,
+        textLayerUrl: compositeData.textLayerUrl,
+        needsCompositing: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } else {
+      // Single image result (no text)
+      if (userId) {
+        try {
+          const { error: genInsertErr } = await supabaseClient.from("generations").insert({
+            user_id: userId,
+            prompt: typeof prompt === "string" ? prompt : "",
+            genre: typeof genre === "string" ? genre : "",
+            style: typeof style === "string" ? style : "",
+            mood: typeof mood === "string" ? mood : "",
+            image_url: imageUrl,
+            song_title: songTitle || null,
+            artist_name: artistName || null,
+            cover_analysis: null,
+          });
+
+          if (genInsertErr) {
+            logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
+          } else {
+            logStep("Generation saved", { songTitle, artistName });
+          }
+        } catch (e) {
+          logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
+        }
+      }
+
+      return new Response(JSON.stringify({ imageUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (error) {
     logStep("ERROR", { message: error instanceof Error ? error.message : String(error) });
     return new Response(
