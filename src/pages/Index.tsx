@@ -111,6 +111,8 @@ const Index = () => {
           }
 
           if (data?.imageUrl) {
+            // The backend now returns the HD (4K upscaled) image as imageUrl
+            // Only display once fully ready (HD version is primary)
             setGeneratedImage(data.imageUrl);
 
             // Refresh credits after generation
@@ -125,8 +127,8 @@ const Index = () => {
                 duration: 6000,
               });
             } else {
-              toast.success("Cover art generated!", {
-                description: `${genre} cover with ${style} style is ready.`,
+              toast.success("4K HD cover art generated!", {
+                description: `${genre} cover with ${style} style is ready at 4096x4096 resolution.`,
               });
             }
           }
