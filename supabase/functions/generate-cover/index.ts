@@ -201,38 +201,37 @@ serve(async (req) => {
 
     try {
       // Build the complete album cover prompt (artwork WITH integrated text)
-      const singlePassPrompt = `SYSTEM ROLE:
-You are generating a complete, professional album cover with INTEGRATED text typography.
-This is a SINGLE cohesive image where the text is designed as part of the artwork.
+      // TEXT STYLING is placed FIRST and emphasized heavily so the AI prioritizes it
+      const singlePassPrompt = `===== CRITICAL: TEXT TYPOGRAPHY DESIGN (HIGHEST PRIORITY) =====
+${textStyleInstructions ? `
+**MANDATORY TEXT STYLE - FOLLOW EXACTLY:**
+${textStyleInstructions}
 
-===== TEXT CONTENT (MUST BE INCLUDED - SPELL EXACTLY) =====
+You MUST replicate this EXACT text style with high fidelity:
+- Match the EXACT letterforms, stroke weights, and shapes described
+- Match the EXACT effects (blur, glow, distortion, metallic, chrome, etc.)
+- Match the EXACT texture and surface quality
+- The typography style is NON-NEGOTIABLE - execute it precisely
+` : `
+Design professional, album-ready typography that fits the ${genre} aesthetic.
+The text should have depth, dimension, effects, and feel integrated with the scene.
+`}
+
+===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
 Song Title: "${songTitle || 'Untitled'}"
 Artist Name: "${artistName || ''}"
 
-The text MUST be:
-- Positioned in the lower third of the image (typical album cover placement)
-- Sized to cover no more than 30-35% of the total image
-- DEEPLY INTEGRATED with the artwork - not just overlaid
-- Colors that are PULLED FROM the artwork's palette (use colors already in the scene!)
-- Styled with effects that match the mood (metallic, glow, shadows, texture)
+Text placement rules:
+- Position in the lower third of the image
+- Size: 30-35% of image area maximum
+- Text colors PULLED FROM the artwork's palette (matching scene colors)
+- Text must feel DESIGNED INTO the artwork, not overlaid
 
-===== GLOBAL QUALITY LAYER =====
-The image must feel cinematic, dramatic, intentional, and polished.
-The result should look like a finished, high-budget album cover.
-
-Prioritize:
-- Strong central composition with the subject as focal point
-- Cinematic lighting (backlighting, rim light, dramatic contrast)
-- Atmospheric depth (fog, rain, smoke, particles)
-- Text that feels DESIGNED INTO the scene, not added on top
-- Text colors that complement the artwork (if artwork has warm oranges, use warm text colors)
-
-===== DIRECTOR PASS =====
-Capture ONE defining cinematic moment.
-The text should enhance, not compete with, the visual story.
+===== ARTWORK VISION =====
+${description}
 
 ===== GENRE: ${genre} =====
-Visual intent: ${genreDirection.visual}
+Visual: ${genreDirection.visual}
 Narrative: ${genreDirection.narrative}
 
 ===== VISUAL STYLE: ${style} =====
@@ -241,30 +240,24 @@ ${visualStyle}
 ===== MOOD: ${mood} =====
 ${moodStyle}
 
-===== USER'S VISION =====
-${description}
+===== GLOBAL QUALITY =====
+Cinematic, dramatic, polished professional album cover.
+Strong composition, dramatic lighting, atmospheric depth.
+Text integrated seamlessly with the scene.
 
-${textStyleInstructions ? `===== TEXT STYLING =====
-${textStyleInstructions}
-Apply this style while ensuring text colors work with the artwork.` : `===== TEXT STYLING =====
-Design professional, album-ready typography that fits the ${genre} aesthetic.
-The text should have depth, effects, and feel integrated with the scene.`}
+===== TEXT COLOR INTEGRATION =====
+- Text colors MUST come from the artwork's existing palette
+- If scene has warm tones → warm text colors
+- If scene has cool tones → cool text colors
+- NEVER introduce colors not in the artwork
+- Add effects (glow, shadow, metallic) that match scene lighting
 
-===== CRITICAL TEXT INTEGRATION RULES =====
-1. Text colors MUST be pulled from the artwork's existing palette
-   - If scene has fire/orange → use warm orange/gold text
-   - If scene has cool blues → use blue/cyan text
-   - NEVER use random colors that don't exist in the artwork
-2. Text should have effects that connect it to the scene (glow matching scene lighting, shadows, etc.)
-3. The text should look like it belongs in the world of the image
-
-===== TECHNICAL REQUIREMENTS =====
-- EXACT 1:1 square aspect ratio (1024x1024)
-- Edge-to-edge artwork, NO borders
+===== TECHNICAL =====
+- 1:1 square (1024x1024)
+- Edge-to-edge, NO borders
 - Ultra high quality
-- Text clearly legible but integrated
-- Song title: "${songTitle || 'Untitled'}" (spell each letter correctly)
-- Artist name: "${artistName || ''}" (spell each letter correctly)`;
+- Song title: "${songTitle || 'Untitled'}" (spell correctly)
+- Artist name: "${artistName || ''}" (spell correctly)`;
 
       logStep("Starting SINGLE-PASS generation (artwork + text together)");
       const startTime = Date.now();
