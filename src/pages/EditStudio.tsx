@@ -686,6 +686,17 @@ const EditStudio = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Progress overlay during upscaling */}
+                  {isUpscaling && (
+                    <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <div className="text-center">
+                        <p className="text-lg font-semibold mb-2">Upscaling to 4K...</p>
+                        <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Action Buttons */}
