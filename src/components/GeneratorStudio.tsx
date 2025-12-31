@@ -1142,27 +1142,25 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                               {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
                             </Button>
                           )}
-                          {upscaledImageUrl && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                              onClick={() => navigate("/edit-studio", {
-                                state: {
-                                  imageUrl: upscaledImageUrl || generatedImage,
-                                  genre,
-                                  style,
-                                  mood,
-                                  textStyle,
-                                  songTitle: songTitle.trim(),
-                                  artistName: artistName.trim(),
-                                }
-                              })}
-                              disabled={isGenerating}
-                            >
-                              Edit Cover
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                            onClick={() => navigate("/edit-studio", {
+                              state: {
+                                imageUrl: upscaledImageUrl || generatedImage,
+                                genre,
+                                style,
+                                mood,
+                                textStyle,
+                                songTitle: songTitle.trim(),
+                                artistName: artistName.trim(),
+                              }
+                            })}
+                            disabled={isGenerating}
+                          >
+                            Edit Cover
+                          </Button>
                         </div>
                         
                         {/* Links row */}
