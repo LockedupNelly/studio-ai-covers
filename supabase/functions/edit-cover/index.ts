@@ -349,9 +349,11 @@ OUTPUT: A transparent PNG with only the styled text overlay.`;
     let effectiveInstructions = instructions;
     let effectiveStyleRefUrl = styleReferenceImageUrl;
 
-    // ===== TEXT LAYER MODE: Generate transparent text layer and return for client compositing =====
+    // ===== TEXT LAYER MODE: Design Studio Pass 3-style text integration =====
+    // Instead of generating a transparent overlay, we regenerate the full image with integrated text
+    // This matches how Design Studio creates covers with text "photographed in the scene"
     if (editMode === "text_layer") {
-      logStep("TEXT LAYER MODE: Generating transparent text layer for non-destructive edit");
+      logStep("TEXT LAYER MODE: Using Design Studio Pass 3-style text integration");
       
       const title = typography?.songTitle || songTitle || null;
       const artist = typography?.artistName || artistName || null;
@@ -360,23 +362,71 @@ OUTPUT: A transparent PNG with only the styled text overlay.`;
       const analysis = typography?.coverAnalysis || coverAnalysis || null;
       
       if (!title && !artist) {
-        logStep("TEXT LAYER MODE: No text metadata provided, cannot generate text layer");
+        logStep("TEXT LAYER MODE: No text metadata provided");
         return new Response(
           JSON.stringify({ error: "Text layer mode requires songTitle or artistName" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      logStep("TEXT LAYER MODE: Generating text layer", { title, artist, stylePromptLength: stylePrompt?.length });
+      logStep("TEXT LAYER MODE: Starting", { title, artist, stylePromptLength: stylePrompt?.length });
       
-      // Step 1: Check if we need to create a clean base artwork (text removed)
-      // If baseArtworkUrl already looks clean (no visible text), we reuse it
-      // Otherwise, we do a one-time text erasure
-      let cleanBaseUrl = baseArtworkUrl || effectiveImageUrl;
+      // Step 1: Detect existing text locations using vision model
+      let detectedTitleZone = "center";
+      let detectedArtistZone = "lower";
       
-      // For the first text-only edit, we need to erase existing text from the base
-      // After that, the frontend will pass the clean baseArtworkUrl
-      if (!baseArtworkUrl) {
+      try {
+        const detectPrompt = `Analyze this album cover and identify where the text is positioned.
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "titleZone": "top|upper-left|upper-right|center|center-left|center-right|lower-left|lower-right|bottom",
+  "artistZone": "top|upper-left|upper-right|center|center-left|center-right|lower-left|lower-right|bottom",
+  "titleSize": "small|medium|large",
+  "artistSize": "small|medium|large"
+}`;
+        const detectRaw = await callLovableText(detectPrompt, imageUrl);
+        const detectParsed = JSON.parse(detectRaw.slice(detectRaw.indexOf("{"), detectRaw.lastIndexOf("}") + 1));
+        detectedTitleZone = detectParsed.titleZone || "center";
+        detectedArtistZone = detectParsed.artistZone || "lower";
+        logStep("TEXT LAYER MODE: Detected text positions", { detectedTitleZone, detectedArtistZone });
+      } catch (e) {
+        logStep("TEXT LAYER MODE: Position detection failed, using defaults", { error: e instanceof Error ? e.message : String(e) });
+      }
+      
+      // Step 2: Check if we have a clean base, otherwise create one
+      let cleanBaseUrl: string;
+      
+      if (baseArtworkUrl) {
+        // Validate that the provided base is actually clean (no text)
+        logStep("TEXT LAYER MODE: Validating provided baseArtworkUrl");
+        try {
+          const validationPrompt = `Does this image contain any visible text, letters, words, or typography? Reply ONLY "yes" or "no".`;
+          const hasTextResponse = await callLovableText(validationPrompt, baseArtworkUrl);
+          const hasText = hasTextResponse.toLowerCase().includes("yes");
+          
+          if (hasText) {
+            logStep("TEXT LAYER MODE: Provided base contains text, will re-erase");
+            const erasePrompt = `You are an image inpainting specialist. COMPLETELY REMOVE ALL TEXT from this album cover.
+ERASE every letter, word, and character. Use context-aware inpainting to fill where text was.
+The result must have ZERO visible text remaining. Do NOT add any new text.
+Keep the artwork style, colors, mood, and composition exactly the same - ONLY remove text.
+Maintain FULL RESOLUTION and DETAIL. Output the cleaned, text-free album art.`;
+            cleanBaseUrl = await callLovableImageEdit(erasePrompt, baseArtworkUrl, null);
+            logStep("TEXT LAYER MODE: Re-erased text from base");
+          } else {
+            cleanBaseUrl = baseArtworkUrl;
+            logStep("TEXT LAYER MODE: Provided base is clean, reusing");
+          }
+        } catch (e) {
+          logStep("TEXT LAYER MODE: Validation failed, erasing text from base", { error: e instanceof Error ? e.message : String(e) });
+          const erasePrompt = `You are an image inpainting specialist. COMPLETELY REMOVE ALL TEXT from this album cover.
+ERASE every letter, word, and character. Use context-aware inpainting to fill where text was.
+Keep the artwork style, colors, mood, and composition exactly the same - ONLY remove text.
+Maintain FULL RESOLUTION and DETAIL.`;
+          cleanBaseUrl = await callLovableImageEdit(erasePrompt, baseArtworkUrl, null);
+        }
+      } else {
+        // First time: must erase text from current image
         logStep("TEXT LAYER MODE: No clean base provided, erasing text from current image");
         
         const erasePrompt = `You are an image inpainting specialist. COMPLETELY REMOVE ALL TEXT from this album cover.
@@ -386,7 +436,7 @@ Keep the artwork style, colors, mood, and composition exactly the same - ONLY re
 Maintain FULL RESOLUTION and DETAIL. Output the cleaned, text-free album art.`;
 
         try {
-          cleanBaseUrl = await callLovableImageEdit(erasePrompt, effectiveImageUrl, null);
+          cleanBaseUrl = await callLovableImageEdit(erasePrompt, imageUrl, null);
           logStep("TEXT LAYER MODE: Base artwork cleaned (text removed)");
         } catch (e) {
           logStep("TEXT LAYER MODE: Text erasure failed", { error: e instanceof Error ? e.message : String(e) });
@@ -394,32 +444,109 @@ Maintain FULL RESOLUTION and DETAIL. Output the cleaned, text-free album art.`;
         }
       }
       
-      // Step 2: Generate transparent text layer using OpenAI gpt-image-1
+      // Step 3: Regenerate full image with integrated text (Design Studio Pass 3 style)
+      // This uses the same contract as generate-cover Pass 3 - text is "photographed in the scene"
+      const colorGuidance = analysis?.dominantColors?.length
+        ? `Use colors from the cover's palette: ${analysis.dominantColors.join(', ')}.`
+        : "Sample dominant colors from the artwork for text colors.";
+      
+      const integrationPrompt = `SYSTEM ROLE:
+You are recreating professional album cover artwork. You must preserve the visual aesthetic 
+and scene from the reference artwork EXACTLY while adding perfectly integrated typography.
+
+===== REFERENCE ARTWORK (PRESERVE EXACTLY) =====
+Use the provided clean artwork as the base. Recreate it EXACTLY, adding only the typography.
+DO NOT modify, regenerate, or change the background artwork in ANY way.
+The artwork must remain pixel-perfect identical - you are ONLY adding text.
+
+===== MANDATORY TEXT STYLE (USER SELECTED - FOLLOW EXACTLY) =====
+The user has explicitly chosen this text style. You MUST create text that matches this description:
+"${stylePrompt}"
+
+This is NON-NEGOTIABLE. The font style, weight, texture, and effects described above MUST be followed.
+
+===== TEXT INTEGRATION CONTRACT (MANDATORY) =====
+Text must be treated as a physical object inside the scene, not an overlay.
+
+TEXT CONTENT (SPELL EXACTLY - LETTER BY LETTER):
+${title ? `- SONG TITLE: "${title}" 
+  - Spell as: ${title.split('').join('-')}
+  - Display as PRIMARY text, large and prominent
+  - Position in the ${detectedTitleZone} area (same location as original)` : ''}
+${artist ? `- ARTIST NAME: "${artist}"
+  - Spell as: ${artist.split('').join('-')}  
+  - Display SMALLER, positioned in the ${detectedArtistZone} area (same location as original)` : ''}
+
+CRITICAL SPELLING VERIFICATION:
+${title ? `- Count letters in "${title}": ${title.length} characters - VERIFY EXACT MATCH` : ''}
+${artist ? `- Count letters in "${artist}": ${artist.length} characters - VERIFY EXACT MATCH` : ''}
+- Do not substitute similar-looking characters
+- Do not add or remove any letters
+
+SINGLE INSTANCE RULES:
+- Each text element appears ONCE only - no duplication
+- Title appears exactly 1 time
+- Artist appears exactly 1 time
+
+===== TEXT PLACEMENT CONSTRAINTS =====
+- Title: position in ${detectedTitleZone} (matching original location)
+- Artist: position in ${detectedArtistZone} (matching original location)  
+- Title height must be <= 22% of canvas height
+- Artist height must be <= 12% of canvas height
+- Title must occupy <= 85% of canvas width
+- Artist must occupy <= 75% of canvas width
+- Do NOT place text spanning the entire cover
+
+===== COLOR INTEGRATION =====
+${colorGuidance}
+Add shadows, glows, or gradients that match the artwork's lighting direction.
+
+===== FORBIDDEN =====
+- Flat overlay text (stamped on top look)
+- Poster-style typography that ignores the artwork
+- Text floating in empty space
+- Clean, UI-like lettering without artistic effects
+- Ignoring the user's selected text style
+- Duplicating any text
+- Giant text spanning the whole cover
+- ANY modification to the background artwork
+
+===== REQUIRED =====
+- Text must match the user's selected style EXACTLY (font, weight, effects, texture)
+- Text must exist as part of the environment
+- Text must interact with light, shadow, depth
+- Text must show wear, texture, perspective distortion appropriate to the style
+- Text must feel like it was PHOTOGRAPHED in the scene, not added in post-production
+- Background artwork must be IDENTICAL to the reference
+
+OUTPUT: The album cover with the styled text integrated into the scene.`;
+
       try {
-        const textLayerUrl = await generateTransparentTextLayer(
+        logStep("TEXT LAYER MODE: Regenerating with integrated text (Pass 3 style)", {
+          titleZone: detectedTitleZone,
+          artistZone: detectedArtistZone
+        });
+        
+        const finalImageUrl = await callLovableImageEdit(
+          integrationPrompt,
           cleanBaseUrl,
-          title,
-          artist,
-          stylePrompt,
-          styleRefUrl,
-          analysis
+          styleRefUrl
         );
         
-        logStep("TEXT LAYER MODE: Text layer generated successfully");
+        logStep("TEXT LAYER MODE: Text integration complete");
         
         clearTimeout(timeout);
         
-        // Return the text layer mode response for client-side compositing
+        // Return the complete image (not text_layer mode - no client compositing needed)
         return new Response(JSON.stringify({ 
-          mode: "text_layer",
-          baseArtworkUrl: cleanBaseUrl,
-          textLayerUrl: textLayerUrl,
+          imageUrl: finalImageUrl,
+          baseArtworkUrl: cleanBaseUrl, // Return clean base for caching
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
-        logStep("TEXT LAYER MODE: Text layer generation failed", { error: e instanceof Error ? e.message : String(e) });
-        throw new Error(`Failed to generate text layer: ${e instanceof Error ? e.message : String(e)}`);
+        logStep("TEXT LAYER MODE: Text integration failed", { error: e instanceof Error ? e.message : String(e) });
+        throw new Error(`Failed to integrate text: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
