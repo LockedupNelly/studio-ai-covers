@@ -403,8 +403,8 @@ ${moodStyle}
       logStep("PASS 1 complete (artwork only)", { timeMs: pass1Time });
 
       // ===== PASS 2: ADD TEXT WITH VISION =====
-      // Use gpt-image-1 with image input to add styled text
-      const textPrompt = `You are looking at an album cover artwork. Your task is to add professional typography to this image.
+      // Use gpt-image-1 with image input to add styled text with DEEP integration
+      const textPrompt = `You are looking at an album cover artwork. Your task is to add professional typography that feels PAINTED INTO the scene, not overlaid on top.
 
 ===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
 Song Title: "${songTitle || 'Untitled'}"
@@ -424,17 +424,49 @@ Design professional, album-ready typography that fits the ${genre} aesthetic.
 The text should have depth, dimension, effects, and feel integrated with the scene.
 `}
 
+===== CRITICAL: DEEP VISUAL INTEGRATION (DO NOT SKIP) =====
+The text must feel like it BELONGS in the artwork, not pasted on top. Apply ALL of these:
+
+**1. LIGHTING INTEGRATION:**
+- Study the light sources in the artwork (where is light coming from?)
+- Text must have shadows/highlights that match the SAME light direction
+- If artwork has rim lighting, text gets rim lighting from the same angle
+- If artwork has warm glow, text picks up that warm ambient light
+- Text surfaces should reflect the scene's lighting conditions
+
+**2. ATMOSPHERIC INTEGRATION:**
+- If the scene has fog/haze/mist, text should be slightly affected by it
+- If there's dust/particles in the air, some may pass in front of text
+- Match the overall atmosphere (moody = text has subtle depth haze)
+- Text should exist IN the environment, not floating above it
+
+**3. DEPTH/LAYER INTEGRATION:**
+- Text can have foreground elements partially overlapping it (subtle)
+- Small particles, fog wisps, or lighting effects can pass OVER parts of the text
+- This creates depth and makes text feel embedded in the scene
+- Don't over-do it - text should remain readable
+
+**4. SURFACE/TEXTURE MATCHING:**
+- If artwork is gritty/distressed, text should have complementary wear
+- If artwork is sleek/polished, text should be clean with matching finish
+- If artwork has film grain, text should appear through that same grain
+- Match the overall "material quality" of the artwork
+
+**5. COLOR TEMPERATURE HARMONY:**
+- Text color MUST be derived from the artwork's existing palette
+- Cool-toned artwork = cool-toned text (not warm orange on blue scene)
+- Warm-toned artwork = warm-toned text (not cool blue on warm scene)
+- Text should feel like it was painted by the same artist
+
+**6. EDGE TREATMENT:**
+- Text edges should NOT be perfectly sharp against the background
+- Subtle glow, shadow softness, or atmospheric blending at edges
+- The text should "breathe" with the artwork, not cut against it
+
 ===== TEXT PLACEMENT =====
 - Position text in the lower third of the image
 - Size: 30-35% of image area maximum
 - Text must feel DESIGNED INTO the artwork, not overlaid
-
-===== TEXT COLOR RULES (CRITICAL) =====
-- LOOK AT the artwork colors carefully
-- Text colors MUST be pulled from the artwork's existing palette
-- Match the dominant tones you see in the image
-- Add effects (glow, shadow, metallic) that match the scene lighting
-- Text should complement and enhance the artwork, not fight it
 
 ===== PRESERVE THE ARTWORK =====
 - Keep ALL elements of the original artwork intact
