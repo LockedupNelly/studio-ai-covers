@@ -10,15 +10,31 @@ import { useCredits } from "@/hooks/useCredits";
 import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
+interface ReturnedState {
+  returnedImage?: string;
+  genre?: string;
+  style?: string;
+  mood?: string;
+  textStyle?: string;
+  songTitle?: string;
+  artistName?: string;
+}
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits } = useCredits();
   const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check for returned state from EditStudio
+  const returnedState = location.state as ReturnedState | null;
+  const [generatedImage, setGeneratedImage] = useState<string | null>(
+    returnedState?.returnedImage || null
+  );
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Listen for cover edit events from EditCoverDialog
   useEffect(() => {
