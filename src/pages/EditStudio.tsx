@@ -377,9 +377,10 @@ const EditStudio = () => {
       let finalImageUrl: string;
       
       if (useTextLayerMode) {
-        // ===== NON-DESTRUCTIVE TEXT LAYER MODE =====
-        console.log("Using non-destructive text layer mode", { songTitle: currentState.songTitle, artistName: currentState.artistName });
-        toast.info("Using non-destructive text layer mode");
+        // ===== NON-DESTRUCTIVE TEXT LAYER MODE (Design Studio Pass 3 style) =====
+        // Backend regenerates the full image with integrated text - no client compositing needed
+        console.log("Using Design Studio Pass 3-style text integration", { songTitle: currentState.songTitle, artistName: currentState.artistName });
+        toast.info("Updating text style...");
         
         const stylePrompt = selectedVariant?.promptInstructions || 
           selectedVariant?.description || 
@@ -388,17 +389,14 @@ const EditStudio = () => {
         const styleRefUrl = selectedVariant?.previewImage 
           ? new URL(selectedVariant.previewImage, window.location.origin).toString()
           : null;
-
-        // Use baseArtworkUrl if we have one, otherwise use current image
-        const artworkUrl = baseArtworkUrl || imageUrl;
         
         setProgress(20);
         
         const { data, error } = await supabase.functions.invoke("edit-cover", {
           body: {
             editMode: "text_layer",
-            baseArtworkUrl: artworkUrl,
-            imageUrl: artworkUrl,
+            imageUrl: imageUrl, // Current image (may have text)
+            baseArtworkUrl: baseArtworkUrl || null, // Cached clean base (if available)
             typography: {
               songTitle: currentState.songTitle,
               artistName: currentState.artistName,
@@ -411,27 +409,16 @@ const EditStudio = () => {
         
         if (error) throw error;
 
-        setProgress(60);
+        setProgress(80);
         
-        if (data?.mode === "text_layer" && data?.textLayerUrl) {
-          // Composite the text layer over the base artwork in the browser
-          const result = await compositeAndUpload(
-            data.baseArtworkUrl,
-            data.textLayerUrl,
-            user.id
-          );
+        // Backend now returns a complete image (not text_layer mode)
+        if (data?.imageUrl) {
+          finalImageUrl = data.imageUrl;
           
-          finalImageUrl = result.imageUrl;
-          
-          // Store the base artwork URL for future text-only edits
-          if (!baseArtworkUrl) {
-            // First time: we need to create a clean base artwork
-            // For now, use the erased version from a one-time operation
+          // Cache the clean base for future text-only edits
+          if (data.baseArtworkUrl) {
             setBaseArtworkUrl(data.baseArtworkUrl);
           }
-        } else if (data?.imageUrl) {
-          // Fallback: backend returned a fully composed image
-          finalImageUrl = data.imageUrl;
         } else {
           throw new Error("No image returned from edit");
         }
