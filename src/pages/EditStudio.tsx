@@ -241,7 +241,7 @@ const EditStudio = () => {
     }
     
     if (accentColor) {
-      instructions.push(`Add ${getColorValue(accentColor)} accent highlights and color accents throughout the cover artwork - this includes lighting effects, glows, color grading, decorative elements, and design details. Make the accent color visibly present in the overall design aesthetic.`);
+      instructions.push(`Apply ${getColorValue(accentColor)} ONLY as a subtle accent highlight, not a dominant color. Use it sparingly and selectively (no more than ~15–25% of the overall image). The accent color may appear ONLY in: small lighting highlights, edge glows or rim lighting, minor reflections on objects or typography, very limited decorative details, subtle atmospheric particles. Accent color intensity must feel realistic, cinematic, and physically motivated (e.g. light spill, glow falloff, material reflection), not graphic, illustrative, or UI-styled. The accent color must NOT: tint or recolor the entire image, apply global color grading or color washes, replace the original color palette, affect shadows or midtones, recolor the background, sky, or main lighting, introduce abstract lines, HUD elements, waveforms, or new graphic shapes. The original mood, lighting, composition, and base color palette must remain dominant.`);
     }
     
     // Check if text style variant changed (compare full variant ID, not just category)
