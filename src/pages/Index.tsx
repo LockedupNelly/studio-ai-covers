@@ -7,7 +7,6 @@ import { Footer } from "@/components/Footer";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
-import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,7 +24,6 @@ interface ReturnedState {
 const Index = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits } = useCredits();
-  const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -128,50 +126,14 @@ const Index = () => {
             throw new Error(data.error);
           }
 
-          // Handle new parallel generation response (needs client-side compositing)
-          if (data?.needsCompositing && data?.artworkUrl && data?.textLayerUrl) {
-            toast.info("Compositing layers...", {
-              description: "Merging artwork and text for final cover.",
-            });
-
-            try {
-              const result = await compositeAndUpload(
-                data.artworkUrl,
-                data.textLayerUrl,
-                user?.id || "anon"
-              );
-
-              setGeneratedImage(result.imageUrl);
-              refetchCredits();
-
-              toast.success("Cover art generated!", {
-                description: `${genre} cover with ${style} style is ready.`,
-              });
-            } catch (compositeError) {
-              console.error("Compositing error:", compositeError);
-              // Fallback: just show the artwork without text
-              setGeneratedImage(data.artworkUrl);
-              refetchCredits();
-              
-              toast.warning("Cover generated (text layer failed)", {
-                description: "The artwork was created but text compositing failed. You can add text manually.",
-              });
-            }
-          } else if (data?.imageUrl) {
-            // Legacy single image response
+          // Single-pass generation - image comes back complete
+          if (data?.imageUrl) {
             setGeneratedImage(data.imageUrl);
             refetchCredits();
 
-            if (data.warning === "TEXT_STYLE_MISMATCH") {
-              toast.info("Cover generated with style variation", {
-                description: "The text style may differ slightly from your selection. You were not charged.",
-                duration: 6000,
-              });
-            } else {
-              toast.success("Cover art generated!", {
-                description: `${genre} cover with ${style} style is ready.`,
-              });
-            }
+            toast.success("Cover art generated!", {
+              description: `${genre} cover with ${style} style is ready.`,
+            });
           }
 
           // Success: stop retry loop
