@@ -173,17 +173,20 @@ serve(async (req) => {
 - Must be indistinguishable from a photograph taken in the real world
 - Reference: Annie Leibovitz, Peter Lindbergh, Tim Walker photography`,
 
-    "3D Render": `HYPER-REALISTIC 3D CGI RENDER - Professional Octane/Redshift/V-Ray quality.
-- Ultra-detailed physically-based rendering (PBR) with realistic materials
-- Subsurface scattering on skin, caustics on glass, accurate metal reflectivity
-- Global illumination with realistic light bounce and ambient occlusion
-- High-poly geometry with no visible polygons or artifacts
-- Volumetric lighting, god rays, atmospheric haze
-- Perfect surface detail: scratches, dust, fingerprints, wear patterns
-- HDRI environment lighting with realistic reflections
-- Clean, polished aesthetic typical of high-end 3D visualization
-- Reference: Pixar, Blur Studio, Digital Domain quality
-- Distinct from photography: perfect, idealized, impossibly clean surfaces`,
+    "3D Render": `OCTANE RENDER / CINEMA 4D / BLENDER CGI AESTHETIC - This MUST look like a professional 3D software render, NOT a photograph or illustration.
+- DISTINCTLY DIGITAL 3D AESTHETIC: smooth, clean, impossibly perfect surfaces that scream "CGI"
+- Octane Render / Redshift / Arnold / Cycles render engine look
+- Ultra-smooth geometry with visible subsurface scattering glow on skin
+- Hyper-clean plastic, rubber, or silicone-like material quality
+- Dramatic rim lighting with neon accent lights (cyan, magenta, orange glows)
+- Volumetric fog, god rays, atmospheric depth with visible light beams
+- Perfect edge bevels and impossibly smooth curves on all geometry
+- HDRI studio lighting with gradient backgrounds or abstract 3D environments
+- Reflective floors, floating geometric shapes, abstract platforms
+- That "Cinema 4D Instagram aesthetic": clean, stylized, almost toy-like perfection
+- Subjects should look like high-end 3D character models, NOT real people
+- Reference: Beeple, Peter Tarka, Nikita Diakur, modern C4D/Octane artists
+- NO photorealism, NO film grain, NO imperfections - this is DIGITAL PERFECTION`,
 
     "Illustration": `TRADITIONAL ILLUSTRATION - Hand-painted artistic quality.
 - Visible brushstrokes, paint texture, artistic mark-making
@@ -197,17 +200,19 @@ serve(async (req) => {
 - Reference: Drew Struzan, James Jean, Sachin Teng, Jon Foster
 - Must look like it was painted by a human artist with physical media`,
 
-    "Anime": `JAPANESE ANIME/MANGA AESTHETIC - High-quality anime production style.
-- Clean cel-shaded look with flat color areas and sharp shadow edges
-- Distinctive anime eye style: large, expressive, with detailed highlights
-- Bold black outlines with varying line weight
-- Simplified features with stylized proportions
-- Dynamic poses and exaggerated expressions
-- Gradient shading on hair with distinct highlight sections
-- Speed lines, motion blur for action
-- Sakura petals, sparkles, atmospheric particles
-- Reference: Studio Ghibli, Makoto Shinkai, MAPPA, Ufotable quality
-- Vibrant, saturated colors with anime-specific color theory`,
+    "Anime": `INTENSE JAPANESE ANIME AESTHETIC - Dramatic, exaggerated, high-impact anime style with MAXIMUM INTENSITY.
+- EXAGGERATED DRAMATIC EXPRESSIONS: intense eyes with multiple highlight reflections, tears streaming, veins visible when angry
+- DYNAMIC ACTION POSES: extreme foreshortening, impossible camera angles, characters bursting out of frame
+- INTENSE LIGHTING: dramatic backlighting silhouettes, lens flares, glowing auras around characters
+- SPEED AND MOTION: speed lines radiating from subject, motion blur streaks, impact frames with white flash
+- OVERSIZED DRAMATIC FEATURES: huge expressive eyes with detailed iris patterns, sharp angular features, exaggerated hair physics
+- HIGH CONTRAST cel-shading with deep blacks and bright highlights, rim lighting on hair and clothes
+- ATMOSPHERIC INTENSITY: wind-blown hair and clothes, debris floating, energy particles, sakura petals or snow
+- EPIC SCALE: characters against massive backdrops, dramatic sky gradients (orange/purple sunsets, stormy clouds)
+- Reference: Attack on Titan intensity, Demon Slayer visual effects, Jujutsu Kaisen action, Chainsaw Man rawness
+- NOT cute/soft anime - this is DRAMATIC, INTENSE, CINEMATIC anime with IMPACT
+- Bold black outlines with aggressive line weight variation, hatching for shadows
+- Color palette: deep saturated colors with neon accent highlights, dramatic color grading`,
 
     "Fine Art": `MUSEUM-QUALITY FINE ART - Classical painting techniques.
 - Chiaroscuro lighting with dramatic light/shadow contrast
