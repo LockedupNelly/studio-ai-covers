@@ -483,15 +483,113 @@ Emotional Narrative: ${genreDirection.narrative}
       const pass1Time = Date.now() - startTime;
       logStep("PASS 1 complete (artwork only)", { timeMs: pass1Time });
 
+      // ===== PASS 1.5: PALETTE ANALYSIS (so text color doesn't default to generic off-white) =====
+      // gpt-image-1 often chooses a safe high-contrast "bone/ivory" on dark scenes unless we provide explicit palette-locked colors.
+      let paletteGuidance:
+        | {
+            titleColorHex: string;
+            artistColorHex: string;
+            shadowRgba: string;
+            accentHex?: string;
+          }
+        | null = null;
+
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          const paletteRes = await fetch(
+            "https://ai.gateway.lovable.dev/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are a senior album-cover typography art director. Your job is to pick text colors that FEEL LIT BY the artwork and belong in the scene while remaining readable at thumbnail size.",
+                  },
+                  {
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text:
+                          "Analyze the artwork. Return STRICT JSON only (no markdown) with keys: titleColorHex, artistColorHex, shadowRgba, accentHex.\n\nRules:\n- Colors must be derived from the artwork palette (dominant light / glow / key color).\n- Avoid generic beige/ivory defaults unless the scene lighting is actually warm-white.\n- Ensure readable contrast with subtle shadow (shadowRgba).\n- If the scene has a strong colored light (e.g., green glow), tint the text toward that hue.\n- Hex must be #RRGGBB. shadowRgba must be rgba(r,g,b,a).",
+                      },
+                      {
+                        type: "image_url",
+                        image_url: {
+                          url: `data:image/png;base64,${artworkBase64}`,
+                        },
+                      },
+                    ],
+                  },
+                ],
+                modalities: ["image", "text"],
+              }),
+            }
+          );
+
+          if (paletteRes.ok) {
+            const paletteJson = await paletteRes.json();
+            const content = paletteJson?.choices?.[0]?.message?.content;
+            if (typeof content === "string") {
+              try {
+                const parsed = JSON.parse(content);
+                if (
+                  parsed?.titleColorHex &&
+                  parsed?.artistColorHex &&
+                  parsed?.shadowRgba
+                ) {
+                  paletteGuidance = {
+                    titleColorHex: String(parsed.titleColorHex),
+                    artistColorHex: String(parsed.artistColorHex),
+                    shadowRgba: String(parsed.shadowRgba),
+                    accentHex: parsed.accentHex ? String(parsed.accentHex) : undefined,
+                  };
+                  logStep("Palette guidance extracted", paletteGuidance);
+                }
+              } catch {
+                // Ignore parse failures; we'll fall back to prompt-only guidance.
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logStep("Palette analysis failed (continuing)", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+
       // ===== PASS 2: ADD TEXT WITH VISION =====
       // Use gpt-image-1 with image input to add styled text with DEEP integration
+      const paletteLockedColorBlock = paletteGuidance
+        ? `===== PALETTE-LOCKED COLOR (NON-NEGOTIABLE) =====
+TITLE_COLOR_HEX: ${paletteGuidance.titleColorHex}
+ARTIST_COLOR_HEX: ${paletteGuidance.artistColorHex}
+SHADOW_RGBA: ${paletteGuidance.shadowRgba}
+${paletteGuidance.accentHex ? `ACCENT_HEX: ${paletteGuidance.accentHex}` : ""}
+
+COLOR RULES:
+- Apply these exact colors (or their material-equivalent tint if metallic/chrome) so the type matches the artwork lighting.
+- Do NOT default to generic beige/ivory unless TITLE_COLOR_HEX is beige/ivory.
+`
+        : "";
+
       const textPrompt = `You are generating professional album cover typography for musicians.
 
 The goal is for the text to feel PAINTED INTO the artwork, not overlaid on top.
 
 ===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
-Song Title: "${songTitle || 'Untitled'}"
-Artist Name: "${artistName || ''}"
+Song Title: "${songTitle || "Untitled"}"
+Artist Name: "${artistName || ""}"
+
+${paletteLockedColorBlock}
 
 ===== MANDATORY RENDER ORDER (CRITICAL – DO NOT IGNORE) =====
 1. Analyze the background artwork and identify:
@@ -547,7 +645,8 @@ The text should have depth, dimension, effects, and feel integrated with the sce
 - Apply the same grain, noise, or film texture as the artwork
 
 **5. COLOR HARMONY**
-- Text color must be derived from the artwork's existing palette
+- If PALETTE-LOCKED COLOR is provided above, it OVERRIDES all other color ideas
+- Otherwise, text color must be derived from the artwork's existing palette
 - Cool scenes = cool text tones
 - Warm scenes = warm text tones
 - No unrelated or artificial color choices
@@ -570,8 +669,8 @@ The text should have depth, dimension, effects, and feel integrated with the sce
 
 ===== TECHNICAL =====
 - 1:1 square (1024x1024)
-- Song title: "${songTitle || 'Untitled'}" (spell each letter correctly)
-- Artist name: "${artistName || ''}" (spell each letter correctly)
+- Song title: "${songTitle || "Untitled"}" (spell each letter correctly)
+- Artist name: "${artistName || ""}" (spell each letter correctly)
 - Professional album cover quality`;
 
       logStep("PASS 2: Adding text with vision input");
