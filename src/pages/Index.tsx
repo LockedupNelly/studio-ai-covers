@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
@@ -26,6 +26,8 @@ const Index = () => {
   const { credits, refetch: refetchCredits } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
+  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   // Check for returned state from EditStudio
   const returnedState = location.state as ReturnedState | null;
@@ -101,15 +103,40 @@ const Index = () => {
       );
     };
 
+    // Clear any existing timeout
+    if (generationTimeoutRef.current) {
+      clearTimeout(generationTimeoutRef.current);
+    }
+    
+    // Create abort controller for this generation
+    abortControllerRef.current = new AbortController();
+    
+    // Set 90-second client-side timeout
+    const GENERATION_TIMEOUT = 90000; // 90 seconds
+    let timedOut = false;
+    
+    generationTimeoutRef.current = setTimeout(() => {
+      timedOut = true;
+      abortControllerRef.current?.abort();
+      setIsGenerating(false);
+      toast.error("Generation timed out", {
+        description: "The request took too long. Please try again - sometimes the AI servers are busy.",
+      });
+    }, GENERATION_TIMEOUT);
+
     try {
       const maxAttempts = 3;
       let lastError: unknown = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (timedOut) break;
+        
         try {
           const { data, error } = await supabase.functions.invoke("generate-cover", {
             body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
           });
+
+          if (timedOut) break;
 
           if (error) {
             throw new Error(await extractInvokeErrorMessage(error));
@@ -139,6 +166,8 @@ const Index = () => {
           // Success: stop retry loop
           return;
         } catch (e) {
+          if (timedOut) break;
+          
           lastError = e;
           const msg = e instanceof Error ? e.message : String(e);
 
@@ -150,15 +179,26 @@ const Index = () => {
         }
       }
 
-      // If all retries failed, throw the last error
-      throw lastError;
+      // If all retries failed and not timed out, throw the last error
+      if (!timedOut && lastError) {
+        throw lastError;
+      }
     } catch (error) {
-      console.error("Generation error:", error);
-      toast.error("Generation failed", {
-        description: error instanceof Error ? error.message : "Please try again",
-      });
+      if (!timedOut) {
+        console.error("Generation error:", error);
+        toast.error("Generation failed", {
+          description: error instanceof Error ? error.message : "Please try again",
+        });
+      }
     } finally {
-      setIsGenerating(false);
+      // Clear timeout on completion
+      if (generationTimeoutRef.current) {
+        clearTimeout(generationTimeoutRef.current);
+        generationTimeoutRef.current = null;
+      }
+      if (!timedOut) {
+        setIsGenerating(false);
+      }
     }
   };
 
