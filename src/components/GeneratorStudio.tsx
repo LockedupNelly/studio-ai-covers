@@ -52,15 +52,13 @@ const textStyles = [
   { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 ];
 
-// Progress stages for generation - includes upscaling phase
+// Progress stages for generation
 const progressStages = [
   { label: "Preparing your cover...", progress: 5 },
-  { label: "Generating artwork...", progress: 15 },
-  { label: "Creating your vision...", progress: 25 },
-  { label: "Rendering details...", progress: 40 },
-  { label: "Adding finishing touches...", progress: 55 },
-  { label: "Upscaling to 4K HD...", progress: 70 },
-  { label: "Preparing HD image...", progress: 85 },
+  { label: "Generating artwork...", progress: 20 },
+  { label: "Creating your vision...", progress: 40 },
+  { label: "Rendering details...", progress: 60 },
+  { label: "Adding finishing touches...", progress: 80 },
   { label: "Almost ready...", progress: 95 },
 ];
 
@@ -131,6 +129,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
+  const [isUpscaling, setIsUpscaling] = useState(false);
+  const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
 
   // Progress animation during generation - tied to actual generation state
@@ -249,6 +249,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleGenerate = () => {
+    // Reset upscaled image when starting new generation
+    setUpscaledImageUrl(null);
+    
     // Require core metadata first
     if (!songTitle.trim() || !artistName.trim()) {
       toast.error("Please enter a song title and artist name.");
@@ -372,18 +375,16 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleDownload = async () => {
-    // generatedImage is now always the HD 4K version from backend
-    const imageToDownload = generatedImage;
+    const imageToDownload = upscaledImageUrl || generatedImage;
     if (!imageToDownload) return;
 
     try {
-      // Download directly - already 4K HD from backend auto-upscale
       const res = await fetch(imageToDownload);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "cover-art-4k.png";
+      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -392,8 +393,36 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       // Fallback: direct download
       const link = document.createElement("a");
       link.href = imageToDownload;
-      link.download = "cover-art-4k.png";
+      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art.png";
       link.click();
+    }
+  };
+
+  const handleUpscale = async () => {
+    if (!generatedImage || isUpscaling) return;
+    
+    setIsUpscaling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("upscale-cover", {
+        body: { imageUrl: generatedImage },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.imageUrl) {
+        setUpscaledImageUrl(data.imageUrl);
+        toast.success("Cover upscaled to 4K HD!", {
+          description: "Your cover is now 4096x4096 resolution.",
+        });
+      }
+    } catch (err) {
+      console.error("Upscale error:", err);
+      toast.error("Upscale failed", {
+        description: err instanceof Error ? err.message : "Please try again",
+      });
+    } finally {
+      setIsUpscaling(false);
     }
   };
 
@@ -1053,13 +1082,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <div className={`relative aspect-square rounded-lg overflow-hidden w-full border-2 ${
                         themeMode === "light" ? "border-gray-300" : "border-gray-500"
                       }`}>
-                        {/* Generated image - now always 4K from backend auto-upscale */}
+                        {/* Generated image - display upscaled if available */}
                         <img 
-                          src={generatedImage} 
-                          alt="Generated Cover Art 4K" 
+                          src={upscaledImageUrl || generatedImage} 
+                          alt="Generated Cover Art" 
                           className="w-full h-full object-cover"
                         />
-                        {isGenerating && (
+                        {(isGenerating || isUpscaling) && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <RefreshCw className="w-8 h-8 text-white animate-spin" />
                           </div>
@@ -1075,9 +1104,17 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <Progress value={smoothProgress} className="h-1.5" />
                         </div>
                       )}
-                      {!isGenerating && (
+                      {isUpscaling && (
+                        <div className="w-full space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`font-medium ${textClass}`}>Upscaling to 4K HD...</span>
+                          </div>
+                          <Progress value={50} className="h-1.5 animate-pulse" />
+                        </div>
+                      )}
+                      {!isGenerating && !isUpscaling && (
                         <p className={`text-center text-xs ${mutedTextClass}`}>
-                          4096 × 4096px · 4K HD · Ready for print & streaming
+                          {upscaledImageUrl ? "4096 × 4096px · 4K HD · Ready for print & streaming" : "1024 × 1024px · Upscale for 4K HD"}
                         </p>
                       )}
                       <div className="flex flex-col gap-3 mt-3 w-full">
@@ -1090,27 +1127,41 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             className="flex-1"
                           >
                             <Download className="w-4 h-4 mr-1" />
-                            Download 4K
+                            {upscaledImageUrl ? "Download 4K" : "Download"}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                            onClick={() => navigate("/edit-studio", {
-                              state: {
-                                imageUrl: generatedImage,
-                                genre,
-                                style,
-                                mood,
-                                textStyle,
-                                songTitle: songTitle.trim(),
-                                artistName: artistName.trim(),
-                              }
-                            })}
-                            disabled={isGenerating}
-                          >
-                            Edit Cover
-                          </Button>
+                          {!upscaledImageUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleUpscale}
+                              disabled={isUpscaling || isGenerating}
+                              className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                            >
+                              <Maximize2 className="w-4 h-4 mr-1" />
+                              {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
+                            </Button>
+                          )}
+                          {upscaledImageUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                              onClick={() => navigate("/edit-studio", {
+                                state: {
+                                  imageUrl: upscaledImageUrl || generatedImage,
+                                  genre,
+                                  style,
+                                  mood,
+                                  textStyle,
+                                  songTitle: songTitle.trim(),
+                                  artistName: artistName.trim(),
+                                }
+                              })}
+                              disabled={isGenerating}
+                            >
+                              Edit Cover
+                            </Button>
+                          )}
                         </div>
                         
                         {/* Links row */}
