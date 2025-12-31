@@ -193,39 +193,17 @@ serve(async (req) => {
     const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
     const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
 
-    // Note: Helper functions for layered generation removed - now using single-pass
-
-    // ========== SINGLE-PASS GENERATION (Artwork + Text Together) ==========
+    // ========== TWO-PASS HYBRID GENERATION ==========
+    // Pass 1: Generate artwork only (no text)
+    // Pass 2: Add text using image input so AI can "see" the artwork
     let imageUrl: string;
     let finalImageUrl: string;
 
     try {
-      // Build the complete album cover prompt (artwork WITH integrated text)
-      // TEXT STYLING is placed FIRST and emphasized heavily so the AI prioritizes it
-      const singlePassPrompt = `===== CRITICAL: TEXT TYPOGRAPHY DESIGN (HIGHEST PRIORITY) =====
-${textStyleInstructions ? `
-**MANDATORY TEXT STYLE - FOLLOW EXACTLY:**
-${textStyleInstructions}
+      const startTime = Date.now();
 
-You MUST replicate this EXACT text style with high fidelity:
-- Match the EXACT letterforms, stroke weights, and shapes described
-- Match the EXACT effects (blur, glow, distortion, metallic, chrome, etc.)
-- Match the EXACT texture and surface quality
-- The typography style is NON-NEGOTIABLE - execute it precisely
-` : `
-Design professional, album-ready typography that fits the ${genre} aesthetic.
-The text should have depth, dimension, effects, and feel integrated with the scene.
-`}
-
-===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
-Song Title: "${songTitle || 'Untitled'}"
-Artist Name: "${artistName || ''}"
-
-Text placement rules:
-- Position in the lower third of the image
-- Size: 30-35% of image area maximum
-- Text colors PULLED FROM the artwork's palette (matching scene colors)
-- Text must feel DESIGNED INTO the artwork, not overlaid
+      // ===== PASS 1: ARTWORK ONLY (No Text) =====
+      const artworkPrompt = `Create a professional album cover artwork for a ${genre} song.
 
 ===== ARTWORK VISION =====
 ${description}
@@ -240,35 +218,29 @@ ${visualStyle}
 ===== MOOD: ${mood} =====
 ${moodStyle}
 
-===== GLOBAL QUALITY =====
-Cinematic, dramatic, polished professional album cover.
-Strong composition, dramatic lighting, atmospheric depth.
-Text integrated seamlessly with the scene.
-
-===== TEXT COLOR INTEGRATION =====
-- Text colors MUST come from the artwork's existing palette
-- If scene has warm tones → warm text colors
-- If scene has cool tones → cool text colors
-- NEVER introduce colors not in the artwork
-- Add effects (glow, shadow, metallic) that match scene lighting
+===== CRITICAL RULES =====
+- DO NOT include ANY text, letters, words, or typography
+- This is ARTWORK ONLY - completely text-free
+- Focus 100% on the visual composition, lighting, and atmosphere
+- Leave space in the lower third for text to be added later
+- Cinematic, dramatic, polished professional quality
+- Strong central composition with clear focal point
+- Dramatic lighting with atmospheric depth
 
 ===== TECHNICAL =====
-- 1:1 square (1024x1024)
-- Edge-to-edge, NO borders
+- 1:1 square aspect ratio (1024x1024)
+- Edge-to-edge artwork, NO borders
 - Ultra high quality
-- Song title: "${songTitle || 'Untitled'}" (spell correctly)
-- Artist name: "${artistName || ''}" (spell correctly)`;
+- NO TEXT WHATSOEVER`;
 
-      logStep("Starting SINGLE-PASS generation (artwork + text together)");
-      const startTime = Date.now();
+      logStep("PASS 1: Starting artwork-only generation");
 
-      // Generate complete cover in one pass
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120_000);
+      const controller1 = new AbortController();
+      const timeout1 = setTimeout(() => controller1.abort(), 90_000);
 
-      let response: Response;
+      let artworkResponse: Response;
       try {
-        response = await fetch("https://api.openai.com/v1/images/generations", {
+        artworkResponse = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -276,51 +248,169 @@ Text integrated seamlessly with the scene.
           },
           body: JSON.stringify({
             model: "gpt-image-1",
-            prompt: singlePassPrompt,
+            prompt: artworkPrompt,
             n: 1,
             size: "1024x1024",
             quality: "high",
           }),
-          signal: controller.signal,
+          signal: controller1.signal,
         });
       } catch (e) {
-        clearTimeout(timeout);
+        clearTimeout(timeout1);
         if (e instanceof DOMException && e.name === "AbortError") {
           throw new Error("Generation timed out. Please try again.");
         }
         throw e;
       } finally {
-        clearTimeout(timeout);
+        clearTimeout(timeout1);
       }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        logStep("OpenAI API error", { status: response.status, error: errorText });
-        if (response.status === 429) throw new Error("RATE_LIMIT");
-        if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
+      if (!artworkResponse.ok) {
+        const errorText = await artworkResponse.text();
+        logStep("PASS 1 API error", { status: artworkResponse.status, error: errorText });
+        if (artworkResponse.status === 429) throw new Error("RATE_LIMIT");
+        if (artworkResponse.status === 402 || artworkResponse.status === 401) throw new Error("CREDITS_EXHAUSTED");
         if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
           throw new Error("CONTENT_MODERATED");
         }
-        throw new Error(`OpenAI API error: ${response.status}`);
+        throw new Error(`OpenAI API error: ${artworkResponse.status}`);
       }
 
-      const data = await response.json();
-      const imageData = data.data?.[0];
+      const artworkData = await artworkResponse.json();
+      const artworkImageData = artworkData.data?.[0];
       
-      if (!imageData) {
-        throw new Error("Failed to generate cover. Please try again.");
+      if (!artworkImageData) {
+        throw new Error("Failed to generate artwork. Please try again.");
       }
 
-      imageUrl = imageData.b64_json 
-        ? `data:image/png;base64,${imageData.b64_json}`
-        : imageData.url;
+      // Get base64 from artwork
+      let artworkBase64 = artworkImageData.b64_json;
+      if (!artworkBase64 && artworkImageData.url) {
+        // Fetch the image and convert to base64
+        const imgResponse = await fetch(artworkImageData.url);
+        const imgBuffer = await imgResponse.arrayBuffer();
+        artworkBase64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+      }
+
+      if (!artworkBase64) {
+        throw new Error("Failed to process artwork. Please try again.");
+      }
+
+      const pass1Time = Date.now() - startTime;
+      logStep("PASS 1 complete (artwork only)", { timeMs: pass1Time });
+
+      // ===== PASS 2: ADD TEXT WITH VISION =====
+      // Use gpt-image-1 with image input to add styled text
+      const textPrompt = `You are looking at an album cover artwork. Your task is to add professional typography to this image.
+
+===== TEXT CONTENT (SPELL EXACTLY AS SHOWN) =====
+Song Title: "${songTitle || 'Untitled'}"
+Artist Name: "${artistName || ''}"
+
+${textStyleInstructions ? `===== CRITICAL: TEXT TYPOGRAPHY DESIGN (HIGHEST PRIORITY) =====
+**MANDATORY TEXT STYLE - FOLLOW EXACTLY:**
+${textStyleInstructions}
+
+You MUST replicate this EXACT text style with high fidelity:
+- Match the EXACT letterforms, stroke weights, and shapes described
+- Match the EXACT effects (blur, glow, distortion, metallic, chrome, etc.)
+- Match the EXACT texture and surface quality
+- The typography style is NON-NEGOTIABLE - execute it precisely
+` : `===== TEXT STYLING =====
+Design professional, album-ready typography that fits the ${genre} aesthetic.
+The text should have depth, dimension, effects, and feel integrated with the scene.
+`}
+
+===== TEXT PLACEMENT =====
+- Position text in the lower third of the image
+- Size: 30-35% of image area maximum
+- Text must feel DESIGNED INTO the artwork, not overlaid
+
+===== TEXT COLOR RULES (CRITICAL) =====
+- LOOK AT the artwork colors carefully
+- Text colors MUST be pulled from the artwork's existing palette
+- Match the dominant tones you see in the image
+- Add effects (glow, shadow, metallic) that match the scene lighting
+- Text should complement and enhance the artwork, not fight it
+
+===== PRESERVE THE ARTWORK =====
+- Keep ALL elements of the original artwork intact
+- Only ADD text - do not modify the artwork itself
+- The final result should be the same artwork with beautiful integrated text
+
+===== TECHNICAL =====
+- 1:1 square (1024x1024)
+- Song title: "${songTitle || 'Untitled'}" (spell each letter correctly)
+- Artist name: "${artistName || ''}" (spell each letter correctly)`;
+
+      logStep("PASS 2: Adding text with vision input");
+
+      const controller2 = new AbortController();
+      const timeout2 = setTimeout(() => controller2.abort(), 90_000);
+
+      let textResponse: Response;
+      try {
+        // Use the edits endpoint to add text to the artwork
+        textResponse = await fetch("https://api.openai.com/v1/images/edits", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: (() => {
+            const formData = new FormData();
+            // Convert base64 to blob for the form data
+            const binaryString = atob(artworkBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: "image/png" });
+            formData.append("image", blob, "artwork.png");
+            formData.append("prompt", textPrompt);
+            formData.append("model", "gpt-image-1");
+            formData.append("size", "1024x1024");
+            return formData;
+          })(),
+          signal: controller2.signal,
+        });
+      } catch (e) {
+        clearTimeout(timeout2);
+        if (e instanceof DOMException && e.name === "AbortError") {
+          throw new Error("Text generation timed out. Please try again.");
+        }
+        throw e;
+      } finally {
+        clearTimeout(timeout2);
+      }
+
+      if (!textResponse.ok) {
+        const errorText = await textResponse.text();
+        logStep("PASS 2 API error", { status: textResponse.status, error: errorText });
+        if (textResponse.status === 429) throw new Error("RATE_LIMIT");
+        if (textResponse.status === 402 || textResponse.status === 401) throw new Error("CREDITS_EXHAUSTED");
+        if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
+          throw new Error("CONTENT_MODERATED");
+        }
+        throw new Error(`OpenAI API error: ${textResponse.status}`);
+      }
+
+      const textData = await textResponse.json();
+      const finalImageData = textData.data?.[0];
+      
+      if (!finalImageData) {
+        throw new Error("Failed to add text. Please try again.");
+      }
+
+      imageUrl = finalImageData.b64_json 
+        ? `data:image/png;base64,${finalImageData.b64_json}`
+        : finalImageData.url;
 
       if (!imageUrl) {
         throw new Error("Failed to generate cover. Please try again.");
       }
 
       const totalTime = Date.now() - startTime;
-      logStep("SINGLE-PASS generation complete", { timeMs: totalTime });
+      logStep("TWO-PASS generation complete", { pass1Ms: pass1Time, totalMs: totalTime });
 
       // Upload to storage
       finalImageUrl = imageUrl;
@@ -395,7 +485,7 @@ Text integrated seamlessly with the scene.
       );
     }
 
-    logStep("Generation complete (single-pass with integrated text)");
+    logStep("Generation complete (two-pass hybrid: artwork + text)");
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
