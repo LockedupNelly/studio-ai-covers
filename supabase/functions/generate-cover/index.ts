@@ -193,353 +193,89 @@ serve(async (req) => {
     const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
     const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
 
-    // Helper function to make artwork generation request (no text)
-    const makeArtworkRequest = async (promptText: string, maxRetries = 2): Promise<string> => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        logStep(`Artwork generation attempt ${attempt}/${maxRetries}`);
-        
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90_000);
+    // Note: Helper functions for layered generation removed - now using single-pass
 
-        let response: Response;
-        try {
-          response = await fetch("https://api.openai.com/v1/images/generations", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${OPENAI_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "gpt-image-1",
-              prompt: promptText,
-              n: 1,
-              size: "1024x1024",
-              quality: "high",
-            }),
-            signal: controller.signal,
-          });
-        } catch (e) {
-          clearTimeout(timeout);
-          if (e instanceof DOMException && e.name === "AbortError") {
-            logStep("Artwork request timed out", { attempt });
-            if (attempt === maxRetries) throw new Error("Generation timed out. Please try again.");
-            continue;
-          }
-          throw e;
-        } finally {
-          clearTimeout(timeout);
-        }
+    // ========== SINGLE-PASS GENERATION (Artwork + Text Together) ==========
+    let imageUrl: string;
+    let finalImageUrl: string;
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          logStep("OpenAI API error (artwork)", { status: response.status, error: errorText });
-          if (response.status === 429) throw new Error("RATE_LIMIT");
-          if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
-          
-          if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
-            throw new Error("CONTENT_MODERATED");
-          }
-          
-          if (attempt === maxRetries) throw new Error(`OpenAI API error: ${response.status}`);
-          continue;
-        }
+    try {
+      // Build the complete album cover prompt (artwork WITH integrated text)
+      const singlePassPrompt = `SYSTEM ROLE:
+You are generating a complete, professional album cover with INTEGRATED text typography.
+This is a SINGLE cohesive image where the text is designed as part of the artwork.
 
-        const data = await response.json();
-        const imageData = data.data?.[0];
-        if (!imageData) {
-          if (attempt === maxRetries) throw new Error("Failed to generate artwork. Please try again.");
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
-        }
+===== TEXT CONTENT (MUST BE INCLUDED - SPELL EXACTLY) =====
+Song Title: "${songTitle || 'Untitled'}"
+Artist Name: "${artistName || ''}"
 
-        const imageUrl = imageData.b64_json 
-          ? `data:image/png;base64,${imageData.b64_json}`
-          : imageData.url;
+The text MUST be:
+- Positioned in the lower third of the image (typical album cover placement)
+- Sized to cover no more than 30-35% of the total image
+- DEEPLY INTEGRATED with the artwork - not just overlaid
+- Colors that are PULLED FROM the artwork's palette (use colors already in the scene!)
+- Styled with effects that match the mood (metallic, glow, shadows, texture)
 
-        if (!imageUrl) {
-          if (attempt === maxRetries) throw new Error("Failed to generate artwork. Please try again.");
-          continue;
-        }
+===== GLOBAL QUALITY LAYER =====
+The image must feel cinematic, dramatic, intentional, and polished.
+The result should look like a finished, high-budget album cover.
 
-        logStep("Artwork generated successfully");
-        return imageUrl;
-      }
-      throw new Error("Failed to generate artwork after retries");
-    };
+Prioritize:
+- Strong central composition with the subject as focal point
+- Cinematic lighting (backlighting, rim light, dramatic contrast)
+- Atmospheric depth (fog, rain, smoke, particles)
+- Text that feels DESIGNED INTO the scene, not added on top
+- Text colors that complement the artwork (if artwork has warm oranges, use warm text colors)
 
-    // Helper function to extract dominant colors from artwork using vision
-    interface ExtractedColors {
-      dominantColors: string[];
-      textColorSuggestion: string;
-      accentColor: string;
-      palette: "warm" | "cool" | "neutral";
-    }
+===== DIRECTOR PASS =====
+Capture ONE defining cinematic moment.
+The text should enhance, not compete with, the visual story.
 
-    const extractDominantColors = async (artworkBase64: string): Promise<ExtractedColors> => {
-      logStep("Extracting dominant colors from artwork");
-      
-      const defaultColors: ExtractedColors = {
-        dominantColors: ["#1a1a2e", "#16213e", "#0f3460"],
-        textColorSuggestion: "#ffd700",
-        accentColor: "#e94560",
-        palette: "cool"
-      };
+===== GENRE: ${genre} =====
+Visual intent: ${genreDirection.visual}
+Narrative: ${genreDirection.narrative}
 
-      try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [{
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Analyze this album cover artwork and pick text colors that USE colors from the artwork.
+===== VISUAL STYLE: ${style} =====
+${visualStyle}
 
-Return ONLY valid JSON (no markdown, no explanation):
-{
-  "dominantColors": ["#hex1", "#hex2", "#hex3"],
-  "textColorSuggestion": "#hex",
-  "accentColor": "#hex",
-  "palette": "warm" | "cool" | "neutral"
-}
+===== MOOD: ${mood} =====
+${moodStyle}
 
-CRITICAL RULES:
-1. dominantColors: The 3 most prominent/vibrant colors in the artwork (hex codes)
-2. textColorSuggestion: Pick ONE of the dominant colors from the artwork (or a slightly brighter version of it). The text should USE the artwork's color palette, NOT introduce new colors. Examples:
-   - If artwork has orange fire → use orange (#FF4500, #FF6600)
-   - If artwork has gold accents → use gold (#FFD700, #D4AF37)
-   - If artwork has blue tones → use that blue
-   - If artwork has red/crimson → use that red
-   NEVER introduce colors that don't exist in the artwork (no random neon green on a warm orange artwork!)
-3. accentColor: Pick ANOTHER color from the artwork's dominantColors for glow/outline effects
-4. palette: Overall temperature (warm = oranges/reds/yellows, cool = blues/purples, neutral = grays/browns)
+===== USER'S VISION =====
+${description}
 
-The text color should be PULLED FROM the artwork's existing palette so it feels integrated and cohesive.
-If the artwork is very dark, pick the brightest/most vibrant color present.
-NEVER pick a color that isn't already in the artwork.`
-                },
-                {
-                  type: "image_url",
-                  image_url: { url: artworkBase64 }
-                }
-              ]
-            }],
-            max_tokens: 150
-          }),
-        });
+${textStyleInstructions ? `===== TEXT STYLING =====
+${textStyleInstructions}
+Apply this style while ensuring text colors work with the artwork.` : `===== TEXT STYLING =====
+Design professional, album-ready typography that fits the ${genre} aesthetic.
+The text should have depth, effects, and feel integrated with the scene.`}
 
-        if (!response.ok) {
-          logStep("Color extraction API error, using defaults", { status: response.status });
-          return defaultColors;
-        }
+===== CRITICAL TEXT INTEGRATION RULES =====
+1. Text colors MUST be pulled from the artwork's existing palette
+   - If scene has fire/orange → use warm orange/gold text
+   - If scene has cool blues → use blue/cyan text
+   - NEVER use random colors that don't exist in the artwork
+2. Text should have effects that connect it to the scene (glow matching scene lighting, shadows, etc.)
+3. The text should look like it belongs in the world of the image
 
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        
-        // Parse JSON from response (handle potential markdown wrapping)
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          logStep("Colors extracted", parsed);
-          return parsed as ExtractedColors;
-        }
-        
-        logStep("Color extraction parse failed, using defaults");
-        return defaultColors;
-      } catch (e) {
-        logStep("Color extraction error, using defaults", { error: e instanceof Error ? e.message : String(e) });
-        return defaultColors;
-      }
-    };
+===== TECHNICAL REQUIREMENTS =====
+- EXACT 1:1 square aspect ratio (1024x1024)
+- Edge-to-edge artwork, NO borders
+- Ultra high quality
+- Text clearly legible but integrated
+- Song title: "${songTitle || 'Untitled'}" (spell each letter correctly)
+- Artist name: "${artistName || ''}" (spell each letter correctly)`;
 
-    // Helper function to generate text layer with transparent background
-    const makeTextLayerRequest = async (
-      songTitle: string,
-      artistName: string | null,
-      textStyle: string | null,
-      genreHint: string,
-      moodHint: string,
-      colors: ExtractedColors,
-      maxRetries = 2
-    ): Promise<string> => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        logStep(`Text layer generation attempt ${attempt}/${maxRetries}`, { colors });
-        
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90_000);
+      logStep("Starting SINGLE-PASS generation (artwork + text together)");
+      const startTime = Date.now();
 
-        const textLayerPrompt = `Create elegant, professional album cover typography on a completely transparent background.
-
-TEXT CONTENT (SPELL EXACTLY - EACH LETTER MUST BE CORRECT):
-- Song Title: "${songTitle}"
-- Artist Name: "${artistName || ''}"
-
-===== MANDATORY COLOR SCHEME (USE THESE EXACT COLORS FROM THE ARTWORK) =====
-These colors were extracted FROM the artwork - USE THEM:
-- Artwork dominant colors: ${colors.dominantColors.join(", ")}
-- Artwork palette: ${colors.palette}
-
-You MUST use these specific colors for the text:
-- PRIMARY TEXT COLOR: ${colors.textColorSuggestion} - This is from the artwork, use it as main text fill
-- ACCENT/GLOW COLOR: ${colors.accentColor} - This is from the artwork, use for outlines/glow
-
-CRITICAL: These colors are PULLED FROM the artwork itself. Using these colors ensures the text feels integrated with the cover art. Do NOT introduce any new colors that aren't specified above.
-
-===== SIZE AND POSITIONING RULES =====
-- Text MUST NOT cover more than 35-40% of the total image area
-- Position in the LOWER THIRD of the canvas
-- Song title: medium-sized, readable but not overwhelming
-- Artist name: smaller, positioned below the song title
-- Leave at least 60% of canvas EMPTY (transparent)
-
-${textStyle ? `===== MANDATORY TEXT STYLE (FOLLOW EXACTLY) =====
-${textStyle}
-
-Match this style while using the artwork colors above.` : `===== TEXT STYLE GUIDELINES =====
-Create professional typography that fits a ${genreHint} ${moodHint} aesthetic.
-Use stylish fonts with depth and texture.`}
-
-===== VISUAL EFFECTS =====
-- Drop shadows or outer glow in ${colors.accentColor}
-- Metallic, gradient, or textured finish using ${colors.textColorSuggestion}
-- Text should have depth and professional polish
-
-REQUIREMENTS:
-- TRANSPARENT BACKGROUND ONLY
-- Maximum 35-40% canvas coverage
-- Use ONLY the colors specified above (from the artwork)
-
-FORBIDDEN:
-- Plain white or black as main text color
-- Any colors NOT listed in the artwork colors above
-- Oversized text
-- Any background
-
-SPELLING: "${songTitle}" by "${artistName || ''}" - verify each letter`;
-
-        let response: Response;
-        try {
-          response = await fetch("https://api.openai.com/v1/images/generations", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${OPENAI_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "gpt-image-1",
-              prompt: textLayerPrompt,
-              n: 1,
-              size: "1024x1024",
-              quality: "high",
-              background: "transparent",
-              output_format: "png",
-            }),
-            signal: controller.signal,
-          });
-        } catch (e) {
-          clearTimeout(timeout);
-          if (e instanceof DOMException && e.name === "AbortError") {
-            logStep("Text layer request timed out", { attempt });
-            if (attempt === maxRetries) throw new Error("Text generation timed out. Please try again.");
-            continue;
-          }
-          throw e;
-        } finally {
-          clearTimeout(timeout);
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logStep("OpenAI API error (text layer)", { status: response.status, error: errorText });
-          if (response.status === 429) throw new Error("RATE_LIMIT");
-          if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
-          
-          if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
-            throw new Error("CONTENT_MODERATED");
-          }
-          
-          if (attempt === maxRetries) throw new Error(`OpenAI API error: ${response.status}`);
-          continue;
-        }
-
-        const data = await response.json();
-        const imageData = data.data?.[0];
-        if (!imageData) {
-          if (attempt === maxRetries) throw new Error("Failed to generate text layer. Please try again.");
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
-        }
-
-        const imageUrl = imageData.b64_json 
-          ? `data:image/png;base64,${imageData.b64_json}`
-          : imageData.url;
-
-        if (!imageUrl) {
-          if (attempt === maxRetries) throw new Error("Failed to generate text layer. Please try again.");
-          continue;
-        }
-
-        logStep("Text layer generated successfully with artwork colors");
-        return imageUrl;
-      }
-      throw new Error("Failed to generate text layer after retries");
-    };
-
-    // Helper function to intelligently composite text onto artwork with color integration
-    const compositeWithAI = async (
-      artworkBase64: string, 
-      textLayerBase64: string,
-      genreHint: string,
-      moodHint: string
-    ): Promise<string> => {
-      logStep("AI compositing artwork and text layer with color integration");
-      
+      // Generate complete cover in one pass
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90_000);
+      const timeout = setTimeout(() => controller.abort(), 120_000);
 
-      const compositePrompt = `You are a professional album cover designer compositing text onto artwork.
-
-TASK: Merge these two layers into a cohesive, professionally designed album cover.
-
-===== INTEGRATION REQUIREMENTS =====
-1. The text layer should be placed over the artwork in the LOWER THIRD of the image
-2. CRITICAL: Adjust the text colors to COMPLEMENT the artwork's color palette:
-   - If the artwork is dark/moody, make text glow with complementary warm or cool tones
-   - If the artwork is bright/vibrant, use contrasting but harmonious text colors
-   - Add subtle color bleeding/interaction between text and background
-3. Add integration effects:
-   - Subtle ambient occlusion where text meets the background
-   - Light reflection from the scene onto the text
-   - Color grading that unifies both layers
-4. The text should look DESIGNED INTO the cover, not just placed on top
-5. Preserve the exact spelling and general positioning of the text
-6. Maintain the artwork's visual focus - text should enhance, not overpower
-
-STYLE CONTEXT: ${genreHint} music with ${moodHint} mood
-
-OUTPUT: A perfectly integrated 1024x1024 album cover where the text feels like it was designed as part of the original artwork.`;
-
+      let response: Response;
       try {
-        // Prepare the content with both images
-        const content: any[] = [
-          { type: "text", text: compositePrompt },
-          { 
-            type: "image_url", 
-            image_url: { url: artworkBase64 }
-          },
-          { 
-            type: "image_url", 
-            image_url: { url: textLayerBase64 }
-          }
-        ];
-
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        response = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -547,210 +283,56 @@ OUTPUT: A perfectly integrated 1024x1024 album cover where the text feels like i
           },
           body: JSON.stringify({
             model: "gpt-image-1",
-            messages: [
-              {
-                role: "user",
-                content: content
-              }
-            ],
-            modalities: ["image", "text"],
+            prompt: singlePassPrompt,
+            n: 1,
+            size: "1024x1024",
+            quality: "high",
           }),
           signal: controller.signal,
         });
-
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logStep("AI compositing error", { status: response.status, error: errorText });
-          // Fall back to client-side compositing
-          return JSON.stringify({
-            artworkUrl: artworkBase64,
-            textLayerUrl: textLayerBase64,
-            needsCompositing: true,
-          });
-        }
-
-        const data = await response.json();
-        const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        
-        if (imageData) {
-          logStep("AI compositing successful");
-          return imageData;
-        }
-
-        // Fall back to client-side compositing
-        logStep("AI compositing returned no image, falling back to client compositing");
-        return JSON.stringify({
-          artworkUrl: artworkBase64,
-          textLayerUrl: textLayerBase64,
-          needsCompositing: true,
-        });
       } catch (e) {
         clearTimeout(timeout);
-        logStep("AI compositing failed, falling back", { error: e instanceof Error ? e.message : String(e) });
-        // Fall back to client-side compositing
-        return JSON.stringify({
-          artworkUrl: artworkBase64,
-          textLayerUrl: textLayerBase64,
-          needsCompositing: true,
-        });
-      }
-    };
-
-    // ========== PARALLEL GENERATION PIPELINE ==========
-    let imageUrl: string;
-    let finalImageUrl: string;
-
-    try {
-      // Build the artwork prompt (no text)
-      const artworkPrompt = `SYSTEM ROLE:
-You are generating professional, high-end album cover artwork intended for commercial music distribution.
-IMPORTANT: DO NOT include ANY text, titles, or typography in this image. Generate ONLY the visual artwork/background.
-
-===== GLOBAL QUALITY LAYER (ALWAYS APPLY) =====
-The image must feel cinematic, dramatic, intentional, and polished — never generic, flat, amateur, or stock-like.
-The result should look like a finished, high-budget album cover created by an experienced designer.
-
-Always prioritize:
-- Strong central or iconographic composition
-- Clear focal hierarchy
-- Cinematic lighting (backlighting, rim light, directional light, high contrast)
-- Realistic materials and textures
-- Atmospheric depth (fog, rain, smoke, particles, volumetric lighting)
-- Mood-driven color grading
-- Album-safe framing with space for text to be added later
-- Strong thumbnail legibility
-
-Avoid flat lighting, symmetrical layouts, empty scenes, or overly clean surfaces.
-
-===== DIRECTOR PASS (CINEMATIC INTENT) =====
-The image must capture ONE defining cinematic moment — as if frozen from a movie trailer or album-defining scene.
-
-Prioritize:
-- A clear story implied in a single frame
-- One dominant visual event (impact, emergence, collision, motion, lightning strike)
-- Asymmetry over perfect balance
-- Natural imperfections (wear, erosion, grime, sparks, rain distortion)
-- Environmental interaction (weather affecting surfaces, light wrapping edges, debris reacting to motion)
-
-Focus on the exact moment of maximum intensity, not before or after.
-
-===== EVENT INTENSITY LAYER (ALWAYS APPLY) =====
-The image must depict an active, high-energy moment, not a static scene.
-
-Force the environment to react to the subject:
-- Motion causes sparks, debris, rain distortion, smoke, or crowd reaction
-- Surfaces show stress, friction, wear, heat, or damage
-- Lighting responds to action (flares, explosions, lightning, reflections)
-- Perspective exaggerates speed, scale, or impact
-
-The scene should feel unstable, dynamic, and alive.
-
-===== PHYSICAL CONSEQUENCE BIAS =====
-Every major action should leave visible consequences on the environment
-(scratches, sparks, cracks, debris, distortion, heat, water displacement).
-
-===== SCALE AND DENSITY RULE =====
-Fill the frame with meaningful detail.
-Avoid large empty areas unless required for composition.
-Crowds, structures, weather, and effects should reinforce scale and intensity.
-${['Hip-Hop', 'Rap', 'EDM', 'Rock', 'Metal'].includes(genre) ? `
-===== FORCED PERSPECTIVE (SPEED/POWER GENRES) =====
-Use aggressive perspective, low angles, motion compression, and depth exaggeration to amplify speed, power, and dominance.
-` : ''}
-===== NEGATIVE CONSTRAINTS =====
-Avoid generic AI aesthetics, stock photography composition, flat poster layouts, plastic textures, over-smoothing, washed-out contrast.
-DO NOT include any text, typography, letters, words, or titles. This is artwork only.
-
-===== ICON BIAS =====
-Compose the image so it is recognizable within one second at small thumbnail size.
-
-===== GENRE-SPECIFIC DIRECTION: ${genre} =====
-Visual intent: ${genreDirection.visual}
-Narrative bias: ${genreDirection.narrative}
-
-===== VISUAL STYLE: ${style} =====
-${visualStyle}
-
-===== MOOD/ATMOSPHERE: ${mood} =====
-${moodStyle}
-
-===== USER'S CREATIVE VISION =====
-${description}
-
-===== TECHNICAL REQUIREMENTS =====
-- EXACT 1:1 square aspect ratio (1024x1024)
-- Artwork fills 100% of canvas edge-to-edge with NO borders, NO letterboxing, NO grey/black bars
-- Ultra high resolution, maximum detail and texture
-- NO TEXT, NO TYPOGRAPHY, NO LETTERS - artwork only
-- Leave compositional space for text integration (typically lower third)`;
-
-      // If no song title, just generate artwork
-      if (!songTitle) {
-        logStep("No song title provided, generating artwork only");
-        const artwork = await makeArtworkRequest(artworkPrompt);
-        imageUrl = artwork;
-      } else {
-        // ===== SEQUENTIAL GENERATION: Artwork → Extract Colors → Text Layer =====
-        logStep("Starting SEQUENTIAL generation: Artwork → Colors → Text");
-        const startTime = Date.now();
-
-        // Step 1: Generate artwork first
-        logStep("Step 1: Generating artwork");
-        const artworkResult = await makeArtworkRequest(artworkPrompt);
-        const artworkTime = Date.now() - startTime;
-        logStep("Artwork generated", { timeMs: artworkTime });
-
-        // Step 2: Extract colors from artwork
-        logStep("Step 2: Extracting colors from artwork");
-        const colorStartTime = Date.now();
-        const extractedColors = await extractDominantColors(artworkResult);
-        const colorTime = Date.now() - colorStartTime;
-        logStep("Colors extracted", { timeMs: colorTime, colors: extractedColors });
-
-        // Step 3: Generate text layer with extracted colors
-        logStep("Step 3: Generating text layer with artwork colors");
-        const textStartTime = Date.now();
-        const textLayerResult = await makeTextLayerRequest(
-          songTitle, 
-          artistName, 
-          textStyleInstructions, 
-          genre, 
-          mood,
-          extractedColors
-        );
-        const textTime = Date.now() - textStartTime;
-        logStep("Text layer generated", { timeMs: textTime });
-
-        const totalTime = Date.now() - startTime;
-        logStep("SEQUENTIAL generation complete", { totalTimeMs: totalTime, artworkMs: artworkTime, colorMs: colorTime, textMs: textTime });
-
-        // Step 4: Composite (text is already correctly colored, simpler merge)
-        logStep("Step 4: Compositing layers");
-        const compositeStartTime = Date.now();
-        const compositedResult = await compositeWithAI(artworkResult, textLayerResult, genre, mood);
-        const compositeTime = Date.now() - compositeStartTime;
-        logStep("Compositing complete", { timeMs: compositeTime });
-
-        // Check if AI compositing succeeded or fell back to client-side
-        if (compositedResult.startsWith('data:image') || compositedResult.startsWith('http')) {
-          // AI compositing succeeded - return the final image directly
-          imageUrl = compositedResult;
-        } else {
-          // Fell back to client-side compositing
-          imageUrl = compositedResult;
+        if (e instanceof DOMException && e.name === "AbortError") {
+          throw new Error("Generation timed out. Please try again.");
         }
+        throw e;
+      } finally {
+        clearTimeout(timeout);
       }
 
-      // Upload to storage (background task for speed)
+      if (!response.ok) {
+        const errorText = await response.text();
+        logStep("OpenAI API error", { status: response.status, error: errorText });
+        if (response.status === 429) throw new Error("RATE_LIMIT");
+        if (response.status === 402 || response.status === 401) throw new Error("CREDITS_EXHAUSTED");
+        if (errorText.includes("content_policy_violation") || errorText.includes("safety")) {
+          throw new Error("CONTENT_MODERATED");
+        }
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageData = data.data?.[0];
+      
+      if (!imageData) {
+        throw new Error("Failed to generate cover. Please try again.");
+      }
+
+      imageUrl = imageData.b64_json 
+        ? `data:image/png;base64,${imageData.b64_json}`
+        : imageData.url;
+
+      if (!imageUrl) {
+        throw new Error("Failed to generate cover. Please try again.");
+      }
+
+      const totalTime = Date.now() - startTime;
+      logStep("SINGLE-PASS generation complete", { timeMs: totalTime });
+
+      // Upload to storage
       finalImageUrl = imageUrl;
       
-      // Check if it's a composite result or single image
-      const isCompositeResult = imageUrl.startsWith("{") && imageUrl.includes("needsCompositing");
-      
-      if (!isCompositeResult && imageUrl.startsWith("data:image")) {
-        // Single image - upload normally
+      if (imageUrl.startsWith("data:image")) {
         try {
           const base64Data = imageUrl.split(",")[1];
           const mimeMatch = imageUrl.match(/data:([^;]+);/);
@@ -781,39 +363,6 @@ ${description}
           });
         }
         imageUrl = finalImageUrl;
-      } else if (isCompositeResult) {
-        // Composite result - upload both images in background
-        const compositeData = JSON.parse(imageUrl);
-        
-        // Use EdgeRuntime.waitUntil for background upload
-        const uploadBothImages = async () => {
-          try {
-            const artworkBase64 = compositeData.artworkUrl.split(",")[1];
-            const textBase64 = compositeData.textLayerUrl.split(",")[1];
-            
-            const timestamp = Date.now();
-            const artworkFileName = `${userId || "anon"}/${timestamp}-artwork.png`;
-            const textFileName = `${userId || "anon"}/${timestamp}-text.png`;
-
-            const artworkBytes = Uint8Array.from(atob(artworkBase64), c => c.charCodeAt(0));
-            const textBytes = Uint8Array.from(atob(textBase64), c => c.charCodeAt(0));
-
-            await Promise.all([
-              supabaseClient.storage.from("covers").upload(artworkFileName, artworkBytes, { contentType: "image/png", upsert: true }),
-              supabaseClient.storage.from("covers").upload(textFileName, textBytes, { contentType: "image/png", upsert: true }),
-            ]);
-
-            const { data: artworkUrl } = supabaseClient.storage.from("covers").getPublicUrl(artworkFileName);
-            const { data: textUrl } = supabaseClient.storage.from("covers").getPublicUrl(textFileName);
-
-            logStep("Both images uploaded to storage", { artworkUrl: artworkUrl.publicUrl, textUrl: textUrl.publicUrl });
-          } catch (e) {
-            logStep("Background upload error", { error: e instanceof Error ? e.message : String(e) });
-          }
-        };
-
-        // Start background upload without awaiting
-        uploadBothImages().catch(e => logStep("Background upload failed", { error: e }));
       }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "Unknown error";
@@ -853,7 +402,7 @@ ${description}
       );
     }
 
-    logStep("Generation complete (sequential pipeline with color extraction)");
+    logStep("Generation complete (single-pass with integrated text)");
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
@@ -897,74 +446,34 @@ ${description}
       logStep("Credit deducted", { newBalance: currentCredits - 1 });
     }
 
-    // Parse the result to determine response format
-    const isCompositeResult = imageUrl.startsWith("{") && imageUrl.includes("needsCompositing");
-    
-    if (isCompositeResult) {
-      const compositeData = JSON.parse(imageUrl);
-      
-      // Best-effort: persist generation for history
-      if (userId) {
-        try {
-          const { error: genInsertErr } = await supabaseClient.from("generations").insert({
-            user_id: userId,
-            prompt: typeof prompt === "string" ? prompt : "",
-            genre: typeof genre === "string" ? genre : "",
-            style: typeof style === "string" ? style : "",
-            mood: typeof mood === "string" ? mood : "",
-            image_url: compositeData.artworkUrl.slice(0, 100) + "...", // Truncate for storage
-            song_title: songTitle || null,
-            artist_name: artistName || null,
-            cover_analysis: null,
-          });
+    // Save generation to history
+    if (userId) {
+      try {
+        const { error: genInsertErr } = await supabaseClient.from("generations").insert({
+          user_id: userId,
+          prompt: typeof prompt === "string" ? prompt : "",
+          genre: typeof genre === "string" ? genre : "",
+          style: typeof style === "string" ? style : "",
+          mood: typeof mood === "string" ? mood : "",
+          image_url: imageUrl,
+          song_title: songTitle || null,
+          artist_name: artistName || null,
+          cover_analysis: null,
+        });
 
-          if (genInsertErr) {
-            logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
-          } else {
-            logStep("Generation saved", { songTitle, artistName });
-          }
-        } catch (e) {
-          logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
+        if (genInsertErr) {
+          logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
+        } else {
+          logStep("Generation saved", { songTitle, artistName });
         }
+      } catch (e) {
+        logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
       }
-
-      return new Response(JSON.stringify({
-        artworkUrl: compositeData.artworkUrl,
-        textLayerUrl: compositeData.textLayerUrl,
-        needsCompositing: true,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } else {
-      // Single image result (no text)
-      if (userId) {
-        try {
-          const { error: genInsertErr } = await supabaseClient.from("generations").insert({
-            user_id: userId,
-            prompt: typeof prompt === "string" ? prompt : "",
-            genre: typeof genre === "string" ? genre : "",
-            style: typeof style === "string" ? style : "",
-            mood: typeof mood === "string" ? mood : "",
-            image_url: imageUrl,
-            song_title: songTitle || null,
-            artist_name: artistName || null,
-            cover_analysis: null,
-          });
-
-          if (genInsertErr) {
-            logStep("Generation save failed (non-blocking)", { error: genInsertErr.message });
-          } else {
-            logStep("Generation saved", { songTitle, artistName });
-          }
-        } catch (e) {
-          logStep("Generation save error (non-blocking)", { error: e instanceof Error ? e.message : String(e) });
-        }
-      }
-
-      return new Response(JSON.stringify({ imageUrl }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
+
+    return new Response(JSON.stringify({ imageUrl }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     logStep("ERROR", { message: error instanceof Error ? error.message : String(error) });
     return new Response(
