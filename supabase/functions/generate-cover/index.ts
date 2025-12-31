@@ -282,31 +282,47 @@ serve(async (req) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 90_000);
 
-        const textLayerPrompt = `Create ONLY typography on a completely transparent background. This is for an album cover.
+        const textLayerPrompt = `Create elegant, professional album cover typography on a completely transparent background.
 
 TEXT CONTENT (SPELL EXACTLY - EACH LETTER MUST BE CORRECT):
-- Song Title: "${songTitle}" — Display as PRIMARY text, large and prominent
-- Artist Name: "${artistName || ''}" — Display SMALLER, positioned below or near title
+- Song Title: "${songTitle}"
+- Artist Name: "${artistName || ''}"
+
+===== CRITICAL SIZE AND POSITIONING RULES =====
+- The text MUST NOT cover more than 35-40% of the total image area
+- Text should be COMPACT and tastefully sized - NOT oversized or dominating
+- Position the text in the LOWER THIRD of the canvas (typical album cover placement)
+- Song title should be medium-sized (not giant), readable but not overwhelming
+- Artist name should be smaller, positioned elegantly below the song title
+- Leave at least 60% of the canvas EMPTY (transparent) for the artwork to show through
+- Think "elegant vinyl record label" sizing, NOT "billboard advertisement"
 
 ${textStyle ? `===== MANDATORY TEXT STYLE (FOLLOW EXACTLY) =====
 ${textStyle}
 
 You MUST create text that matches this style description exactly. The font style, weight, texture, and effects described above MUST be followed.` : `===== TEXT STYLE GUIDELINES =====
 Create professional, album-ready typography that fits a ${genreHint} ${moodHint} aesthetic.
-Use bold, impactful fonts with depth and texture.
+Use stylish, impactful fonts with depth and texture.
 Add appropriate effects: shadows, glow, metallic shine, distress, or other effects that fit the genre.`}
+
+===== TEXT VISUAL REQUIREMENTS =====
+- Use CONTRASTING colors that will stand out on any background (white, metallic silver, gold, neon, etc.)
+- Include strong drop shadows or outer glow so text is visible on dark AND light backgrounds
+- Text should have depth, dimension, and visual polish
+- Include effects that give the text substance and professional finish
+- The text should look like it was designed by a professional album art designer
 
 CRITICAL REQUIREMENTS:
 - TRANSPARENT BACKGROUND ONLY - no imagery, no patterns, no colors behind the text
-- The text should have depth, dimension, and visual impact
-- Include shadows, highlights, and effects that give the text substance
-- Text should be centered and well-composed for album cover use
+- Maximum 35-40% coverage of the canvas - the text must be COMPACT
+- Position in lower third for optimal album cover composition
 - Ultra high quality, maximum detail on the text itself
 - The background MUST be completely transparent (PNG with alpha)
 
 FORBIDDEN:
+- Oversized text that covers most of the image
+- Text positioned in the center covering the main artwork area
 - Any background color, gradient, or pattern
-- Any imagery behind the text
 - Plain flat text without effects
 - Misspelled words
 
@@ -382,36 +398,111 @@ SPELLING CHECK:
       throw new Error("Failed to generate text layer after retries");
     };
 
-    // Helper function to composite two images using Canvas API
-    const compositeImages = async (artworkBase64: string, textLayerBase64: string): Promise<string> => {
-      logStep("Compositing artwork and text layer");
+    // Helper function to intelligently composite text onto artwork with color integration
+    const compositeWithAI = async (
+      artworkBase64: string, 
+      textLayerBase64: string,
+      genreHint: string,
+      moodHint: string
+    ): Promise<string> => {
+      logStep("AI compositing artwork and text layer with color integration");
       
-      // For Deno, we need to use a different approach since OffscreenCanvas isn't available
-      // We'll return both images and let the client composite them
-      // OR use the final pass approach
-      
-      // Actually, let's use a final compositing pass with gpt-image-1 for best quality
-      const compositePrompt = `You are compositing two layers into a final album cover.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90_000);
 
-LAYER 1 (BACKGROUND): The artwork/background image
-LAYER 2 (FOREGROUND): The text overlay with transparent background
+      const compositePrompt = `You are a professional album cover designer compositing text onto artwork.
 
-Your job is to:
-1. Place the text layer EXACTLY as it appears over the artwork
-2. Ensure the text integrates naturally with lighting and atmosphere
-3. Add subtle interactions: the text should pick up ambient light from the scene
-4. Maintain the exact spelling and positioning of the text
-5. Do NOT modify the artwork or text - just composite them together with natural integration
+TASK: Merge these two layers into a cohesive, professionally designed album cover.
 
-OUTPUT: A perfect 1024x1024 album cover with the text integrated into the scene.`;
+===== INTEGRATION REQUIREMENTS =====
+1. The text layer should be placed over the artwork in the LOWER THIRD of the image
+2. CRITICAL: Adjust the text colors to COMPLEMENT the artwork's color palette:
+   - If the artwork is dark/moody, make text glow with complementary warm or cool tones
+   - If the artwork is bright/vibrant, use contrasting but harmonious text colors
+   - Add subtle color bleeding/interaction between text and background
+3. Add integration effects:
+   - Subtle ambient occlusion where text meets the background
+   - Light reflection from the scene onto the text
+   - Color grading that unifies both layers
+4. The text should look DESIGNED INTO the cover, not just placed on top
+5. Preserve the exact spelling and general positioning of the text
+6. Maintain the artwork's visual focus - text should enhance, not overpower
 
-      // For now, return both images for client-side compositing (faster)
-      // The client already has useTextLayerCompositing hook
-      return JSON.stringify({
-        artworkUrl: artworkBase64,
-        textLayerUrl: textLayerBase64,
-        needsCompositing: true,
-      });
+STYLE CONTEXT: ${genreHint} music with ${moodHint} mood
+
+OUTPUT: A perfectly integrated 1024x1024 album cover where the text feels like it was designed as part of the original artwork.`;
+
+      try {
+        // Prepare the content with both images
+        const content: any[] = [
+          { type: "text", text: compositePrompt },
+          { 
+            type: "image_url", 
+            image_url: { url: artworkBase64 }
+          },
+          { 
+            type: "image_url", 
+            image_url: { url: textLayerBase64 }
+          }
+        ];
+
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-image-1",
+            messages: [
+              {
+                role: "user",
+                content: content
+              }
+            ],
+            modalities: ["image", "text"],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logStep("AI compositing error", { status: response.status, error: errorText });
+          // Fall back to client-side compositing
+          return JSON.stringify({
+            artworkUrl: artworkBase64,
+            textLayerUrl: textLayerBase64,
+            needsCompositing: true,
+          });
+        }
+
+        const data = await response.json();
+        const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (imageData) {
+          logStep("AI compositing successful");
+          return imageData;
+        }
+
+        // Fall back to client-side compositing
+        logStep("AI compositing returned no image, falling back to client compositing");
+        return JSON.stringify({
+          artworkUrl: artworkBase64,
+          textLayerUrl: textLayerBase64,
+          needsCompositing: true,
+        });
+      } catch (e) {
+        clearTimeout(timeout);
+        logStep("AI compositing failed, falling back", { error: e instanceof Error ? e.message : String(e) });
+        // Fall back to client-side compositing
+        return JSON.stringify({
+          artworkUrl: artworkBase64,
+          textLayerUrl: textLayerBase64,
+          needsCompositing: true,
+        });
+      }
     };
 
     // ========== PARALLEL GENERATION PIPELINE ==========
@@ -520,13 +611,21 @@ ${description}
         const parallelTime = Date.now() - startTime;
         logStep("PARALLEL generation complete", { timeMs: parallelTime });
 
-        // Return both images for client-side compositing
-        // This is faster than server-side compositing and uses the existing hook
-        imageUrl = JSON.stringify({
-          artworkUrl: artworkResult,
-          textLayerUrl: textLayerResult,
-          needsCompositing: true,
-        });
+        // Use AI compositing for intelligent color integration
+        logStep("Starting AI compositing for color integration");
+        const compositeStartTime = Date.now();
+        const compositedResult = await compositeWithAI(artworkResult, textLayerResult, genre, mood);
+        const compositeTime = Date.now() - compositeStartTime;
+        logStep("AI compositing complete", { timeMs: compositeTime });
+
+        // Check if AI compositing succeeded or fell back to client-side
+        if (compositedResult.startsWith('data:image') || compositedResult.startsWith('http')) {
+          // AI compositing succeeded - return the final image directly
+          imageUrl = compositedResult;
+        } else {
+          // Fell back to client-side compositing
+          imageUrl = compositedResult;
+        }
       }
 
       // Upload to storage (background task for speed)
