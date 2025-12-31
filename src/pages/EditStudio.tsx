@@ -236,8 +236,7 @@ const EditStudio = () => {
     }
     
     if (mainColor) {
-      // Be specific: only change text color, not the entire image
-      instructions.push(`Change the color of ALL text and typography on the cover to ${getColorValue(mainColor)}. Keep the background imagery and artwork colors the same.`);
+      instructions.push(`Apply ${getColorValue(mainColor)} as the PRIMARY color grade and lighting mood across the entire cover artwork and typography. This should behave like a cinematic color filter applied to the full composition (background imagery, lighting, atmosphere, objects, AND text together). The main color may influence: overall lighting temperature and mood, environmental tones and atmosphere, reflections and highlights on objects, typography color so it harmonizes with the scene, subtle color grading across the entire image. IMPORTANT CONSTRAINTS: Preserve contrast, depth, and readability. Do NOT flatten the image or remove dynamic lighting. Do NOT fully monochrome the image. Shadows must remain dark and grounded. Highlights must retain brightness and detail. The image should still feel realistic and cinematic. The main color should guide the mood of the cover, not override structure, composition, or legibility.`);
     }
     
     if (accentColor) {
