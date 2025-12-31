@@ -497,6 +497,8 @@ Emotional Narrative: ${genreDirection.narrative}
       try {
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
+          logStep("Pass 1.5 starting palette analysis with GPT-5 vision");
+          
           const paletteRes = await fetch(
             "https://ai.gateway.lovable.dev/v1/chat/completions",
             {
@@ -506,13 +508,13 @@ Emotional Narrative: ${genreDirection.narrative}
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
-                max_completion_tokens: 300,
+                model: "openai/gpt-5",
+                max_completion_tokens: 400,
                 messages: [
                   {
                     role: "system",
                     content:
-                      "You are a senior album-cover typography art director. Return strict JSON only.",
+                      "You are a senior album-cover typography art director. Analyze images and return ONLY valid JSON with no markdown formatting.",
                   },
                   {
                     role: "user",
@@ -520,7 +522,23 @@ Emotional Narrative: ${genreDirection.narrative}
                       {
                         type: "text",
                         text:
-                          "Analyze the artwork and return STRICT JSON only (no markdown) with keys: titleColorHex, artistColorHex, shadowRgba, accentHex.\n\nRules:\n- Colors must be derived from the artwork palette (dominant light / glow / key color).\n- Avoid generic beige/ivory defaults unless the scene lighting is actually warm-white.\n- Ensure readable contrast with subtle shadow (shadowRgba).\n- If the scene has a strong colored light (e.g., green glow), tint the text toward that hue.\n- Hex must be #RRGGBB. shadowRgba must be rgba(r,g,b,a).",
+                          `Analyze this album artwork and determine the best text colors that match the scene's lighting and atmosphere.
+
+Return STRICT JSON only (no markdown, no code blocks) with these keys:
+- titleColorHex: The hex color for the song title (must feel LIT by the scene)
+- artistColorHex: The hex color for the artist name (must harmonize with scene)
+- shadowRgba: Text shadow in rgba format for depth
+- accentHex: Optional accent/glow color from the scene
+
+RULES:
+1. Extract colors from the ACTUAL lighting in the image (glows, highlights, dominant light sources)
+2. If there's colored lighting (neon, sunset, etc.), the text colors MUST reflect that
+3. NEVER default to generic beige/ivory/#F5F5DC unless the scene is actually warm-white lit
+4. Ensure the colors would be readable with good contrast
+5. Hex format: #RRGGBB, shadow format: rgba(r,g,b,a)
+
+Example response (no markdown):
+{"titleColorHex":"#FF6B35","artistColorHex":"#FFD700","shadowRgba":"rgba(0,0,0,0.6)","accentHex":"#FF4500"}`,
                       },
                       {
                         type: "image_url",
@@ -535,12 +553,25 @@ Emotional Narrative: ${genreDirection.narrative}
             }
           );
 
+          // Log full response for debugging
+          const paletteJson = await paletteRes.json();
+          logStep("Pass 1.5 full API response", { 
+            status: paletteRes.status, 
+            ok: paletteRes.ok,
+            hasChoices: !!paletteJson?.choices,
+            choicesLength: paletteJson?.choices?.length,
+            firstChoice: paletteJson?.choices?.[0] ? {
+              finishReason: paletteJson.choices[0].finish_reason,
+              hasMessage: !!paletteJson.choices[0].message,
+              contentType: typeof paletteJson.choices[0].message?.content,
+              contentPreview: String(paletteJson.choices[0].message?.content || "").substring(0, 200)
+            } : null
+          });
+
           if (paletteRes.ok) {
-            const paletteJson = await paletteRes.json();
             const content = paletteJson?.choices?.[0]?.message?.content;
-            logStep("Pass 1.5 raw Gemini response", { content: content?.substring?.(0, 500) || content });
             
-            if (typeof content === "string") {
+            if (typeof content === "string" && content.trim().length > 0) {
               // Strip markdown code blocks if present (```json ... ``` or ``` ... ```)
               let cleanedContent = content.trim();
               if (cleanedContent.startsWith("```")) {
@@ -548,7 +579,7 @@ Emotional Narrative: ${genreDirection.narrative}
                   .replace(/^```(?:json)?\s*/i, "")
                   .replace(/```\s*$/, "")
                   .trim();
-                logStep("Stripped markdown from Gemini response", { cleanedContent: cleanedContent.substring(0, 300) });
+                logStep("Stripped markdown from response", { cleanedContent: cleanedContent.substring(0, 300) });
               }
               
               try {
@@ -613,11 +644,79 @@ Emotional Narrative: ${genreDirection.narrative}
                 }
               }
             } else {
-              logStep("Gemini content was not a string", { contentType: typeof content });
+              logStep("GPT-5 content was empty or not a string", { contentType: typeof content, contentLength: content?.length });
             }
           } else {
-            const errorText = await paletteRes.text();
-            logStep("Palette API request failed", { status: paletteRes.status, error: errorText.substring(0, 300) });
+            logStep("Palette API request failed", { status: paletteRes.status, error: JSON.stringify(paletteJson).substring(0, 300) });
+          }
+          
+          // TEXT-BASED FALLBACK: If vision failed, derive colors from the expanded prompt
+          if (!paletteGuidance) {
+            logStep("Vision-based palette failed, attempting text-based fallback");
+            
+            const textFallbackRes = await fetch(
+              "https://ai.gateway.lovable.dev/v1/chat/completions",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "openai/gpt-5-mini",
+                  max_completion_tokens: 300,
+                  messages: [
+                    {
+                      role: "system",
+                      content: "You are a color theory expert for album cover art. Return only valid JSON.",
+                    },
+                    {
+                      role: "user",
+                      content: `Based on this scene description, suggest text colors that would look naturally lit by the scene:
+
+Scene: ${expandedDescription.substring(0, 800)}
+Genre: ${genre}
+Mood: ${mood}
+
+Return STRICT JSON only with: titleColorHex, artistColorHex, shadowRgba, accentHex
+- Colors must match the lighting described (if neon green lighting, use greenish tints)
+- If dark/moody, use colors that pop against darkness
+- NEVER use generic beige/ivory unless the scene is warm-white lit
+- Format: {"titleColorHex":"#RRGGBB","artistColorHex":"#RRGGBB","shadowRgba":"rgba(r,g,b,a)","accentHex":"#RRGGBB"}`,
+                    },
+                  ],
+                }),
+              }
+            );
+            
+            if (textFallbackRes.ok) {
+              const fallbackJson = await textFallbackRes.json();
+              const fallbackContent = fallbackJson?.choices?.[0]?.message?.content;
+              logStep("Text fallback response", { content: fallbackContent?.substring?.(0, 300) });
+              
+              if (typeof fallbackContent === "string" && fallbackContent.trim().length > 0) {
+                let cleanedFallback = fallbackContent.trim();
+                if (cleanedFallback.startsWith("```")) {
+                  cleanedFallback = cleanedFallback.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+                }
+                
+                try {
+                  const parsed = JSON.parse(cleanedFallback);
+                  const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+                  if (parsed?.titleColorHex && parsed?.artistColorHex && hexRegex.test(parsed.titleColorHex) && hexRegex.test(parsed.artistColorHex)) {
+                    paletteGuidance = {
+                      titleColorHex: String(parsed.titleColorHex),
+                      artistColorHex: String(parsed.artistColorHex),
+                      shadowRgba: parsed.shadowRgba || "rgba(0,0,0,0.5)",
+                      accentHex: parsed.accentHex ? String(parsed.accentHex) : undefined,
+                    };
+                    logStep("Palette guidance from text fallback", paletteGuidance);
+                  }
+                } catch {
+                  logStep("Text fallback JSON parse failed");
+                }
+              }
+            }
           }
         }
       } catch (e) {
