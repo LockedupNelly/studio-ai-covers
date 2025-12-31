@@ -591,7 +591,21 @@ const EditStudio = () => {
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate("/", { 
+                  state: { 
+                    returnedImage: imageUrl,
+                    genre: currentState.genre,
+                    style: currentState.style,
+                    mood: currentState.mood,
+                    textStyle: currentState.textStyle,
+                    songTitle: currentState.songTitle,
+                    artistName: currentState.artistName,
+                  } 
+                })}
+              >
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </Button>

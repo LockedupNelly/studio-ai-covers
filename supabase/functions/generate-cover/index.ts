@@ -267,6 +267,97 @@ serve(async (req) => {
       throw new Error("Failed to generate artwork after retries");
     };
 
+    // Helper function to extract dominant colors from artwork using vision
+    interface ExtractedColors {
+      dominantColors: string[];
+      textColorSuggestion: string;
+      accentColor: string;
+      palette: "warm" | "cool" | "neutral";
+    }
+
+    const extractDominantColors = async (artworkBase64: string): Promise<ExtractedColors> => {
+      logStep("Extracting dominant colors from artwork");
+      
+      const defaultColors: ExtractedColors = {
+        dominantColors: ["#1a1a2e", "#16213e", "#0f3460"],
+        textColorSuggestion: "#e94560",
+        accentColor: "#ffd700",
+        palette: "cool"
+      };
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Analyze this album cover artwork and extract colors for text styling.
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "dominantColors": ["#hex1", "#hex2", "#hex3"],
+  "textColorSuggestion": "#hex",
+  "accentColor": "#hex",
+  "palette": "warm" | "cool" | "neutral"
+}
+
+RULES:
+1. dominantColors: The 3 most prominent colors in the artwork (hex codes)
+2. textColorSuggestion: A vibrant, eye-catching color that CONTRASTS with the artwork. NEVER suggest plain white (#FFFFFF) or black (#000000). Choose colors like:
+   - Metallic gold (#FFD700, #D4AF37)
+   - Electric blue (#00D4FF, #4FC3F7)
+   - Hot pink (#FF1493, #FF69B4)
+   - Neon green (#39FF14, #00FF41)
+   - Deep purple (#8B00FF, #9400D3)
+   - Coral/salmon (#FF6B6B, #FF7F50)
+   - Turquoise (#40E0D0, #00CED1)
+3. accentColor: A secondary color that complements the text color for glow/shadow effects
+4. palette: Overall temperature of the artwork
+
+The text color should POP against the background while feeling cohesive with the artwork's mood.`
+                },
+                {
+                  type: "image_url",
+                  image_url: { url: artworkBase64 }
+                }
+              ]
+            }],
+            max_tokens: 150
+          }),
+        });
+
+        if (!response.ok) {
+          logStep("Color extraction API error, using defaults", { status: response.status });
+          return defaultColors;
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        
+        // Parse JSON from response (handle potential markdown wrapping)
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          logStep("Colors extracted", parsed);
+          return parsed as ExtractedColors;
+        }
+        
+        logStep("Color extraction parse failed, using defaults");
+        return defaultColors;
+      } catch (e) {
+        logStep("Color extraction error, using defaults", { error: e instanceof Error ? e.message : String(e) });
+        return defaultColors;
+      }
+    };
+
     // Helper function to generate text layer with transparent background
     const makeTextLayerRequest = async (
       songTitle: string,
@@ -274,13 +365,32 @@ serve(async (req) => {
       textStyle: string | null,
       genreHint: string,
       moodHint: string,
+      colors: ExtractedColors,
       maxRetries = 2
     ): Promise<string> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        logStep(`Text layer generation attempt ${attempt}/${maxRetries}`);
+        logStep(`Text layer generation attempt ${attempt}/${maxRetries}`, { colors });
         
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 90_000);
+
+        // Genre-specific color hints
+        const genreColorHints: Record<string, string> = {
+          "Hip-Hop": "Gold, Chrome, Electric Green, or bold contrasting colors",
+          "Rap": "Gold, Chrome, Electric Green, or bold contrasting colors",
+          "Pop": "Hot Pink, Electric Purple, Gold, vibrant eye-catching colors",
+          "EDM": "Neon Pink, Electric Blue, Cyan, UV/blacklight colors",
+          "R&B": "Rose Gold, Deep Purple, Burgundy, warm sensual tones",
+          "Rock": "Blood Red, Orange, Electric Yellow, aggressive colors",
+          "Alternative": "Deep Teal, Burnt Orange, Muted Gold, unique tones",
+          "Indie": "Warm Coral, Dusty Pink, Sage Green, organic tones",
+          "Metal": "Silver Chrome, Blood Red, Black with colored accents",
+          "Country": "Warm Gold, Rust Orange, Earth tones with metallic",
+          "Jazz": "Gold, Deep Blue, Sophisticated metallic tones",
+          "Classical": "Gold, Ivory, Deep Red, elegant refined colors",
+        };
+
+        const genreColorHint = genreColorHints[genreHint] || "vibrant, eye-catching colors that complement the artwork";
 
         const textLayerPrompt = `Create elegant, professional album cover typography on a completely transparent background.
 
@@ -288,43 +398,51 @@ TEXT CONTENT (SPELL EXACTLY - EACH LETTER MUST BE CORRECT):
 - Song Title: "${songTitle}"
 - Artist Name: "${artistName || ''}"
 
-===== CRITICAL SIZE AND POSITIONING RULES =====
-- The text MUST NOT cover more than 35-40% of the total image area
-- Text should be COMPACT and tastefully sized - NOT oversized or dominating
-- Position the text in the LOWER THIRD of the canvas (typical album cover placement)
-- Song title should be medium-sized (not giant), readable but not overwhelming
-- Artist name should be smaller, positioned elegantly below the song title
-- Leave at least 60% of the canvas EMPTY (transparent) for the artwork to show through
-- Think "elegant vinyl record label" sizing, NOT "billboard advertisement"
+===== MANDATORY COLOR SCHEME (USE THESE EXACT COLORS) =====
+The artwork's dominant colors are: ${colors.dominantColors.join(", ")}
+The artwork has a ${colors.palette} palette.
+
+You MUST use these specific colors for the text:
+- PRIMARY TEXT COLOR: ${colors.textColorSuggestion} - Use this as the main text color
+- ACCENT/GLOW COLOR: ${colors.accentColor} - Use this for glow effects, outlines, or secondary elements
+
+CRITICAL COLOR RULES:
+- NEVER use plain white (#FFFFFF) or plain black (#000000) as the main text color
+- The text MUST incorporate the colors specified above
+- Create depth with gradients, metallic effects, or multi-tone styling using these colors
+- Genre-appropriate colors for ${genreHint}: ${genreColorHint}
+
+===== SIZE AND POSITIONING RULES =====
+- Text MUST NOT cover more than 35-40% of the total image area
+- Position in the LOWER THIRD of the canvas (typical album cover placement)
+- Song title: medium-sized, readable but not overwhelming
+- Artist name: smaller, positioned elegantly below the song title
+- Leave at least 60% of canvas EMPTY (transparent) for artwork
 
 ${textStyle ? `===== MANDATORY TEXT STYLE (FOLLOW EXACTLY) =====
 ${textStyle}
 
-You MUST create text that matches this style description exactly. The font style, weight, texture, and effects described above MUST be followed.` : `===== TEXT STYLE GUIDELINES =====
+You MUST create text that matches this style description while using the color scheme above.` : `===== TEXT STYLE GUIDELINES =====
 Create professional, album-ready typography that fits a ${genreHint} ${moodHint} aesthetic.
-Use stylish, impactful fonts with depth and texture.
-Add appropriate effects: shadows, glow, metallic shine, distress, or other effects that fit the genre.`}
+Use stylish, impactful fonts with depth and texture.`}
 
-===== TEXT VISUAL REQUIREMENTS =====
-- Use CONTRASTING colors that will stand out on any background (white, metallic silver, gold, neon, etc.)
-- Include strong drop shadows or outer glow so text is visible on dark AND light backgrounds
-- Text should have depth, dimension, and visual polish
-- Include effects that give the text substance and professional finish
-- The text should look like it was designed by a professional album art designer
+===== VISUAL EFFECTS REQUIREMENTS =====
+- Strong drop shadows or outer glow in ${colors.accentColor} for visibility
+- Metallic, gradient, or textured finish using the color palette
+- Text should have depth, dimension, and professional polish
+- Effects should make the text feel designed, not flat
 
 CRITICAL REQUIREMENTS:
-- TRANSPARENT BACKGROUND ONLY - no imagery, no patterns, no colors behind the text
-- Maximum 35-40% coverage of the canvas - the text must be COMPACT
-- Position in lower third for optimal album cover composition
-- Ultra high quality, maximum detail on the text itself
-- The background MUST be completely transparent (PNG with alpha)
+- TRANSPARENT BACKGROUND ONLY - no imagery, no patterns
+- Maximum 35-40% coverage of the canvas
+- Ultra high quality, maximum detail on text
+- Use the EXACT colors specified above
 
 FORBIDDEN:
-- Oversized text that covers most of the image
-- Text positioned in the center covering the main artwork area
+- Plain white (#FFFFFF) or black (#000000) as main text color
+- Oversized text covering most of the image
 - Any background color, gradient, or pattern
-- Plain flat text without effects
-- Misspelled words
+- Flat, single-color text without effects
 
 SPELLING CHECK:
 - Song title is "${songTitle}" - verify each letter
@@ -392,7 +510,7 @@ SPELLING CHECK:
           continue;
         }
 
-        logStep("Text layer generated successfully");
+        logStep("Text layer generated successfully with artwork colors");
         return imageUrl;
       }
       throw new Error("Failed to generate text layer after retries");
@@ -599,24 +717,46 @@ ${description}
         const artwork = await makeArtworkRequest(artworkPrompt);
         imageUrl = artwork;
       } else {
-        // ===== PARALLEL GENERATION: Artwork + Text Layer simultaneously =====
-        logStep("Starting PARALLEL generation: Artwork + Text Layer");
+        // ===== SEQUENTIAL GENERATION: Artwork → Extract Colors → Text Layer =====
+        logStep("Starting SEQUENTIAL generation: Artwork → Colors → Text");
         const startTime = Date.now();
 
-        const [artworkResult, textLayerResult] = await Promise.all([
-          makeArtworkRequest(artworkPrompt),
-          makeTextLayerRequest(songTitle, artistName, textStyleInstructions, genre, mood),
-        ]);
+        // Step 1: Generate artwork first
+        logStep("Step 1: Generating artwork");
+        const artworkResult = await makeArtworkRequest(artworkPrompt);
+        const artworkTime = Date.now() - startTime;
+        logStep("Artwork generated", { timeMs: artworkTime });
 
-        const parallelTime = Date.now() - startTime;
-        logStep("PARALLEL generation complete", { timeMs: parallelTime });
+        // Step 2: Extract colors from artwork
+        logStep("Step 2: Extracting colors from artwork");
+        const colorStartTime = Date.now();
+        const extractedColors = await extractDominantColors(artworkResult);
+        const colorTime = Date.now() - colorStartTime;
+        logStep("Colors extracted", { timeMs: colorTime, colors: extractedColors });
 
-        // Use AI compositing for intelligent color integration
-        logStep("Starting AI compositing for color integration");
+        // Step 3: Generate text layer with extracted colors
+        logStep("Step 3: Generating text layer with artwork colors");
+        const textStartTime = Date.now();
+        const textLayerResult = await makeTextLayerRequest(
+          songTitle, 
+          artistName, 
+          textStyleInstructions, 
+          genre, 
+          mood,
+          extractedColors
+        );
+        const textTime = Date.now() - textStartTime;
+        logStep("Text layer generated", { timeMs: textTime });
+
+        const totalTime = Date.now() - startTime;
+        logStep("SEQUENTIAL generation complete", { totalTimeMs: totalTime, artworkMs: artworkTime, colorMs: colorTime, textMs: textTime });
+
+        // Step 4: Composite (text is already correctly colored, simpler merge)
+        logStep("Step 4: Compositing layers");
         const compositeStartTime = Date.now();
         const compositedResult = await compositeWithAI(artworkResult, textLayerResult, genre, mood);
         const compositeTime = Date.now() - compositeStartTime;
-        logStep("AI compositing complete", { timeMs: compositeTime });
+        logStep("Compositing complete", { timeMs: compositeTime });
 
         // Check if AI compositing succeeded or fell back to client-side
         if (compositedResult.startsWith('data:image') || compositedResult.startsWith('http')) {
@@ -738,7 +878,7 @@ ${description}
       );
     }
 
-    logStep("Generation complete (parallel pipeline)");
+    logStep("Generation complete (sequential pipeline with color extraction)");
 
     // Deduct credit after successful generation
     if (userId && !hasUnlimitedAccess) {
