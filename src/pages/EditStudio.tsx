@@ -690,11 +690,11 @@ const EditStudio = () => {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={handleApplyEdits}
                     disabled={isEditing || isUpscaling || !hasChanges}
-                    className="flex-1 gap-2"
+                    className="flex-1 min-w-[200px] gap-2"
                     size="lg"
                   >
                     {isEditing ? (
@@ -709,28 +709,30 @@ const EditStudio = () => {
                       </>
                     )}
                   </Button>
-                  <Button
-                    onClick={handleDownload}
-                    variant="outline"
-                    size="lg"
-                    className="gap-2"
-                    disabled={isEditing || isUpscaling}
-                  >
-                    <Download className="w-4 h-4" />
-                    {upscaledImageUrl ? "Download 4K" : "Download"}
-                  </Button>
-                  {!upscaledImageUrl && (
+                  <div className="flex gap-3">
                     <Button
-                      onClick={handleUpscale}
+                      onClick={handleDownload}
                       variant="outline"
                       size="lg"
                       className="gap-2"
                       disabled={isEditing || isUpscaling}
                     >
-                      <Maximize2 className="w-4 h-4" />
-                      {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
+                      <Download className="w-4 h-4" />
+                      {upscaledImageUrl ? "Download 4K" : "Download"}
                     </Button>
-                  )}
+                    {!upscaledImageUrl && (
+                      <Button
+                        onClick={handleUpscale}
+                        variant="outline"
+                        size="lg"
+                        className="gap-2"
+                        disabled={isEditing || isUpscaling}
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                        {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Version Navigation */}
