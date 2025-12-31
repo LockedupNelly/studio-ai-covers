@@ -43,13 +43,14 @@ const genres = [
   "Classical"
 ];
 
-// Text/Typography style presets - Only 5 main categories + AI Select
+// Text/Typography style presets - Only 3 main categories + AI Select
+// NOTE: "Modern" and "Retro" temporarily removed - add back later:
+// { id: "modern", name: "Modern", description: "Clean, contemporary, sharp", prompt: "modern clean contemporary sharp typography", example: "" },
+// { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 const textStyles = [
   { id: "creative", name: "Creative", description: "Artistic, unique, expressive", prompt: "creative artistic unique expressive typography", example: "" },
   { id: "dark", name: "Dark", description: "Moody, shadow, gothic vibes", prompt: "dark moody gothic shadow text with dramatic lighting", example: "" },
   { id: "futuristic", name: "Futuristic", description: "Sci-fi, tech, cyber aesthetics", prompt: "futuristic sci-fi technology cyber text with holographic effects", example: "" },
-  { id: "modern", name: "Modern", description: "Clean, contemporary, sharp", prompt: "modern clean contemporary sharp typography", example: "" },
-  { id: "retro", name: "Retro", description: "Vintage, 70s-80s, nostalgic", prompt: "retro vintage 70s 80s nostalgic text with warm tones", example: "" },
 ];
 
 // Progress stages for generation
