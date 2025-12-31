@@ -111,8 +111,8 @@ const Index = () => {
     // Create abort controller for this generation
     abortControllerRef.current = new AbortController();
     
-    // Set 90-second client-side timeout
-    const GENERATION_TIMEOUT = 90000; // 90 seconds
+    // Set 3-minute client-side timeout (covers often take 90s+)
+    const GENERATION_TIMEOUT = 180000; // 180 seconds
     let timedOut = false;
     
     generationTimeoutRef.current = setTimeout(() => {
@@ -120,7 +120,7 @@ const Index = () => {
       abortControllerRef.current?.abort();
       setIsGenerating(false);
       toast.error("Generation timed out", {
-        description: "The request took too long. Please try again - sometimes the AI servers are busy.",
+        description: "This can take up to ~3 minutes depending on AI load. Please try again.",
       });
     }, GENERATION_TIMEOUT);
 
