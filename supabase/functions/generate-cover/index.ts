@@ -280,8 +280,8 @@ serve(async (req) => {
       
       const defaultColors: ExtractedColors = {
         dominantColors: ["#1a1a2e", "#16213e", "#0f3460"],
-        textColorSuggestion: "#e94560",
-        accentColor: "#ffd700",
+        textColorSuggestion: "#ffd700",
+        accentColor: "#e94560",
         palette: "cool"
       };
 
@@ -299,7 +299,7 @@ serve(async (req) => {
               content: [
                 {
                   type: "text",
-                  text: `Analyze this album cover artwork and extract colors for text styling.
+                  text: `Analyze this album cover artwork and pick text colors that USE colors from the artwork.
 
 Return ONLY valid JSON (no markdown, no explanation):
 {
@@ -309,20 +309,20 @@ Return ONLY valid JSON (no markdown, no explanation):
   "palette": "warm" | "cool" | "neutral"
 }
 
-RULES:
-1. dominantColors: The 3 most prominent colors in the artwork (hex codes)
-2. textColorSuggestion: A vibrant, eye-catching color that CONTRASTS with the artwork. NEVER suggest plain white (#FFFFFF) or black (#000000). Choose colors like:
-   - Metallic gold (#FFD700, #D4AF37)
-   - Electric blue (#00D4FF, #4FC3F7)
-   - Hot pink (#FF1493, #FF69B4)
-   - Neon green (#39FF14, #00FF41)
-   - Deep purple (#8B00FF, #9400D3)
-   - Coral/salmon (#FF6B6B, #FF7F50)
-   - Turquoise (#40E0D0, #00CED1)
-3. accentColor: A secondary color that complements the text color for glow/shadow effects
-4. palette: Overall temperature of the artwork
+CRITICAL RULES:
+1. dominantColors: The 3 most prominent/vibrant colors in the artwork (hex codes)
+2. textColorSuggestion: Pick ONE of the dominant colors from the artwork (or a slightly brighter version of it). The text should USE the artwork's color palette, NOT introduce new colors. Examples:
+   - If artwork has orange fire → use orange (#FF4500, #FF6600)
+   - If artwork has gold accents → use gold (#FFD700, #D4AF37)
+   - If artwork has blue tones → use that blue
+   - If artwork has red/crimson → use that red
+   NEVER introduce colors that don't exist in the artwork (no random neon green on a warm orange artwork!)
+3. accentColor: Pick ANOTHER color from the artwork's dominantColors for glow/outline effects
+4. palette: Overall temperature (warm = oranges/reds/yellows, cool = blues/purples, neutral = grays/browns)
 
-The text color should POP against the background while feeling cohesive with the artwork's mood.`
+The text color should be PULLED FROM the artwork's existing palette so it feels integrated and cohesive.
+If the artwork is very dark, pick the brightest/most vibrant color present.
+NEVER pick a color that isn't already in the artwork.`
                 },
                 {
                   type: "image_url",
@@ -374,79 +374,54 @@ The text color should POP against the background while feeling cohesive with the
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 90_000);
 
-        // Genre-specific color hints
-        const genreColorHints: Record<string, string> = {
-          "Hip-Hop": "Gold, Chrome, Electric Green, or bold contrasting colors",
-          "Rap": "Gold, Chrome, Electric Green, or bold contrasting colors",
-          "Pop": "Hot Pink, Electric Purple, Gold, vibrant eye-catching colors",
-          "EDM": "Neon Pink, Electric Blue, Cyan, UV/blacklight colors",
-          "R&B": "Rose Gold, Deep Purple, Burgundy, warm sensual tones",
-          "Rock": "Blood Red, Orange, Electric Yellow, aggressive colors",
-          "Alternative": "Deep Teal, Burnt Orange, Muted Gold, unique tones",
-          "Indie": "Warm Coral, Dusty Pink, Sage Green, organic tones",
-          "Metal": "Silver Chrome, Blood Red, Black with colored accents",
-          "Country": "Warm Gold, Rust Orange, Earth tones with metallic",
-          "Jazz": "Gold, Deep Blue, Sophisticated metallic tones",
-          "Classical": "Gold, Ivory, Deep Red, elegant refined colors",
-        };
-
-        const genreColorHint = genreColorHints[genreHint] || "vibrant, eye-catching colors that complement the artwork";
-
         const textLayerPrompt = `Create elegant, professional album cover typography on a completely transparent background.
 
 TEXT CONTENT (SPELL EXACTLY - EACH LETTER MUST BE CORRECT):
 - Song Title: "${songTitle}"
 - Artist Name: "${artistName || ''}"
 
-===== MANDATORY COLOR SCHEME (USE THESE EXACT COLORS) =====
-The artwork's dominant colors are: ${colors.dominantColors.join(", ")}
-The artwork has a ${colors.palette} palette.
+===== MANDATORY COLOR SCHEME (USE THESE EXACT COLORS FROM THE ARTWORK) =====
+These colors were extracted FROM the artwork - USE THEM:
+- Artwork dominant colors: ${colors.dominantColors.join(", ")}
+- Artwork palette: ${colors.palette}
 
 You MUST use these specific colors for the text:
-- PRIMARY TEXT COLOR: ${colors.textColorSuggestion} - Use this as the main text color
-- ACCENT/GLOW COLOR: ${colors.accentColor} - Use this for glow effects, outlines, or secondary elements
+- PRIMARY TEXT COLOR: ${colors.textColorSuggestion} - This is from the artwork, use it as main text fill
+- ACCENT/GLOW COLOR: ${colors.accentColor} - This is from the artwork, use for outlines/glow
 
-CRITICAL COLOR RULES:
-- NEVER use plain white (#FFFFFF) or plain black (#000000) as the main text color
-- The text MUST incorporate the colors specified above
-- Create depth with gradients, metallic effects, or multi-tone styling using these colors
-- Genre-appropriate colors for ${genreHint}: ${genreColorHint}
+CRITICAL: These colors are PULLED FROM the artwork itself. Using these colors ensures the text feels integrated with the cover art. Do NOT introduce any new colors that aren't specified above.
 
 ===== SIZE AND POSITIONING RULES =====
 - Text MUST NOT cover more than 35-40% of the total image area
-- Position in the LOWER THIRD of the canvas (typical album cover placement)
+- Position in the LOWER THIRD of the canvas
 - Song title: medium-sized, readable but not overwhelming
-- Artist name: smaller, positioned elegantly below the song title
-- Leave at least 60% of canvas EMPTY (transparent) for artwork
+- Artist name: smaller, positioned below the song title
+- Leave at least 60% of canvas EMPTY (transparent)
 
 ${textStyle ? `===== MANDATORY TEXT STYLE (FOLLOW EXACTLY) =====
 ${textStyle}
 
-You MUST create text that matches this style description while using the color scheme above.` : `===== TEXT STYLE GUIDELINES =====
-Create professional, album-ready typography that fits a ${genreHint} ${moodHint} aesthetic.
-Use stylish, impactful fonts with depth and texture.`}
+Match this style while using the artwork colors above.` : `===== TEXT STYLE GUIDELINES =====
+Create professional typography that fits a ${genreHint} ${moodHint} aesthetic.
+Use stylish fonts with depth and texture.`}
 
-===== VISUAL EFFECTS REQUIREMENTS =====
-- Strong drop shadows or outer glow in ${colors.accentColor} for visibility
-- Metallic, gradient, or textured finish using the color palette
-- Text should have depth, dimension, and professional polish
-- Effects should make the text feel designed, not flat
+===== VISUAL EFFECTS =====
+- Drop shadows or outer glow in ${colors.accentColor}
+- Metallic, gradient, or textured finish using ${colors.textColorSuggestion}
+- Text should have depth and professional polish
 
-CRITICAL REQUIREMENTS:
-- TRANSPARENT BACKGROUND ONLY - no imagery, no patterns
-- Maximum 35-40% coverage of the canvas
-- Ultra high quality, maximum detail on text
-- Use the EXACT colors specified above
+REQUIREMENTS:
+- TRANSPARENT BACKGROUND ONLY
+- Maximum 35-40% canvas coverage
+- Use ONLY the colors specified above (from the artwork)
 
 FORBIDDEN:
-- Plain white (#FFFFFF) or black (#000000) as main text color
-- Oversized text covering most of the image
-- Any background color, gradient, or pattern
-- Flat, single-color text without effects
+- Plain white or black as main text color
+- Any colors NOT listed in the artwork colors above
+- Oversized text
+- Any background
 
-SPELLING CHECK:
-- Song title is "${songTitle}" - verify each letter
-- Artist name is "${artistName || ''}" - verify each letter`;
+SPELLING: "${songTitle}" by "${artistName || ''}" - verify each letter`;
 
         let response: Response;
         try {
