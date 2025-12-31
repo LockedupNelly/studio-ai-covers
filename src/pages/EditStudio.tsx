@@ -512,12 +512,12 @@ const EditStudio = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = upscaledImageUrl ? "cover-art-2k.png" : "cover-art-final.png";
+      link.download = upscaledImageUrl ? "cover-art-hd.png" : "cover-art-final.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success("Downloaded!", { description: upscaledImageUrl ? "2K HD cover saved" : "Your final cover has been saved" });
+      toast.success("Downloaded!", { description: upscaledImageUrl ? "HD cover saved (4096x4096)" : "Your final cover has been saved" });
     } catch (error) {
       toast.error("Download failed");
     }
@@ -536,8 +536,8 @@ const EditStudio = () => {
       
       if (data?.upscaledUrl) {
         setUpscaledImageUrl(data.upscaledUrl);
-        toast.success("Cover upscaled to 2K HD!", {
-          description: "Your cover is now 2048x2048 resolution.",
+        toast.success("Cover upscaled to HD!", {
+          description: "Your cover is now 4096x4096 (exceeds 3000x3000).",
         });
       } else {
         throw new Error("No upscaled image returned");
@@ -694,7 +694,7 @@ const EditStudio = () => {
                     <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
                       <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       <div className="text-center">
-                        <p className="text-lg font-semibold mb-2">Upscaling to 2K...</p>
+                        <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
                         <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
                       </div>
                     </div>
@@ -730,7 +730,7 @@ const EditStudio = () => {
                       disabled={isEditing || isUpscaling}
                     >
                       <Download className="w-4 h-4" />
-                      {upscaledImageUrl ? "Download 2K" : "Download"}
+                      {upscaledImageUrl ? "Download HD" : "Download"}
                     </Button>
                     {!upscaledImageUrl && (
                       <Button
@@ -741,7 +741,7 @@ const EditStudio = () => {
                         disabled={isEditing || isUpscaling}
                       >
                         <Maximize2 className="w-4 h-4" />
-                        {isUpscaling ? "Upscaling..." : "Upscale to 2K"}
+                        {isUpscaling ? "Upscaling..." : "Upscale to HD"}
                       </Button>
                     )}
                   </div>
