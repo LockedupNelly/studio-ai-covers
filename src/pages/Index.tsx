@@ -115,12 +115,40 @@ const Index = () => {
     const GENERATION_TIMEOUT = 180000; // 180 seconds
     let timedOut = false;
     
-    generationTimeoutRef.current = setTimeout(() => {
+    // Track generation start time to check for recent covers on timeout
+    const generationStartedAt = Date.now();
+    
+    generationTimeoutRef.current = setTimeout(async () => {
       timedOut = true;
       abortControllerRef.current?.abort();
+      
+      // Try to recover by checking if a cover was generated recently
+      try {
+        const { data } = await supabase.functions.invoke("list-generations", {
+          body: { limit: 1, offset: 0 },
+        });
+        
+        const latestCover = data?.generations?.[0];
+        if (latestCover?.image_url && latestCover?.created_at) {
+          const coverTime = new Date(latestCover.created_at).getTime();
+          // If cover was created after we started generating (within last 4 mins)
+          if (coverTime > generationStartedAt - 10000) {
+            setGeneratedImage(latestCover.image_url);
+            setIsGenerating(false);
+            refetchCredits();
+            toast.success("Cover generated!", {
+              description: "The request took longer than expected, but your cover is ready.",
+            });
+            return;
+          }
+        }
+      } catch {
+        // Recovery failed, show timeout message
+      }
+      
       setIsGenerating(false);
       toast.error("Generation timed out", {
-        description: "This can take up to ~3 minutes depending on AI load. Please try again.",
+        description: "Your cover may still be processing. Check Recent Covers in a moment.",
       });
     }, GENERATION_TIMEOUT);
 
