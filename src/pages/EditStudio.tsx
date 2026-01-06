@@ -799,7 +799,7 @@ const EditStudio = () => {
                           backgroundImage: `url(${lightingOption.image})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          mixBlendMode: lightingOption.blendMode || 'screen',
+                          mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
                           opacity: lightingOption.opacity || 1,
                         }}
                       />
@@ -818,7 +818,7 @@ const EditStudio = () => {
                           backgroundImage: `url(${textureOption.image})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          mixBlendMode: textureOption.blendMode || 'overlay',
+                          mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
                           opacity: textureOption.opacity || 0.5,
                         }}
                       />
