@@ -852,11 +852,17 @@ const EditStudio = () => {
                           "bottom-right": "bottom-0 right-0",
                         };
                       }
-                      const bottomOffset = isMedium ? "bottom-1.5" : "bottom-3";
+                      if (isMedium) {
+                        return {
+                          "bottom-left": "bottom-0.5 left-1.5",
+                          "bottom-center": "bottom-1 left-1/2 -translate-x-1/2",
+                          "bottom-right": "bottom-0.5 right-1.5",
+                        };
+                      }
                       return {
-                        "bottom-left": `${bottomOffset} left-3`,
-                        "bottom-center": `${bottomOffset} left-1/2 -translate-x-1/2`,
-                        "bottom-right": `${bottomOffset} right-3`,
+                        "bottom-left": "bottom-3 left-3",
+                        "bottom-center": "bottom-3 left-1/2 -translate-x-1/2",
+                        "bottom-right": "bottom-3 right-3",
                       };
                     };
                     
@@ -864,7 +870,7 @@ const EditStudio = () => {
                     const sizeClass = isLarge 
                       ? "w-[36%] min-w-[120px] max-w-[200px]" 
                       : isMedium 
-                        ? "w-[22%] min-w-[75px] max-w-[120px]" 
+                        ? "w-[24%] min-w-[80px] max-w-[130px]" 
                         : "w-[18%] min-w-[60px] max-w-[100px]";
                     return (
                       <div className={`absolute ${positionClasses[paPosition]} ${sizeClass}`}>
