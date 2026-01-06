@@ -114,7 +114,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
   
-  const [showCanvasPopup, setShowCanvasPopup] = useState(false);
+  // Removed: showCanvasPopup state and popup
   const [activeInputTab, setActiveInputTab] = useState<"text" | "audio" | "image">("text");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState("");
@@ -180,17 +180,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
   };
 
-  // Show free Spotify Canvas popup on mount
-  useEffect(() => {
-    const hasSeenPopup = sessionStorage.getItem("seenCanvasPopup");
-    if (!hasSeenPopup) {
-      const timer = setTimeout(() => {
-        setShowCanvasPopup(true);
-        sessionStorage.setItem("seenCanvasPopup", "true");
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  // Removed: Spotify Canvas popup effect
 
   // Load recent covers for placeholder grid
   useEffect(() => {
@@ -1339,31 +1329,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
         </DialogContent>
       </Dialog>
 
-      {/* Free Spotify Canvas Popup */}
-      <Dialog open={showCanvasPopup} onOpenChange={setShowCanvasPopup}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ImagePlus className="w-5 h-5 text-primary" />
-              Free Spotify Canvas Offer
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              For a limited time, get a <span className="font-semibold text-primary">free Spotify Canvas</span> when you
-              purchase any motion upgrade add-on.
-            </p>
-            <p>
-              Perfect for bringing your new cover art to life on Spotify with looping motion visuals.
-            </p>
-            <div className="flex justify-end">
-              <Button onClick={() => setShowCanvasPopup(false)} size="sm" variant="outline">
-                Got it
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Text Style Variant Selection Dialog */}
       <TextStyleVariantDialog
