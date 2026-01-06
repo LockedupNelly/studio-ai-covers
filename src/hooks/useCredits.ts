@@ -1,22 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface CreditsState {
+  credits: number | null;
+  loading: boolean;
+  subscriptionTier: string | null;
+  subscriptionUsage: number | null;
+  subscriptionLimit: number | null;
+}
+
+const initialState: CreditsState = {
+  credits: null,
+  loading: true,
+  subscriptionTier: null,
+  subscriptionUsage: null,
+  subscriptionLimit: null,
+};
+
 export function useCredits() {
   const { user } = useAuth();
-  const [credits, setCredits] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
-  const [subscriptionUsage, setSubscriptionUsage] = useState<number | null>(null);
-  const [subscriptionLimit, setSubscriptionLimit] = useState<number | null>(null);
+  const [state, setState] = useState<CreditsState>(initialState);
+  const mountedRef = useRef(true);
 
   const fetchCredits = useCallback(async () => {
     if (!user) {
-      setCredits(null);
-      setSubscriptionTier(null);
-      setSubscriptionUsage(null);
-      setSubscriptionLimit(null);
-      setLoading(false);
+      setState({
+        credits: null,
+        loading: false,
+        subscriptionTier: null,
+        subscriptionUsage: null,
+        subscriptionLimit: null,
+      });
       return;
     }
 
@@ -28,50 +43,70 @@ export function useCredits() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching credits:", error);
-        // Don't clobber the UI with 0 on transient errors; keep the previous value.
+      if (!mountedRef.current) return;
+
+      let newCredits = state.credits;
+      if (!error) {
+        newCredits = data?.credits ?? 0;
       } else {
-        setCredits(data?.credits ?? 0);
+        console.error("Error fetching credits:", error);
       }
 
       // Check subscription for tier, usage, and limits
       const { data: subData } = await supabase.functions.invoke("check-subscription");
+
+      if (!mountedRef.current) return;
+
       if (subData?.tier) {
-        setSubscriptionTier(subData.tier);
-        setSubscriptionUsage(subData.usage ?? 0);
-        setSubscriptionLimit(subData.limit ?? null);
+        setState({
+          credits: newCredits,
+          loading: false,
+          subscriptionTier: subData.tier,
+          subscriptionUsage: subData.usage ?? 0,
+          subscriptionLimit: subData.limit ?? null,
+        });
       } else {
-        setSubscriptionTier(null);
-        setSubscriptionUsage(null);
-        setSubscriptionLimit(null);
+        setState({
+          credits: newCredits,
+          loading: false,
+          subscriptionTier: null,
+          subscriptionUsage: null,
+          subscriptionLimit: null,
+        });
       }
     } catch (error) {
       console.error("Error fetching credits:", error);
-      // Keep last known credits on errors.
-    } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setState((prev) => ({ ...prev, loading: false }));
+      }
     }
-  }, [user]);
+  }, [user, state.credits]);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchCredits();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [fetchCredits]);
 
   const refetch = useCallback(() => {
-    setLoading(true);
+    setState((prev) => ({ ...prev, loading: true }));
     fetchCredits();
   }, [fetchCredits]);
 
-  const hasUnlimitedGenerations = subscriptionTier === "pro" || subscriptionTier === "studio" || subscriptionTier === "starter";
+  const hasUnlimitedGenerations =
+    state.subscriptionTier === "pro" ||
+    state.subscriptionTier === "studio" ||
+    state.subscriptionTier === "starter";
 
-  return { 
-    credits, 
-    loading, 
-    refetch, 
-    subscriptionTier, 
+  return {
+    credits: state.credits,
+    loading: state.loading,
+    refetch,
+    subscriptionTier: state.subscriptionTier,
     hasUnlimitedGenerations,
-    subscriptionUsage,
-    subscriptionLimit
+    subscriptionUsage: state.subscriptionUsage,
+    subscriptionLimit: state.subscriptionLimit,
   };
 }
