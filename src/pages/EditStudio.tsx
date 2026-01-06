@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -1110,77 +1110,60 @@ const EditStudio = () => {
                     <div className="grid grid-cols-3 gap-1.5">
                       {lightingOptions.filter(l => l.id !== "none").map(l => {
                         const isSelected = lightings.includes(l.id);
+                        const currentRotation = lightingRotations[l.id] || 0;
                         return (
-                          <button
-                            key={l.id}
-                            onClick={() => {
-                              if (isSelected) {
-                                setLightings(lightings.filter(id => id !== l.id));
-                                // Also remove rotation when deselecting
-                                const { [l.id]: _, ...rest } = lightingRotations;
-                                setLightingRotations(rest);
-                              } else {
-                                setLightings([...lightings, l.id]);
-                              }
-                            }}
-                            disabled={isEditing}
-                            title={l.name}
-                            className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                              isSelected
-                                ? "border-primary ring-1 ring-primary"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                            style={{ 
-                              background: l.image 
-                                ? `url(${l.image}) center/cover` 
-                                : l.gradient || "var(--secondary)" 
-                            }}
-                          >
-                            {isSelected && (
-                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                              </div>
+                          <div key={l.id} className="flex flex-col gap-1">
+                            <button
+                              onClick={() => {
+                                if (isSelected) {
+                                  setLightings(lightings.filter(id => id !== l.id));
+                                  // Also remove rotation when deselecting
+                                  const { [l.id]: _, ...rest } = lightingRotations;
+                                  setLightingRotations(rest);
+                                } else {
+                                  setLightings([...lightings, l.id]);
+                                }
+                              }}
+                              disabled={isEditing}
+                              title={l.name}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                isSelected
+                                  ? "border-primary ring-1 ring-primary"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              style={{ 
+                                background: l.image 
+                                  ? `url(${l.image}) center/cover` 
+                                  : l.gradient || "var(--secondary)" 
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                </div>
+                              )}
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                {l.name}
+                              </span>
+                            </button>
+                            {/* Simple rotate button shown only when selected and has image */}
+                            {isSelected && l.image && (
+                              <button
+                                onClick={() => {
+                                  const nextRotation = (currentRotation + 90) % 360;
+                                  setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
+                                }}
+                                disabled={isEditing}
+                                className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
+                              >
+                                <RotateCw className="w-3 h-3" />
+                                Rotate
+                              </button>
                             )}
-                            <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                              {l.name}
-                            </span>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
-                    
-                    {/* Rotation controls for selected lightings */}
-                    {lightings.filter(id => lightingOptions.find(l => l.id === id)?.image).length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-border space-y-2">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Rotate</div>
-                        {lightings.map(lightingId => {
-                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                          if (!lightingOption?.image) return null;
-                          const currentRotation = lightingRotations[lightingId] || 0;
-                          return (
-                            <div key={lightingId} className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-muted-foreground truncate">{lightingOption.name}</span>
-                              <div className="flex gap-1">
-                                {[0, 90, 180, 270].map(deg => (
-                                  <button
-                                    key={deg}
-                                    onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: deg })}
-                                    disabled={isEditing}
-                                    className={`w-7 h-7 rounded text-xs font-medium transition-all ${
-                                      currentRotation === deg
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-secondary hover:bg-secondary/80 text-muted-foreground"
-                                    }`}
-                                  >
-                                    {deg}°
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 </div>
                 
