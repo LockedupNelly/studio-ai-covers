@@ -75,7 +75,7 @@ const RefundPolicy = () => {
               Requesting a refund is simple:
             </p>
             <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-              <li>Email us at <a href="mailto:support@coverartmaker.com" className="text-primary hover:underline">support@coverartmaker.com</a></li>
+              <li>Email us at <a href="mailto:coverartmaker@gmail.com" className="text-primary hover:underline">coverartmaker@gmail.com</a></li>
               <li>Include your account email and a brief description of the issue</li>
               <li>If applicable, share examples of prompts that didn't generate as expected</li>
               <li>We'll respond within 24-48 hours with a resolution</li>
@@ -97,8 +97,8 @@ const RefundPolicy = () => {
               Have questions about our refund policy? We're here to help.{" "}
               <a href="/contact" className="text-primary hover:underline">Contact our support team</a>{" "}
               or email us directly at{" "}
-              <a href="mailto:support@coverartmaker.com" className="text-primary hover:underline">
-                support@coverartmaker.com
+              <a href="mailto:coverartmaker@gmail.com" className="text-primary hover:underline">
+                coverartmaker@gmail.com
               </a>.
             </p>
           </section>
