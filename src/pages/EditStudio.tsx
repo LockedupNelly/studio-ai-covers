@@ -190,6 +190,7 @@ const EditStudio = () => {
   const [paPosition, setPaPosition] = useState<PAPosition>("bottom-right");
   const [textures, setTextures] = useState<string[]>([]);
   const [lightings, setLightings] = useState<string[]>([]);
+  const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
   const [customInstructions, setCustomInstructions] = useState("");
   
   // Version history
@@ -535,7 +536,7 @@ const EditStudio = () => {
       
       // ===== APPLY TEXTURE/LIGHTING OVERLAYS VIA CANVAS COMPOSITING =====
       // This happens AFTER AI edits (or can happen standalone for texture-only changes)
-      const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number } }> = [];
+      const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number; rotation?: number } }> = [];
       
       // Add texture overlays if selected and have image files
       textures.forEach(textureId => {
@@ -560,6 +561,7 @@ const EditStudio = () => {
             options: {
               blendMode: lightingOption.blendMode,
               opacity: lightingOption.opacity,
+              rotation: lightingRotations[lightingId] || 0,
             },
           });
         }
@@ -598,6 +600,7 @@ const EditStudio = () => {
       setParentalAdvisory("none");
       setTextures([]);
       setLightings([]);
+      setLightingRotations({});
       setCustomInstructions("");
       
       toast.success("Edits applied!", { 
@@ -791,6 +794,7 @@ const EditStudio = () => {
                   {lightings.map(lightingId => {
                     const lightingOption = lightingOptions.find(l => l.id === lightingId);
                     if (!lightingOption?.image) return null;
+                    const rotation = lightingRotations[lightingId] || 0;
                     return (
                       <div 
                         key={lightingId}
@@ -801,6 +805,7 @@ const EditStudio = () => {
                           backgroundPosition: 'center',
                           mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
                           opacity: lightingOption.opacity || 1,
+                          transform: rotation ? `rotate(${rotation}deg)` : undefined,
                         }}
                       />
                     );
@@ -1105,6 +1110,9 @@ const EditStudio = () => {
                             onClick={() => {
                               if (isSelected) {
                                 setLightings(lightings.filter(id => id !== l.id));
+                                // Also remove rotation when deselecting
+                                const { [l.id]: _, ...rest } = lightingRotations;
+                                setLightingRotations(rest);
                               } else {
                                 setLightings([...lightings, l.id]);
                               }
@@ -1134,6 +1142,39 @@ const EditStudio = () => {
                         );
                       })}
                     </div>
+                    
+                    {/* Rotation controls for selected lightings */}
+                    {lightings.filter(id => lightingOptions.find(l => l.id === id)?.image).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border space-y-2">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Rotate</div>
+                        {lightings.map(lightingId => {
+                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                          if (!lightingOption?.image) return null;
+                          const currentRotation = lightingRotations[lightingId] || 0;
+                          return (
+                            <div key={lightingId} className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-muted-foreground truncate">{lightingOption.name}</span>
+                              <div className="flex gap-1">
+                                {[0, 90, 180, 270].map(deg => (
+                                  <button
+                                    key={deg}
+                                    onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: deg })}
+                                    disabled={isEditing}
+                                    className={`w-7 h-7 rounded text-xs font-medium transition-all ${
+                                      currentRotation === deg
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-secondary hover:bg-secondary/80 text-muted-foreground"
+                                    }`}
+                                  >
+                                    {deg}°
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
