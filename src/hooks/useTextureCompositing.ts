@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light";
+type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
 
 interface CompositeOptions {
   blendMode: BlendMode;

@@ -102,7 +102,13 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
 ];
 
 // Texture overlay options - stored in public/textures/
-type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light";
+type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
+
+// Map canvas blend modes to CSS mix-blend-mode equivalents for preview
+const getCssMixBlendMode = (blendMode?: BlendMode): React.CSSProperties['mixBlendMode'] => {
+  if (blendMode === "lighter") return "screen"; // "lighter" is canvas-only, "screen" is closest CSS equivalent for preview
+  return blendMode;
+};
 
 interface TextureOption {
   id: string;
@@ -116,7 +122,7 @@ interface TextureOption {
 const textureOptions: TextureOption[] = [
   { id: "none", name: "None", image: null },
   { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
-  { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
+  { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "lighter", opacity: 0.3 },
   { id: "white-grunge", name: "White Grunge", image: "/textures/white-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
   { id: "vintage-fade", name: "Vintage Fade", image: null, blendMode: "soft-light", opacity: 0.5, gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
   { id: "static-noise", name: "Static Noise", image: null, blendMode: "overlay", opacity: 0.3, gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
@@ -793,7 +799,7 @@ const EditStudio = () => {
                           backgroundImage: `url(${lightingOption.image})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          mixBlendMode: lightingOption.blendMode || 'screen',
+                          mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
                           opacity: lightingOption.opacity || 1,
                         }}
                       />
@@ -812,7 +818,7 @@ const EditStudio = () => {
                           backgroundImage: `url(${textureOption.image})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          mixBlendMode: textureOption.blendMode || 'overlay',
+                          mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
                           opacity: textureOption.opacity || 0.5,
                         }}
                       />
