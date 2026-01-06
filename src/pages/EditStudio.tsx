@@ -841,12 +841,26 @@ const EditStudio = () => {
                     if (!paOption?.image) return null;
                     const isMedium = paOption.size === "medium";
                     const isLarge = paOption.size === "large";
-                    const bottomOffset = isMedium ? "bottom-1.5" : "bottom-3";
-                    const positionClasses = {
-                      "bottom-left": `${bottomOffset} left-3`,
-                      "bottom-center": `${bottomOffset} left-1/2 -translate-x-1/2`,
-                      "bottom-right": `${bottomOffset} right-3`,
+                    const isStandard = paOption.id === "standard";
+                    
+                    // Standard goes flush to corners, others have padding
+                    const getPositionClasses = () => {
+                      if (isStandard) {
+                        return {
+                          "bottom-left": "bottom-0 left-0",
+                          "bottom-center": "bottom-2 left-1/2 -translate-x-1/2",
+                          "bottom-right": "bottom-0 right-0",
+                        };
+                      }
+                      const bottomOffset = isMedium ? "bottom-1.5" : "bottom-3";
+                      return {
+                        "bottom-left": `${bottomOffset} left-3`,
+                        "bottom-center": `${bottomOffset} left-1/2 -translate-x-1/2`,
+                        "bottom-right": `${bottomOffset} right-3`,
+                      };
                     };
+                    
+                    const positionClasses = getPositionClasses();
                     const sizeClass = isLarge 
                       ? "w-[36%] min-w-[120px] max-w-[200px]" 
                       : isMedium 
