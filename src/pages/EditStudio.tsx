@@ -93,7 +93,7 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
   { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
   { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
   { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
-  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
+  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png", size: "large" },
   { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
   { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png", size: "large" },
   { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
