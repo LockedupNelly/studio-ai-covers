@@ -81,7 +81,11 @@ interface ParentalAdvisoryOption {
   id: string;
   name: string;
   image: string | null;
+  size?: "normal" | "large"; // For Minimal which is double size
 }
+
+// PA position options
+type PAPosition = "bottom-left" | "bottom-center" | "bottom-right";
 
 const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
   { id: "none", name: "None", image: null },
@@ -91,7 +95,7 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
   { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
   { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
   { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
-  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png" },
+  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png", size: "large" },
   { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
   { id: "smooth", name: "Smooth", image: "/parental-advisory/smooth.png" },
   { id: "sticker", name: "Sticker", image: "/parental-advisory/sticker.png" },
@@ -176,8 +180,9 @@ const EditStudio = () => {
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
   const [parentalAdvisory, setParentalAdvisory] = useState("none");
-  const [texture, setTexture] = useState("none");
-  const [lighting, setLighting] = useState("none");
+  const [paPosition, setPaPosition] = useState<PAPosition>("bottom-right");
+  const [textures, setTextures] = useState<string[]>([]);
+  const [lightings, setLightings] = useState<string[]>([]);
   const [customInstructions, setCustomInstructions] = useState("");
   
   // Version history
@@ -314,18 +319,26 @@ const EditStudio = () => {
     
     // Note: Textures and lighting with image files are applied via canvas compositing (not AI)
     // Only include AI instruction for textures/lighting without image files
-    if (texture !== "none") {
-      const textureOption = textureOptions.find(t => t.id === texture);
-      if (textureOption && !textureOption.image) {
-        instructions.push(`Apply a subtle ${textureOption.name} texture overlay across the entire image`);
-      }
+    if (textures.length > 0) {
+      const aiTextures = textures
+        .map(id => textureOptions.find(t => t.id === id))
+        .filter(t => t && !t.image);
+      aiTextures.forEach(textureOption => {
+        if (textureOption) {
+          instructions.push(`Apply a subtle ${textureOption.name} texture overlay across the entire image`);
+        }
+      });
     }
     
-    if (lighting !== "none") {
-      const lightingOption = lightingOptions.find(l => l.id === lighting);
-      if (lightingOption && !lightingOption.image) {
-        instructions.push(`Add a ${lightingOption.name} lighting effect / light leak to enhance the atmosphere`);
-      }
+    if (lightings.length > 0) {
+      const aiLightings = lightings
+        .map(id => lightingOptions.find(l => l.id === id))
+        .filter(l => l && !l.image);
+      aiLightings.forEach(lightingOption => {
+        if (lightingOption) {
+          instructions.push(`Add a ${lightingOption.name} lighting effect / light leak to enhance the atmosphere`);
+        }
+      });
     }
     
     if (customInstructions.trim()) {
@@ -374,8 +387,8 @@ const EditStudio = () => {
       (mood !== currentState.mood && mood !== "None") ||
       accentColor ||
       parentalAdvisory !== "none" ||
-      texture !== "none" ||
-      lighting !== "none" ||
+      textures.length > 0 ||
+      lightings.length > 0 ||
       customInstructions.trim();
     
     return hasTextStyleChange && !hasVisualEdits;
@@ -388,9 +401,15 @@ const EditStudio = () => {
     const instructions = buildEditInstructions();
     
     // Check if we have texture/lighting overlays that use image files (applied via canvas, not AI)
-    const textureOption = textureOptions.find(t => t.id === texture);
-    const lightingOption = lightingOptions.find(l => l.id === lighting);
-    const hasCanvasOverlays = !!(textureOption?.image || lightingOption?.image);
+    const hasCanvasTextures = textures.some(id => {
+      const t = textureOptions.find(t => t.id === id);
+      return t?.image;
+    });
+    const hasCanvasLightings = lightings.some(id => {
+      const l = lightingOptions.find(l => l.id === id);
+      return l?.image;
+    });
+    const hasCanvasOverlays = hasCanvasTextures || hasCanvasLightings;
     
     // Allow if we have AI instructions OR canvas overlays to apply
     if (!instructions && !hasCanvasOverlays) {
@@ -399,9 +418,9 @@ const EditStudio = () => {
     }
     
     // Texture-only edits (with image files) don't consume credits - they're local canvas operations
-    const isTextureOnlyEdit = !instructions && hasCanvasOverlays;
+    const isTextureOnlyEditFlag = !instructions && hasCanvasOverlays;
     
-    if (!isTextureOnlyEdit) {
+    if (!isTextureOnlyEditFlag) {
       // Check and deduct credit for AI edits
       const creditOk = await deductCredit();
       if (!creditOk) return;
@@ -511,9 +530,9 @@ const EditStudio = () => {
       // This happens AFTER AI edits (or can happen standalone for texture-only changes)
       const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number } }> = [];
       
-      // Add texture overlay if selected and has image file
-      if (texture !== "none") {
-        const textureOption = textureOptions.find(t => t.id === texture);
+      // Add texture overlays if selected and have image files
+      textures.forEach(textureId => {
+        const textureOption = textureOptions.find(t => t.id === textureId);
         if (textureOption?.image && textureOption.blendMode && textureOption.opacity) {
           overlays.push({
             imageUrl: textureOption.image,
@@ -523,11 +542,11 @@ const EditStudio = () => {
             },
           });
         }
-      }
+      });
       
-      // Add lighting overlay if selected and has image file
-      if (lighting !== "none") {
-        const lightingOption = lightingOptions.find(l => l.id === lighting);
+      // Add lighting overlays if selected and have image files
+      lightings.forEach(lightingId => {
+        const lightingOption = lightingOptions.find(l => l.id === lightingId);
         if (lightingOption?.image && lightingOption.blendMode && lightingOption.opacity) {
           overlays.push({
             imageUrl: lightingOption.image,
@@ -537,7 +556,7 @@ const EditStudio = () => {
             },
           });
         }
-      }
+      });
       
       // Apply canvas overlays if any
       if (overlays.length > 0) {
@@ -570,12 +589,12 @@ const EditStudio = () => {
       setMainColor("");
       setAccentColor("");
       setParentalAdvisory("none");
-      setTexture("none");
-      setLighting("none");
+      setTextures([]);
+      setLightings([]);
       setCustomInstructions("");
       
       toast.success("Edits applied!", { 
-        description: isTextureOnlyEdit 
+        description: isTextureOnlyEditFlag 
           ? "Texture overlay applied (no credits used)" 
           : textOnlyEdit 
             ? "Text layer updated (background preserved)" 
@@ -688,7 +707,7 @@ const EditStudio = () => {
     (mood !== currentState.mood && mood !== "None") || 
     hasTextStyleVariantChange || 
     mainColor || accentColor || 
-    parentalAdvisory !== "none" || texture !== "none" || lighting !== "none" || 
+    parentalAdvisory !== "none" || textures.length > 0 || lightings.length > 0 || 
     customInstructions.trim();
   
   const canGoPrev = historyIndex > 0;
@@ -761,16 +780,64 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Parental Advisory Logo Overlay */}
-                  {parentalAdvisory !== "none" && parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory)?.image && (
-                    <div className="absolute bottom-3 left-3 w-[18%] min-w-[60px] max-w-[100px]">
-                      <img 
-                        src={parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory)?.image || ''} 
-                        alt="Parental Advisory"
-                        className="w-full h-auto"
+                  {/* Lighting Preview Overlays */}
+                  {lightings.map(lightingId => {
+                    const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                    if (!lightingOption?.image) return null;
+                    return (
+                      <div 
+                        key={lightingId}
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          backgroundImage: `url(${lightingOption.image})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          mixBlendMode: lightingOption.blendMode || 'screen',
+                          opacity: lightingOption.opacity || 1,
+                        }}
                       />
-                    </div>
-                  )}
+                    );
+                  })}
+                  
+                  {/* Texture Preview Overlays */}
+                  {textures.map(textureId => {
+                    const textureOption = textureOptions.find(t => t.id === textureId);
+                    if (!textureOption?.image) return null;
+                    return (
+                      <div 
+                        key={textureId}
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          backgroundImage: `url(${textureOption.image})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          mixBlendMode: textureOption.blendMode || 'overlay',
+                          opacity: textureOption.opacity || 0.5,
+                        }}
+                      />
+                    );
+                  })}
+                  
+                  {/* Parental Advisory Logo Overlay */}
+                  {parentalAdvisory !== "none" && (() => {
+                    const paOption = parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory);
+                    if (!paOption?.image) return null;
+                    const isLarge = paOption.size === "large";
+                    const positionClasses = {
+                      "bottom-left": "bottom-3 left-3",
+                      "bottom-center": "bottom-3 left-1/2 -translate-x-1/2",
+                      "bottom-right": "bottom-3 right-3",
+                    };
+                    return (
+                      <div className={`absolute ${positionClasses[paPosition]} ${isLarge ? "w-[36%] min-w-[120px] max-w-[200px]" : "w-[18%] min-w-[60px] max-w-[100px]"}`}>
+                        <img 
+                          src={paOption.image} 
+                          alt="Parental Advisory"
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    );
+                  })()}
                   
                   {/* Version indicator */}
                   {editHistory.length > 1 && (
@@ -966,78 +1033,128 @@ const EditStudio = () => {
                 
                 {/* Visual selectors row: Textures + Lighting */}
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Textures - Visual squares */}
+                  {/* Textures - Visual squares (multi-select) */}
                   <div className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                       <Layers className="w-4 h-4 text-primary" />
-                      Texture
+                      Textures
+                      {textures.length > 0 && <span className="text-primary">({textures.length})</span>}
                     </div>
                     
                     <div className="grid grid-cols-3 gap-1.5">
-                      {textureOptions.map(t => (
-                        <button
-                          key={t.id}
-                          onClick={() => setTexture(t.id)}
-                          disabled={isEditing}
-                          title={t.name}
-                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center ${
-                            texture === t.id
-                              ? "border-primary ring-1 ring-primary"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                          style={{ 
-                            background: t.image 
-                              ? `url(${t.image}) center/cover` 
-                              : t.gradient || "var(--secondary)" 
-                          }}
-                        >
-                          <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                            {t.name}
-                          </span>
-                        </button>
-                      ))}
+                      {textureOptions.filter(t => t.id !== "none").map(t => {
+                        const isSelected = textures.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              if (isSelected) {
+                                setTextures(textures.filter(id => id !== t.id));
+                              } else {
+                                setTextures([...textures, t.id]);
+                              }
+                            }}
+                            disabled={isEditing}
+                            title={t.name}
+                            className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                              isSelected
+                                ? "border-primary ring-1 ring-primary"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                            style={{ 
+                              background: t.image 
+                                ? `url(${t.image}) center/cover` 
+                                : t.gradient || "var(--secondary)" 
+                            }}
+                          >
+                            {isSelected && (
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                              </div>
+                            )}
+                            <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                              {t.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   
-                  {/* Lighting - Visual squares */}
+                  {/* Lighting - Visual squares (multi-select) */}
                   <div className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                       <Zap className="w-4 h-4 text-primary" />
                       Lighting
+                      {lightings.length > 0 && <span className="text-primary">({lightings.length})</span>}
                     </div>
                     
                     <div className="grid grid-cols-3 gap-1.5">
-                      {lightingOptions.map(l => (
-                        <button
-                          key={l.id}
-                          onClick={() => setLighting(l.id)}
-                          disabled={isEditing}
-                          title={l.name}
-                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center ${
-                            lighting === l.id
-                              ? "border-primary ring-1 ring-primary"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                          style={{ 
-                            background: l.image 
-                              ? `url(${l.image}) center/cover` 
-                              : l.gradient || "var(--secondary)" 
-                          }}
-                        >
-                          <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                            {l.name}
-                          </span>
-                        </button>
-                      ))}
+                      {lightingOptions.filter(l => l.id !== "none").map(l => {
+                        const isSelected = lightings.includes(l.id);
+                        return (
+                          <button
+                            key={l.id}
+                            onClick={() => {
+                              if (isSelected) {
+                                setLightings(lightings.filter(id => id !== l.id));
+                              } else {
+                                setLightings([...lightings, l.id]);
+                              }
+                            }}
+                            disabled={isEditing}
+                            title={l.name}
+                            className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                              isSelected
+                                ? "border-primary ring-1 ring-primary"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                            style={{ 
+                              background: l.image 
+                                ? `url(${l.image}) center/cover` 
+                                : l.gradient || "var(--secondary)" 
+                            }}
+                          >
+                            {isSelected && (
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                              </div>
+                            )}
+                            <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                              {l.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
                 
-                {/* Parental Advisory - Visual grid with logos */}
+                {/* Parental Advisory - Visual grid with logos + Position selector */}
                 <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                    <Check className="w-4 h-4 text-primary" />
-                    Parental Advisory
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+                      <Check className="w-4 h-4 text-primary" />
+                      Parental Advisory
+                    </div>
+                    {parentalAdvisory !== "none" && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground mr-1">Position:</span>
+                        {(["bottom-left", "bottom-center", "bottom-right"] as PAPosition[]).map(pos => (
+                          <button
+                            key={pos}
+                            onClick={() => setPaPosition(pos)}
+                            className={`px-2 py-0.5 text-[10px] rounded ${
+                              paPosition === pos 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-secondary text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {pos === "bottom-left" ? "L" : pos === "bottom-center" ? "C" : "R"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-6 gap-2">
