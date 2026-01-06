@@ -81,7 +81,7 @@ interface ParentalAdvisoryOption {
   id: string;
   name: string;
   image: string | null;
-  size?: "normal" | "large"; // For Minimal which is double size
+  size?: "normal" | "medium" | "large"; // For Minimal (large) and Futuristic (medium)
 }
 
 // PA position options
@@ -94,7 +94,7 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
   { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
   { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
   { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
-  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
+  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png", size: "medium" },
   { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
   { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png", size: "large" },
   { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
@@ -839,14 +839,21 @@ const EditStudio = () => {
                   {parentalAdvisory !== "none" && (() => {
                     const paOption = parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory);
                     if (!paOption?.image) return null;
+                    const isMedium = paOption.size === "medium";
                     const isLarge = paOption.size === "large";
+                    const bottomOffset = isMedium ? "bottom-1.5" : "bottom-3";
                     const positionClasses = {
-                      "bottom-left": "bottom-3 left-3",
-                      "bottom-center": "bottom-3 left-1/2 -translate-x-1/2",
-                      "bottom-right": "bottom-3 right-3",
+                      "bottom-left": `${bottomOffset} left-3`,
+                      "bottom-center": `${bottomOffset} left-1/2 -translate-x-1/2`,
+                      "bottom-right": `${bottomOffset} right-3`,
                     };
+                    const sizeClass = isLarge 
+                      ? "w-[36%] min-w-[120px] max-w-[200px]" 
+                      : isMedium 
+                        ? "w-[22%] min-w-[75px] max-w-[120px]" 
+                        : "w-[18%] min-w-[60px] max-w-[100px]";
                     return (
-                      <div className={`absolute ${positionClasses[paPosition]} ${isLarge ? "w-[36%] min-w-[120px] max-w-[200px]" : "w-[18%] min-w-[60px] max-w-[100px]"}`}>
+                      <div className={`absolute ${positionClasses[paPosition]} ${sizeClass}`}>
                         <img 
                           src={paOption.image} 
                           alt="Parental Advisory"
