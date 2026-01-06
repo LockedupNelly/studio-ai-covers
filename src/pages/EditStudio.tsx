@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
+import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, History, Coins, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
@@ -84,28 +85,49 @@ const parentalAdvisoryOptions = [
 ];
 
 // Texture overlay options - stored in public/textures/
-const textureOptions = [
+type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light";
+
+interface TextureOption {
+  id: string;
+  name: string;
+  image: string | null;
+  blendMode?: BlendMode;
+  opacity?: number;
+  gradient?: string; // Fallback for preview only
+}
+
+const textureOptions: TextureOption[] = [
   { id: "none", name: "None", image: null },
-  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg" },
-  { id: "film-grain", name: "Film Grain", image: null, gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
-  { id: "vintage-fade", name: "Vintage Fade", image: null, gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
-  { id: "static-noise", name: "Static Noise", image: null, gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
-  { id: "vinyl-scratch", name: "Vinyl Scratch", image: null, gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
+  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
+  { id: "film-grain", name: "Film Grain", image: null, blendMode: "overlay", opacity: 0.4, gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
+  { id: "vintage-fade", name: "Vintage Fade", image: null, blendMode: "soft-light", opacity: 0.5, gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
+  { id: "static-noise", name: "Static Noise", image: null, blendMode: "overlay", opacity: 0.3, gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
+  { id: "vinyl-scratch", name: "Vinyl Scratch", image: null, blendMode: "multiply", opacity: 0.35, gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
 ];
 
+interface LightingOption {
+  id: string;
+  name: string;
+  image: string | null;
+  blendMode?: BlendMode;
+  opacity?: number;
+  gradient?: string;
+}
+
 // Light/Lighting options - stored in public/lighting/
-const lightingOptions = [
+const lightingOptions: LightingOption[] = [
   { id: "none", name: "None", image: null },
-  { id: "golden-hour", name: "Golden Hour", image: null, gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
-  { id: "moonlit-blue", name: "Moonlit Blue", image: null, gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
-  { id: "prism-leak", name: "Prism Leak", image: null, gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
-  { id: "dusk-glow", name: "Dusk Glow", image: null, gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
+  { id: "golden-hour", name: "Golden Hour", image: null, blendMode: "screen", opacity: 0.4, gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
+  { id: "moonlit-blue", name: "Moonlit Blue", image: null, blendMode: "screen", opacity: 0.4, gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
+  { id: "prism-leak", name: "Prism Leak", image: null, blendMode: "screen", opacity: 0.35, gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
+  { id: "dusk-glow", name: "Dusk Glow", image: null, blendMode: "soft-light", opacity: 0.45, gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
 ];
 
 const EditStudio = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
   const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
+  const { applyTextureOverlay, applyMultipleOverlays, isCompositing: isApplyingTexture } = useTextureCompositing();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -276,16 +298,18 @@ const EditStudio = () => {
       }
     }
     
+    // Note: Textures and lighting with image files are applied via canvas compositing (not AI)
+    // Only include AI instruction for textures/lighting without image files
     if (texture !== "none") {
       const textureOption = textureOptions.find(t => t.id === texture);
-      if (textureOption) {
+      if (textureOption && !textureOption.image) {
         instructions.push(`Apply a subtle ${textureOption.name} texture overlay across the entire image`);
       }
     }
     
     if (lighting !== "none") {
       const lightingOption = lightingOptions.find(l => l.id === lighting);
-      if (lightingOption) {
+      if (lightingOption && !lightingOption.image) {
         instructions.push(`Add a ${lightingOption.name} lighting effect / light leak to enhance the atmosphere`);
       }
     }
@@ -455,6 +479,45 @@ const EditStudio = () => {
         // After a visual edit, clear the base artwork cache
         // (the composition has changed, so we need fresh text removal next time)
         setBaseArtworkUrl(null);
+      }
+      
+      // ===== APPLY TEXTURE/LIGHTING OVERLAYS VIA CANVAS COMPOSITING =====
+      // This happens AFTER AI edits (or can happen standalone for texture-only changes)
+      const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number } }> = [];
+      
+      // Add texture overlay if selected and has image file
+      if (texture !== "none") {
+        const textureOption = textureOptions.find(t => t.id === texture);
+        if (textureOption?.image && textureOption.blendMode && textureOption.opacity) {
+          overlays.push({
+            imageUrl: textureOption.image,
+            options: {
+              blendMode: textureOption.blendMode,
+              opacity: textureOption.opacity,
+            },
+          });
+        }
+      }
+      
+      // Add lighting overlay if selected and has image file
+      if (lighting !== "none") {
+        const lightingOption = lightingOptions.find(l => l.id === lighting);
+        if (lightingOption?.image && lightingOption.blendMode && lightingOption.opacity) {
+          overlays.push({
+            imageUrl: lightingOption.image,
+            options: {
+              blendMode: lightingOption.blendMode,
+              opacity: lightingOption.opacity,
+            },
+          });
+        }
+      }
+      
+      // Apply canvas overlays if any
+      if (overlays.length > 0) {
+        setProgress(95);
+        toast.info("Applying texture overlay...");
+        finalImageUrl = await applyMultipleOverlays(finalImageUrl, overlays);
       }
       
       setProgress(100);
