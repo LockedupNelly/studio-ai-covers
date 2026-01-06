@@ -116,7 +116,8 @@ interface TextureOption {
 const textureOptions: TextureOption[] = [
   { id: "none", name: "None", image: null },
   { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
-  { id: "film-grain", name: "Film Grain", image: null, blendMode: "overlay", opacity: 0.4, gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
+  { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
+  { id: "white-grunge", name: "White Grunge", image: "/textures/white-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
   { id: "vintage-fade", name: "Vintage Fade", image: null, blendMode: "soft-light", opacity: 0.5, gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
   { id: "static-noise", name: "Static Noise", image: null, blendMode: "overlay", opacity: 0.3, gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
   { id: "vinyl-scratch", name: "Vinyl Scratch", image: null, blendMode: "multiply", opacity: 0.35, gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
