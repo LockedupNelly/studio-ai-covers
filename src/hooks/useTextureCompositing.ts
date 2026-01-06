@@ -5,6 +5,7 @@ type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light"
 interface CompositeOptions {
   blendMode: BlendMode;
   opacity: number;
+  rotation?: number; // Rotation in degrees (0, 90, 180, 270)
 }
 
 export const useTextureCompositing = () => {
@@ -64,8 +65,16 @@ export const useTextureCompositing = () => {
       ctx.globalCompositeOperation = canvasBlendMode as GlobalCompositeOperation;
       ctx.globalAlpha = options.opacity;
 
-      // Draw texture overlay
-      ctx.drawImage(textureImg, 0, 0, size, size);
+      // Draw texture overlay with rotation if specified
+      if (options.rotation && options.rotation !== 0) {
+        ctx.save();
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate((options.rotation * Math.PI) / 180);
+        ctx.drawImage(textureImg, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      } else {
+        ctx.drawImage(textureImg, 0, 0, size, size);
+      }
 
       // Reset composite operation
       ctx.globalCompositeOperation = "source-over";
