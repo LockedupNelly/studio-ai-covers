@@ -89,6 +89,7 @@ type PAPosition = "bottom-left" | "bottom-center" | "bottom-right";
 
 const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
   { id: "none", name: "None", image: null },
+  { id: "standard", name: "Standard", image: "/parental-advisory/standard.png" },
   { id: "3d", name: "3D", image: "/parental-advisory/3d.png" },
   { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
   { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
@@ -188,6 +189,7 @@ const EditStudio = () => {
   const [accentColor, setAccentColor] = useState("");
   const [parentalAdvisory, setParentalAdvisory] = useState("none");
   const [paPosition, setPaPosition] = useState<PAPosition>("bottom-right");
+  const [paInverted, setPaInverted] = useState(false);
   const [textures, setTextures] = useState<string[]>([]);
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
@@ -321,7 +323,9 @@ const EditStudio = () => {
     if (parentalAdvisory !== "none") {
       const paOption = parentalAdvisoryOptions.find(p => p.id === parentalAdvisory);
       if (paOption) {
-        instructions.push(`Add a ${paOption.name} parental advisory sticker in the bottom-right corner of the cover`);
+        const positionText = paPosition === "bottom-left" ? "bottom-left" : paPosition === "bottom-center" ? "bottom-center" : "bottom-right";
+        const invertText = paInverted ? " with inverted colors (white on black instead of black on white)" : "";
+        instructions.push(`Add a ${paOption.name} parental advisory sticker in the ${positionText} corner of the cover${invertText}`);
       }
     }
     
@@ -598,6 +602,7 @@ const EditStudio = () => {
       setMainColor("");
       setAccentColor("");
       setParentalAdvisory("none");
+      setPaInverted(false);
       setTextures([]);
       setLightings([]);
       setLightingRotations({});
@@ -846,6 +851,7 @@ const EditStudio = () => {
                           src={paOption.image} 
                           alt="Parental Advisory"
                           className="w-full h-auto"
+                          style={{ filter: paInverted ? "invert(1)" : undefined }}
                         />
                       </div>
                     );
@@ -1186,21 +1192,35 @@ const EditStudio = () => {
                       Parental Advisory
                     </div>
                     {parentalAdvisory !== "none" && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground mr-1">Position:</span>
-                        {(["bottom-left", "bottom-center", "bottom-right"] as PAPosition[]).map(pos => (
-                          <button
-                            key={pos}
-                            onClick={() => setPaPosition(pos)}
-                            className={`px-2 py-0.5 text-[10px] rounded ${
-                              paPosition === pos 
-                                ? "bg-primary text-primary-foreground" 
-                                : "bg-secondary text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            {pos === "bottom-left" ? "L" : pos === "bottom-center" ? "C" : "R"}
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-3">
+                        {/* Invert toggle */}
+                        <button
+                          onClick={() => setPaInverted(!paInverted)}
+                          className={`px-2 py-0.5 text-[10px] rounded flex items-center gap-1 ${
+                            paInverted 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Invert
+                        </button>
+                        {/* Position selector */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground mr-1">Position:</span>
+                          {(["bottom-left", "bottom-center", "bottom-right"] as PAPosition[]).map(pos => (
+                            <button
+                              key={pos}
+                              onClick={() => setPaPosition(pos)}
+                              className={`px-2 py-0.5 text-[10px] rounded ${
+                                paPosition === pos 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-secondary text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {pos === "bottom-left" ? "L" : pos === "bottom-center" ? "C" : "R"}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
