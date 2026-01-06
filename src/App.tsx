@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { CookieConsent } from "@/components/CookieConsent";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import AddOns from "./pages/AddOns";
@@ -13,6 +14,8 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
+import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import EditStudio from "./pages/EditStudio";
 import NotFound from "./pages/NotFound";
@@ -25,6 +28,7 @@ const App = () => (
       <CartProvider>
         <TooltipProvider>
           <Toaster />
+          <CookieConsent />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -38,6 +42,8 @@ const App = () => (
               <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
