@@ -118,9 +118,9 @@ interface LightingOption {
 const lightingOptions: LightingOption[] = [
   { id: "none", name: "None", image: null },
   { id: "golden-hour", name: "Golden Hour", image: null, blendMode: "screen", opacity: 0.4, gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
-  { id: "moonlit-blue", name: "Moonlit Blue", image: null, blendMode: "screen", opacity: 0.4, gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
+  { id: "blue-heaven", name: "BlueHeaven", image: "/lighting/blue-heaven.jpg", blendMode: "screen", opacity: 1.0 },
   { id: "prism-leak", name: "Prism Leak", image: null, blendMode: "screen", opacity: 0.35, gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
-  { id: "dusk-glow", name: "Dusk Glow", image: null, blendMode: "soft-light", opacity: 0.45, gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
+  { id: "side-flash", name: "SideFlash", image: "/lighting/side-flash.jpg", blendMode: "screen", opacity: 1.0 },
   { id: "fractal-red", name: "Fractal Red", image: "/lighting/fractal-red.jpg", blendMode: "screen", opacity: 1.0 },
 ];
 
