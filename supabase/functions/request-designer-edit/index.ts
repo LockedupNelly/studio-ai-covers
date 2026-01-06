@@ -177,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification email to admin/design team
     const adminEmailResponse = await resend.emails.send({
-      from: "Cover Art Maker <onboarding@resend.dev>",
+      from: "Cover Art Maker <noreply@coverartmaker.com>",
       to: ["coverartmaker@gmail.com"],
       subject: `New Designer Edit Request from ${safeUserName || safeUserEmail}`,
       html: `
@@ -199,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to user
     const userEmailResponse = await resend.emails.send({
-      from: "Cover Art Maker <onboarding@resend.dev>",
+      from: "Cover Art Maker <noreply@coverartmaker.com>",
       to: [userEmail],
       subject: "We received your designer edit request!",
       html: `
