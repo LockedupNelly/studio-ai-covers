@@ -104,6 +104,12 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
 // Texture overlay options - stored in public/textures/
 type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
 
+// Map canvas blend modes to CSS mix-blend-mode equivalents for preview
+const getCssMixBlendMode = (blendMode?: BlendMode): React.CSSProperties['mixBlendMode'] => {
+  if (blendMode === "lighter") return "screen"; // "lighter" is canvas-only, "screen" is closest CSS equivalent for preview
+  return blendMode;
+};
+
 interface TextureOption {
   id: string;
   name: string;
