@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email to support team
     const adminEmailResponse = await resend.emails.send({
-      from: "Cover Art Maker <noreply@coverartmaker.com>",
+      from: "Cover Art Maker <onboarding@resend.dev>",
       to: ["coverartmaker@gmail.com"],
       reply_to: email.trim(),
       subject: `Contact Form: ${safeSubject}`,
@@ -109,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to user
     await resend.emails.send({
-      from: "Cover Art Maker <noreply@coverartmaker.com>",
+      from: "Cover Art Maker <onboarding@resend.dev>",
       to: [email.trim()],
       subject: "We received your message!",
       html: `
