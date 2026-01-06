@@ -823,7 +823,8 @@ const EditStudio = () => {
                     const textureOption = textureOptions.find(t => t.id === textureId);
                     if (!textureOption?.image) return null;
                     const baseOpacity = textureOption.opacity || 0.5;
-                    const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 50; // 50 is default (1x), 0 is 0x, 100 is 2x
+                    // 50% = 1x base, 0% = 0x, 100% = 2.5x for stronger max effect
+                    const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
                     const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
                     return (
                       <div 
