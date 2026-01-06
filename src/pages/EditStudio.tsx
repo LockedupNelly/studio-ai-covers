@@ -83,22 +83,23 @@ const parentalAdvisoryOptions = [
   { id: "clean", name: "Clean", color: "#333333", textColor: "#FFFFFF" },
 ];
 
-// Texture overlay options with gradient previews
+// Texture overlay options - stored in public/textures/
 const textureOptions = [
-  { id: "none", name: "None", gradient: "transparent" },
-  { id: "grain", name: "Grain", gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
-  { id: "vintage", name: "Vintage", gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
-  { id: "noise", name: "Noise", gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
-  { id: "scratches", name: "Scratches", gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
+  { id: "none", name: "None", image: null },
+  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg" },
+  { id: "film-grain", name: "Film Grain", image: null, gradient: "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)" },
+  { id: "vintage-fade", name: "Vintage Fade", image: null, gradient: "linear-gradient(135deg, rgba(255,220,180,0.4) 0%, rgba(200,160,120,0.3) 100%)" },
+  { id: "static-noise", name: "Static Noise", image: null, gradient: "repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 2px)" },
+  { id: "vinyl-scratch", name: "Vinyl Scratch", image: null, gradient: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.1) 4px, rgba(0,0,0,0.1) 5px)" },
 ];
 
-// Light/Lighting options with gradient previews
+// Light/Lighting options - stored in public/lighting/
 const lightingOptions = [
-  { id: "none", name: "None", gradient: "transparent" },
-  { id: "warm", name: "Warm", gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
-  { id: "cool", name: "Cool", gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
-  { id: "rainbow", name: "Rainbow", gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
-  { id: "sunset", name: "Sunset", gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
+  { id: "none", name: "None", image: null },
+  { id: "golden-hour", name: "Golden Hour", image: null, gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
+  { id: "moonlit-blue", name: "Moonlit Blue", image: null, gradient: "linear-gradient(135deg, rgba(100,150,255,0.6) 0%, rgba(50,100,200,0.3) 100%)" },
+  { id: "prism-leak", name: "Prism Leak", image: null, gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
+  { id: "dusk-glow", name: "Dusk Glow", image: null, gradient: "linear-gradient(180deg, rgba(255,150,50,0.5) 0%, rgba(255,50,100,0.4) 50%, rgba(100,50,150,0.3) 100%)" },
 ];
 
 const EditStudio = () => {
@@ -877,16 +878,20 @@ const EditStudio = () => {
                           onClick={() => setTexture(t.id)}
                           disabled={isEditing}
                           title={t.name}
-                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center ${
                             texture === t.id
                               ? "border-primary ring-1 ring-primary"
                               : "border-border hover:border-primary/50"
                           }`}
-                          style={{ background: t.id === "none" ? "var(--secondary)" : t.gradient }}
+                          style={{ 
+                            background: t.image 
+                              ? `url(${t.image}) center/cover` 
+                              : t.gradient || "var(--secondary)" 
+                          }}
                         >
-                          {t.id === "none" && (
-                            <span className="text-[10px] text-muted-foreground">None</span>
-                          )}
+                          <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                            {t.name}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -906,16 +911,20 @@ const EditStudio = () => {
                           onClick={() => setLighting(l.id)}
                           disabled={isEditing}
                           title={l.name}
-                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                          className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center ${
                             lighting === l.id
                               ? "border-primary ring-1 ring-primary"
                               : "border-border hover:border-primary/50"
                           }`}
-                          style={{ background: l.id === "none" ? "var(--secondary)" : l.gradient }}
+                          style={{ 
+                            background: l.image 
+                              ? `url(${l.image}) center/cover` 
+                              : l.gradient || "var(--secondary)" 
+                          }}
                         >
-                          {l.id === "none" && (
-                            <span className="text-[10px] text-muted-foreground">None</span>
-                          )}
+                          <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                            {l.name}
+                          </span>
                         </button>
                       ))}
                     </div>
