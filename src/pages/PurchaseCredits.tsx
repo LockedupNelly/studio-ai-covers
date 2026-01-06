@@ -31,7 +31,8 @@ const PurchaseCredits = () => {
       if (data?.error) throw new Error(data.error);
 
       if (data?.url) {
-        window.open(data.url, "_blank");
+        // Use location.href for mobile compatibility (popups are often blocked)
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error("Checkout error:", error);
