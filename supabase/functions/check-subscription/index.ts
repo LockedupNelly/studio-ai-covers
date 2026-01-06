@@ -7,16 +7,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Product IDs for subscription tiers
-const SUBSCRIPTION_PRODUCTS = {
-  "prod_TaUTWhd9yIEw4B": "starter",
-  "prod_TaUUCtQXelHcBD": "pro",
-  "prod_TaUUG2rRmV18Nz": "studio",
+// Product IDs for subscription tiers with their monthly limits
+const SUBSCRIPTION_TIERS = {
+  "prod_TaUTWhd9yIEw4B": { name: "starter", limit: 50 },
+  "prod_TaUUCtQXelHcBD": { name: "pro", limit: 150 },
+  "prod_TaUUG2rRmV18Nz": { name: "studio", limit: 500 },
 };
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
+// Get current month in YYYY-MM format
+const getCurrentMonthYear = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
 serve(async (req) => {
@@ -58,7 +64,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: null,
-        subscription_end: null
+        subscription_end: null,
+        usage: null,
+        limit: null
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -76,7 +84,9 @@ serve(async (req) => {
     
     const hasActiveSub = subscriptions.data.length > 0;
     let tier = null;
+    let limit = null;
     let subscriptionEnd = null;
+    let usage = 0;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -84,8 +94,26 @@ serve(async (req) => {
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
       const productId = subscription.items.data[0].price.product as string;
-      tier = SUBSCRIPTION_PRODUCTS[productId as keyof typeof SUBSCRIPTION_PRODUCTS] || null;
-      logStep("Determined subscription tier", { productId, tier });
+      const tierInfo = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
+      tier = tierInfo?.name || null;
+      limit = tierInfo?.limit || null;
+      logStep("Determined subscription tier", { productId, tier, limit });
+
+      // Get current month's usage
+      const currentMonth = getCurrentMonthYear();
+      const { data: usageData, error: usageError } = await supabaseClient
+        .from("subscription_usage")
+        .select("generation_count")
+        .eq("user_id", user.id)
+        .eq("month_year", currentMonth)
+        .maybeSingle();
+
+      if (usageError) {
+        logStep("Error fetching usage (non-blocking)", { error: usageError.message });
+      } else {
+        usage = usageData?.generation_count || 0;
+        logStep("Current usage", { month: currentMonth, usage });
+      }
     } else {
       logStep("No active subscription found");
     }
@@ -93,7 +121,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       tier,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      usage,
+      limit
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

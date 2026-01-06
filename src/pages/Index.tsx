@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -243,6 +244,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <WelcomeModal />
       <Header />
       
       <main className="pt-16">

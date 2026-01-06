@@ -18,6 +18,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
   const { signInWithGoogle, user, loading } = useAuth();
@@ -57,6 +58,41 @@ const Auth = () => {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleForgotPassword = async () => {
+    // Validate email first
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors({ email: "Please enter your email address first" });
+      return;
+    }
+
+    setIsSendingReset(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        toast.error("Failed to send reset email", {
+          description: error.message,
+        });
+        return;
+      }
+
+      toast.success("Check your email", {
+        description: "We've sent you a password reset link.",
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      toast.error("Error", {
+        description: "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -219,7 +255,19 @@ const Auth = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading || isSendingReset}
+                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                  >
+                    {isSendingReset ? "Sending..." : "Forgot password?"}
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Input
                   id="password"

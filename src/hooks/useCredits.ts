@@ -7,11 +7,15 @@ export function useCredits() {
   const [credits, setCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
+  const [subscriptionUsage, setSubscriptionUsage] = useState<number | null>(null);
+  const [subscriptionLimit, setSubscriptionLimit] = useState<number | null>(null);
 
   const fetchCredits = useCallback(async () => {
     if (!user) {
       setCredits(null);
       setSubscriptionTier(null);
+      setSubscriptionUsage(null);
+      setSubscriptionLimit(null);
       setLoading(false);
       return;
     }
@@ -31,10 +35,16 @@ export function useCredits() {
         setCredits(data?.credits ?? 0);
       }
 
-      // Check subscription for unlimited status
+      // Check subscription for tier, usage, and limits
       const { data: subData } = await supabase.functions.invoke("check-subscription");
       if (subData?.tier) {
         setSubscriptionTier(subData.tier);
+        setSubscriptionUsage(subData.usage ?? 0);
+        setSubscriptionLimit(subData.limit ?? null);
+      } else {
+        setSubscriptionTier(null);
+        setSubscriptionUsage(null);
+        setSubscriptionLimit(null);
       }
     } catch (error) {
       console.error("Error fetching credits:", error);
@@ -53,7 +63,15 @@ export function useCredits() {
     fetchCredits();
   }, [fetchCredits]);
 
-  const hasUnlimitedGenerations = subscriptionTier === "pro" || subscriptionTier === "studio";
+  const hasUnlimitedGenerations = subscriptionTier === "pro" || subscriptionTier === "studio" || subscriptionTier === "starter";
 
-  return { credits, loading, refetch, subscriptionTier, hasUnlimitedGenerations };
+  return { 
+    credits, 
+    loading, 
+    refetch, 
+    subscriptionTier, 
+    hasUnlimitedGenerations,
+    subscriptionUsage,
+    subscriptionLimit
+  };
 }

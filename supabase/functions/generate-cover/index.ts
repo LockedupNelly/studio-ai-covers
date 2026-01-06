@@ -9,15 +9,22 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 };
 
-// Product IDs for unlimited tiers
-const UNLIMITED_PRODUCT_IDS = [
-  "prod_TaUUCtQXelHcBD", // Pro
-  "prod_TaUUG2rRmV18Nz", // Studio
-];
+// Subscription tier limits (monthly generation counts)
+const SUBSCRIPTION_TIERS = {
+  "prod_TaUTWhd9yIEw4B": { name: "starter", limit: 50 },
+  "prod_TaUUCtQXelHcBD": { name: "pro", limit: 150 },
+  "prod_TaUUG2rRmV18Nz": { name: "studio", limit: 500 },
+};
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[GENERATE-COVER] ${step}${detailsStr}`);
+};
+
+// Get current month in YYYY-MM format
+const getCurrentMonthYear = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
 serve(async (req) => {
@@ -46,6 +53,8 @@ serve(async (req) => {
     let userId: string | null = null;
     let userEmail: string | null = null;
     let hasUnlimitedAccess = false;
+    let subscriptionTier: string | null = null;
+    let subscriptionLimit: number | null = null;
 
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
@@ -55,7 +64,7 @@ serve(async (req) => {
         userEmail = userData.user.email || null;
         logStep("User authenticated", { userId, email: userEmail });
 
-        // Check for Pro/Studio subscription (unlimited access)
+        // Check for subscription and determine tier/limits
         if (userEmail) {
           const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
           if (stripeKey) {
@@ -72,9 +81,13 @@ serve(async (req) => {
 
                 for (const sub of subscriptions.data) {
                   const productId = sub.items.data[0]?.price?.product as string;
-                  if (UNLIMITED_PRODUCT_IDS.includes(productId)) {
-                    hasUnlimitedAccess = true;
-                    logStep("User has unlimited access", { productId });
+                  const tierInfo = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
+                  
+                  if (tierInfo) {
+                    subscriptionTier = tierInfo.name;
+                    subscriptionLimit = tierInfo.limit;
+                    hasUnlimitedAccess = true; // All subscription tiers skip credit check
+                    logStep("User has subscription", { tier: subscriptionTier, limit: subscriptionLimit });
                     break;
                   }
                 }
@@ -82,6 +95,37 @@ serve(async (req) => {
             } catch (stripeError) {
               logStep("Stripe check error (continuing)", { error: stripeError instanceof Error ? stripeError.message : String(stripeError) });
             }
+          }
+        }
+
+        // If user has subscription, check and enforce monthly limits
+        if (subscriptionTier && subscriptionLimit && userId) {
+          const currentMonth = getCurrentMonthYear();
+          
+          // Get current usage
+          const { data: usageData, error: usageError } = await supabaseClient
+            .from("subscription_usage")
+            .select("generation_count")
+            .eq("user_id", userId)
+            .eq("month_year", currentMonth)
+            .maybeSingle();
+
+          if (usageError) {
+            logStep("Error fetching usage (non-blocking)", { error: usageError.message });
+          }
+
+          const currentUsage = usageData?.generation_count || 0;
+          logStep("Current monthly usage", { month: currentMonth, usage: currentUsage, limit: subscriptionLimit });
+
+          // Check if limit exceeded
+          if (currentUsage >= subscriptionLimit) {
+            logStep("Monthly limit exceeded", { usage: currentUsage, limit: subscriptionLimit });
+            return new Response(
+              JSON.stringify({ 
+                error: `Monthly generation limit reached (${currentUsage}/${subscriptionLimit}). Your limit resets at the start of next month.` 
+              }),
+              { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
           }
         }
       }
@@ -975,8 +1019,45 @@ The text should have depth, dimension, effects, and feel integrated with the sce
 
     logStep("Generation complete (two-pass hybrid: artwork + text)");
 
-    // Deduct credit after successful generation
-    if (userId && !hasUnlimitedAccess) {
+    // Track subscription usage OR deduct credit
+    if (userId && hasUnlimitedAccess && subscriptionTier) {
+      // Increment monthly usage for subscribers
+      const currentMonth = getCurrentMonthYear();
+      
+      // Try to upsert the usage record
+      const { data: existingUsage } = await supabaseClient
+        .from("subscription_usage")
+        .select("id, generation_count")
+        .eq("user_id", userId)
+        .eq("month_year", currentMonth)
+        .maybeSingle();
+
+      if (existingUsage) {
+        // Update existing record
+        await supabaseClient
+          .from("subscription_usage")
+          .update({ generation_count: existingUsage.generation_count + 1 })
+          .eq("id", existingUsage.id);
+        
+        logStep("Subscription usage incremented", { 
+          month: currentMonth, 
+          newCount: existingUsage.generation_count + 1,
+          limit: subscriptionLimit 
+        });
+      } else {
+        // Insert new record for this month
+        await supabaseClient
+          .from("subscription_usage")
+          .insert({ 
+            user_id: userId, 
+            month_year: currentMonth, 
+            generation_count: 1 
+          });
+        
+        logStep("Subscription usage started", { month: currentMonth, count: 1, limit: subscriptionLimit });
+      }
+    } else if (userId && !hasUnlimitedAccess) {
+      // Deduct credit for non-subscribers
       const { data: creditsData, error: creditsError } = await supabaseClient
         .from("user_credits")
         .select("credits")
