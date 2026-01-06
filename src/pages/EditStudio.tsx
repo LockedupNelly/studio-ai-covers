@@ -373,14 +373,25 @@ const EditStudio = () => {
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
-    if (!instructions) {
+    // Check if we have texture/lighting overlays that use image files (applied via canvas, not AI)
+    const textureOption = textureOptions.find(t => t.id === texture);
+    const lightingOption = lightingOptions.find(l => l.id === lighting);
+    const hasCanvasOverlays = !!(textureOption?.image || lightingOption?.image);
+    
+    // Allow if we have AI instructions OR canvas overlays to apply
+    if (!instructions && !hasCanvasOverlays) {
       toast.error("No changes selected", { description: "Please select at least one edit to apply" });
       return;
     }
     
-    // Check and deduct credit first
-    const creditOk = await deductCredit();
-    if (!creditOk) return;
+    // Texture-only edits (with image files) don't consume credits - they're local canvas operations
+    const isTextureOnlyEdit = !instructions && hasCanvasOverlays;
+    
+    if (!isTextureOnlyEdit) {
+      // Check and deduct credit for AI edits
+      const creditOk = await deductCredit();
+      if (!creditOk) return;
+    }
     
     setIsEditing(true);
     setProgress(0);
@@ -402,9 +413,9 @@ const EditStudio = () => {
       // Only use text layer mode if we have text metadata AND it's a text-only edit
       const useTextLayerMode = textOnlyEdit && hasTextMetadata && user;
       
-      let finalImageUrl: string;
+      let finalImageUrl: string = imageUrl; // Start with current image
       
-      if (useTextLayerMode) {
+      if (instructions && useTextLayerMode) {
         // ===== NON-DESTRUCTIVE TEXT LAYER MODE (Design Studio Pass 3 style) =====
         // Backend regenerates the full image with integrated text - no client compositing needed
         console.log("Using Design Studio Pass 3-style text integration", { songTitle: currentState.songTitle, artistName: currentState.artistName });
@@ -450,7 +461,7 @@ const EditStudio = () => {
         } else {
           throw new Error("No image returned from edit");
         }
-      } else {
+      } else if (instructions) {
         // ===== LEGACY MODE: Full inpainting =====
         const styleReferenceImageUrl =
           textStyle && selectedVariant
@@ -480,6 +491,7 @@ const EditStudio = () => {
         // (the composition has changed, so we need fresh text removal next time)
         setBaseArtworkUrl(null);
       }
+      // If no instructions but hasCanvasOverlays, we skip AI and go straight to canvas compositing
       
       // ===== APPLY TEXTURE/LIGHTING OVERLAYS VIA CANVAS COMPOSITING =====
       // This happens AFTER AI edits (or can happen standalone for texture-only changes)
@@ -549,9 +561,11 @@ const EditStudio = () => {
       setCustomInstructions("");
       
       toast.success("Edits applied!", { 
-        description: textOnlyEdit 
-          ? "Text layer updated (background preserved)" 
-          : "Your cover has been updated" 
+        description: isTextureOnlyEdit 
+          ? "Texture overlay applied (no credits used)" 
+          : textOnlyEdit 
+            ? "Text layer updated (background preserved)" 
+            : "Your cover has been updated" 
       });
     } catch (error) {
       console.error("Edit error:", error);
