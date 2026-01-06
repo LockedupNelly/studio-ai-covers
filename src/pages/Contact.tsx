@@ -59,10 +59,10 @@ const Contact = () => {
             </div>
             <h3 className="font-semibold text-foreground mb-2">Email Us</h3>
             <a
-              href="mailto:support@coverartmaker.com"
+              href="mailto:coverartmaker@gmail.com"
               className="text-sm text-primary hover:underline"
             >
-              support@coverartmaker.com
+              coverartmaker@gmail.com
             </a>
           </div>
 

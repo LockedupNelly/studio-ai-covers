@@ -178,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification email to admin/design team
     const adminEmailResponse = await resend.emails.send({
       from: "Cover Art Maker <onboarding@resend.dev>",
-      to: ["support@coverartmaker.com"],
+      to: ["coverartmaker@gmail.com"],
       subject: `New Designer Edit Request from ${safeUserName || safeUserEmail}`,
       html: `
         <h1>New Designer Edit Request</h1>
