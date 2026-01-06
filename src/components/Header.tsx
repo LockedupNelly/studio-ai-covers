@@ -26,7 +26,7 @@ import {
 export const Header = () => {
   const { user, signInWithGoogle, signOut } = useAuth();
   const { items, setIsOpen } = useCart();
-  const { credits, hasUnlimitedGenerations, subscriptionTier } = useCredits();
+  const { credits, hasUnlimitedGenerations, subscriptionTier, subscriptionUsage, subscriptionLimit } = useCredits();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -105,7 +105,11 @@ export const Header = () => {
                 {hasUnlimitedGenerations ? (
                   <>
                     <Sparkles className="w-4 h-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-500">Unlimited</span>
+                    <span className="text-sm font-medium text-green-500">
+                      {subscriptionUsage !== null && subscriptionLimit !== null 
+                        ? `${subscriptionUsage}/${subscriptionLimit}` 
+                        : "Pro"}
+                    </span>
                   </>
                 ) : (
                   <>
@@ -135,7 +139,9 @@ export const Header = () => {
                     {hasUnlimitedGenerations ? (
                       <>
                         <Sparkles className="w-3 h-3 text-green-500" />
-                        <span className="text-green-500 font-medium">{subscriptionTier?.toUpperCase()} - Unlimited generations</span>
+                        <span className="text-green-500 font-medium">
+                          {subscriptionTier?.toUpperCase()} - {subscriptionUsage ?? 0}/{subscriptionLimit ?? "∞"} this month
+                        </span>
                       </>
                     ) : (
                       <>
