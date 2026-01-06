@@ -14,7 +14,8 @@ export const Footer = () => {
           <nav className="flex items-center gap-6 text-sm text-foreground/70">
             <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
             <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
-            <a href="mailto:support@coverartmaker.com" className="hover:text-primary transition-colors">Contact</a>
+            <Link to="/refund-policy" className="hover:text-primary transition-colors">Refunds</Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
           </nav>
         </div>
       </div>
