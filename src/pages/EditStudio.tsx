@@ -102,7 +102,7 @@ const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
 ];
 
 // Texture overlay options - stored in public/textures/
-type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light";
+type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
 
 interface TextureOption {
   id: string;
