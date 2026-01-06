@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -191,6 +191,7 @@ const EditStudio = () => {
   const [paPosition, setPaPosition] = useState<PAPosition>("bottom-right");
   const [paInverted, setPaInverted] = useState(false);
   const [textures, setTextures] = useState<string[]>([]);
+  const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
   const [customInstructions, setCustomInstructions] = useState("");
@@ -604,6 +605,7 @@ const EditStudio = () => {
       setParentalAdvisory("none");
       setPaInverted(false);
       setTextures([]);
+      setTextureIntensities({});
       setLightings([]);
       setLightingRotations({});
       setCustomInstructions("");
@@ -820,6 +822,9 @@ const EditStudio = () => {
                   {textures.map(textureId => {
                     const textureOption = textureOptions.find(t => t.id === textureId);
                     if (!textureOption?.image) return null;
+                    const baseOpacity = textureOption.opacity || 0.5;
+                    const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 50; // 50 is default (1x), 0 is 0x, 100 is 2x
+                    const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
                     return (
                       <div 
                         key={textureId}
@@ -829,7 +834,7 @@ const EditStudio = () => {
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                           mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                          opacity: textureOption.opacity || 0.5,
+                          opacity: finalOpacity,
                         }}
                       />
                     );
@@ -1089,38 +1094,69 @@ const EditStudio = () => {
                     <div className="grid grid-cols-3 gap-1.5">
                       {textureOptions.filter(t => t.id !== "none").map(t => {
                         const isSelected = textures.includes(t.id);
+                        const currentIntensity = textureIntensities[t.id] ?? 50;
                         return (
-                          <button
-                            key={t.id}
-                            onClick={() => {
-                              if (isSelected) {
-                                setTextures(textures.filter(id => id !== t.id));
-                              } else {
-                                setTextures([...textures, t.id]);
-                              }
-                            }}
-                            disabled={isEditing}
-                            title={t.name}
-                            className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                              isSelected
-                                ? "border-primary ring-1 ring-primary"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                            style={{ 
-                              background: t.image 
-                                ? `url(${t.image}) center/cover` 
-                                : t.gradient || "var(--secondary)" 
-                            }}
-                          >
+                          <div key={t.id} className="flex flex-col gap-1">
+                            <button
+                              onClick={() => {
+                                if (isSelected) {
+                                  setTextures(textures.filter(id => id !== t.id));
+                                  // Also remove intensity when deselecting
+                                  const { [t.id]: _, ...rest } = textureIntensities;
+                                  setTextureIntensities(rest);
+                                } else {
+                                  setTextures([...textures, t.id]);
+                                }
+                              }}
+                              disabled={isEditing}
+                              title={t.name}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                isSelected
+                                  ? "border-primary ring-1 ring-primary"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              style={{ 
+                                background: t.image 
+                                  ? `url(${t.image}) center/cover` 
+                                  : t.gradient || "var(--secondary)" 
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                </div>
+                              )}
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                {t.name}
+                              </span>
+                            </button>
+                            {/* Intensity controls shown only when selected */}
                             {isSelected && (
-                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                              <div className="flex items-center justify-between gap-1 py-0.5">
+                                <button
+                                  onClick={() => {
+                                    const newIntensity = Math.max(0, currentIntensity - 25);
+                                    setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
+                                  }}
+                                  disabled={isEditing || currentIntensity <= 0}
+                                  className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="text-[9px] text-muted-foreground">{currentIntensity}%</span>
+                                <button
+                                  onClick={() => {
+                                    const newIntensity = Math.min(100, currentIntensity + 25);
+                                    setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
+                                  }}
+                                  disabled={isEditing || currentIntensity >= 100}
+                                  className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
                               </div>
                             )}
-                            <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                              {t.name}
-                            </span>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
