@@ -76,12 +76,25 @@ const textStyles = [
   { id: "retro", name: "Retro" },
 ];
 
-// Parental Advisory sticker options with colors
-const parentalAdvisoryOptions = [
-  { id: "none", name: "None", color: "transparent", border: true },
-  { id: "explicit-black", name: "Explicit", color: "#000000", textColor: "#FFFFFF" },
-  { id: "explicit-white", name: "Explicit", color: "#FFFFFF", textColor: "#000000" },
-  { id: "clean", name: "Clean", color: "#333333", textColor: "#FFFFFF" },
+// Parental Advisory logo options
+interface ParentalAdvisoryOption {
+  id: string;
+  name: string;
+  image: string | null;
+}
+
+const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
+  { id: "none", name: "None", image: null },
+  { id: "3d", name: "3D", image: "/parental-advisory/3d.png" },
+  { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
+  { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
+  { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
+  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
+  { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
+  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png" },
+  { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
+  { id: "smooth", name: "Smooth", image: "/parental-advisory/smooth.png" },
+  { id: "sticker", name: "Sticker", image: "/parental-advisory/sticker.png" },
 ];
 
 // Texture overlay options - stored in public/textures/
@@ -748,6 +761,17 @@ const EditStudio = () => {
                     </div>
                   )}
                   
+                  {/* Parental Advisory Logo Overlay */}
+                  {parentalAdvisory !== "none" && parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory)?.image && (
+                    <div className="absolute bottom-3 left-3 w-[18%] min-w-[60px] max-w-[100px]">
+                      <img 
+                        src={parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory)?.image || ''} 
+                        alt="Parental Advisory"
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  )}
+                  
                   {/* Version indicator */}
                   {editHistory.length > 1 && (
                     <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
@@ -1009,31 +1033,42 @@ const EditStudio = () => {
                   </div>
                 </div>
                 
-                {/* Parental Advisory - Visual rectangles */}
+                {/* Parental Advisory - Visual grid with logos */}
                 <div className="bg-card rounded-xl border border-border p-4">
                   <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                     <Check className="w-4 h-4 text-primary" />
                     Parental Advisory
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-6 gap-2">
                     {parentalAdvisoryOptions.map(pa => (
                       <button
                         key={pa.id}
                         onClick={() => setParentalAdvisory(pa.id)}
                         disabled={isEditing}
                         title={pa.name}
-                        className={`h-8 px-3 rounded border-2 transition-all flex items-center justify-center text-[9px] font-bold uppercase tracking-wide ${
+                        className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border-2 transition-all ${
                           parentalAdvisory === pa.id
                             ? "border-primary ring-1 ring-primary"
                             : "border-border hover:border-primary/50"
                         }`}
-                        style={{ 
-                          backgroundColor: pa.id === "none" ? "var(--secondary)" : pa.color,
-                          color: pa.textColor || "var(--muted-foreground)"
-                        }}
                       >
-                        {pa.id === "none" ? "None" : pa.name}
+                        <div 
+                          className="w-full aspect-[16/10] rounded bg-black flex items-center justify-center overflow-hidden"
+                        >
+                          {pa.image ? (
+                            <img 
+                              src={pa.image} 
+                              alt={pa.name}
+                              className="w-full h-full object-contain p-1"
+                            />
+                          ) : (
+                            <span className="text-[8px] text-muted-foreground">None</span>
+                          )}
+                        </div>
+                        <span className="text-[8px] font-medium text-muted-foreground truncate w-full text-center">
+                          {pa.name}
+                        </span>
                       </button>
                     ))}
                   </div>
