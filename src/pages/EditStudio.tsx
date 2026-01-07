@@ -76,32 +76,6 @@ const textStyles = [
   { id: "retro", name: "Retro" },
 ];
 
-// Parental Advisory logo options
-interface ParentalAdvisoryOption {
-  id: string;
-  name: string;
-  image: string | null;
-  size?: "normal" | "medium" | "large"; // For Minimal (large) and Futuristic (medium)
-}
-
-// PA position options
-type PAPosition = "bottom-left" | "bottom-center" | "bottom-right";
-
-const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
-  { id: "none", name: "None", image: null },
-  { id: "standard", name: "Standard", image: "/parental-advisory/standard.png" },
-  { id: "3d", name: "3D", image: "/parental-advisory/3d.png" },
-  { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
-  { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
-  { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
-  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png", size: "medium" },
-  { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
-  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png", size: "large" },
-  { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
-  { id: "smooth", name: "Smooth", image: "/parental-advisory/smooth.png" },
-  { id: "sticker", name: "Sticker", image: "/parental-advisory/sticker.png" },
-];
-
 // Texture overlay options - stored in public/textures/
 type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
 
@@ -188,9 +162,6 @@ const EditStudio = () => {
   const [textStyle, setTextStyle] = useState(passedState?.textStyle || "");
   const [mainColor, setMainColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
-  const [parentalAdvisory, setParentalAdvisory] = useState("none");
-  const [paPosition, setPaPosition] = useState<PAPosition>("bottom-right");
-  const [paInverted, setPaInverted] = useState(false);
   const [textures, setTextures] = useState<string[]>([]);
   const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
   const [lightings, setLightings] = useState<string[]>([]);
@@ -322,14 +293,6 @@ const EditStudio = () => {
       );
     }
     
-    if (parentalAdvisory !== "none") {
-      const paOption = parentalAdvisoryOptions.find(p => p.id === parentalAdvisory);
-      if (paOption) {
-        const positionText = paPosition === "bottom-left" ? "bottom-left" : paPosition === "bottom-center" ? "bottom-center" : "bottom-right";
-        const invertText = paInverted ? " with inverted colors (white on black instead of black on white)" : "";
-        instructions.push(`Add a ${paOption.name} parental advisory sticker in the ${positionText} corner of the cover${invertText}`);
-      }
-    }
     
     // Note: Textures and lighting with image files are applied via canvas compositing (not AI)
     // Only include AI instruction for textures/lighting without image files
@@ -400,7 +363,6 @@ const EditStudio = () => {
       (style !== currentState.style && style !== "None") ||
       (mood !== currentState.mood && mood !== "None") ||
       accentColor ||
-      parentalAdvisory !== "none" ||
       textures.length > 0 ||
       lightings.length > 0 ||
       customInstructions.trim();
@@ -603,8 +565,6 @@ const EditStudio = () => {
       // Reset single-use options
       setMainColor("");
       setAccentColor("");
-      setParentalAdvisory("none");
-      setPaInverted(false);
       setTextures([]);
       setTextureIntensities({});
       setLightings([]);
@@ -725,7 +685,7 @@ const EditStudio = () => {
     (mood !== currentState.mood && mood !== "None") || 
     hasTextStyleVariantChange || 
     mainColor || accentColor || 
-    parentalAdvisory !== "none" || textures.length > 0 || lightings.length > 0 || 
+    textures.length > 0 || lightings.length > 0 || 
     customInstructions.trim();
   
   const canGoPrev = historyIndex > 0;
@@ -842,59 +802,6 @@ const EditStudio = () => {
                     );
                   })}
                   
-                  {/* Parental Advisory Logo Overlay */}
-                  {parentalAdvisory !== "none" && (() => {
-                    const paOption = parentalAdvisoryOptions.find(pa => pa.id === parentalAdvisory);
-                    if (!paOption?.image) return null;
-                    const isMedium = paOption.size === "medium";
-                    const isLarge = paOption.size === "large";
-                    const isStandard = paOption.id === "standard";
-                    
-                    // Standard goes flush to corners, others have padding
-                    const getPositionClasses = () => {
-                      if (isStandard) {
-                        return {
-                          "bottom-left": "bottom-0 left-0",
-                          "bottom-center": "bottom-2 left-1/2 -translate-x-1/2",
-                          "bottom-right": "bottom-0 right-0",
-                        };
-                      }
-                      if (isMedium) {
-                        return {
-                          "bottom-left": "bottom-0.5 left-1.5",
-                          "bottom-center": "bottom-1 left-1/2 -translate-x-1/2",
-                          "bottom-right": "bottom-0.5 right-1.5",
-                        };
-                      }
-                      return {
-                        "bottom-left": "bottom-3 left-3",
-                        "bottom-center": "bottom-3 left-1/2 -translate-x-1/2",
-                        "bottom-right": "bottom-3 right-3",
-                      };
-                    };
-                    
-                    const positionClasses = getPositionClasses();
-                    const sizeClass = isLarge 
-                      ? "w-[36%] min-w-[120px] max-w-[200px]" 
-                      : isMedium 
-                        ? "w-[24%] min-w-[80px] max-w-[130px]" 
-                        : "w-[18%] min-w-[60px] max-w-[100px]";
-                    const getInvertFilter = () => {
-                      if (!paInverted) return undefined;
-                      // Standard just needs invert, others need invert + brightness(0) for pure black
-                      return isStandard ? "invert(1)" : "invert(1) brightness(0)";
-                    };
-                    return (
-                      <div className={`absolute ${positionClasses[paPosition]} ${sizeClass}`}>
-                        <img 
-                          src={paOption.image} 
-                          alt="Parental Advisory"
-                          className="w-full h-auto"
-                          style={{ filter: getInvertFilter() }}
-                        />
-                      </div>
-                    );
-                  })()}
                   
                   {/* Version indicator */}
                   {editHistory.length > 1 && (
@@ -1237,80 +1144,6 @@ const EditStudio = () => {
                   </div>
                 </div>
                 
-                {/* Parental Advisory - Visual grid with logos + Position selector */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
-                      <Check className="w-4 h-4 text-primary" />
-                      Parental Advisory
-                    </div>
-                    {parentalAdvisory !== "none" && (
-                      <div className="flex items-center gap-3">
-                        {/* Invert toggle */}
-                        <button
-                          onClick={() => setPaInverted(!paInverted)}
-                          className={`px-2 py-0.5 text-[10px] rounded flex items-center gap-1 ${
-                            paInverted 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-secondary text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          Invert
-                        </button>
-                        {/* Position selector */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground mr-1">Position:</span>
-                          {(["bottom-left", "bottom-center", "bottom-right"] as PAPosition[]).map(pos => (
-                            <button
-                              key={pos}
-                              onClick={() => setPaPosition(pos)}
-                              className={`px-2 py-0.5 text-[10px] rounded ${
-                                paPosition === pos 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-secondary text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              {pos === "bottom-left" ? "L" : pos === "bottom-center" ? "C" : "R"}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-6 gap-2">
-                    {parentalAdvisoryOptions.map(pa => (
-                      <button
-                        key={pa.id}
-                        onClick={() => setParentalAdvisory(pa.id)}
-                        disabled={isEditing}
-                        title={pa.name}
-                        className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border-2 transition-all ${
-                          parentalAdvisory === pa.id
-                            ? "border-primary ring-1 ring-primary"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <div 
-                          className="w-full aspect-[16/10] rounded bg-black flex items-center justify-center overflow-hidden"
-                        >
-                          {pa.image ? (
-                            <img 
-                              src={pa.image} 
-                              alt={pa.name}
-                              className="w-full h-full object-contain p-1"
-                            />
-                          ) : (
-                            <span className="text-[8px] text-muted-foreground">None</span>
-                          )}
-                        </div>
-                        <span className="text-[8px] font-medium text-muted-foreground truncate w-full text-center">
-                          {pa.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 
                 {/* Custom Instructions - Compact */}
                 <div className="bg-card rounded-xl border border-border p-4">

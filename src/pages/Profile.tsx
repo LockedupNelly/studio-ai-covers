@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Trash2, ArrowLeft, Image as ImageIcon, Search, Filter, UserPlus, Copy, Check, Gift, Pencil } from "lucide-react";
+import { Download, Trash2, ArrowLeft, Image as ImageIcon, Search, Filter, UserPlus, Copy, Check, Gift, Pencil, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -391,13 +391,32 @@ const Profile = () => {
                               coverAnalysis: gen.cover_analysis,
                             } 
                           })}
+                          title="Edit in Studio"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
+                          variant="secondary"
+                          onClick={() => navigate("/", { 
+                            state: { 
+                              returnedImage: gen.image_url,
+                              genre: gen.genre,
+                              style: gen.style,
+                              mood: gen.mood,
+                              songTitle: gen.song_title,
+                              artistName: gen.artist_name,
+                            } 
+                          })}
+                          title="Rerun in Design Studio"
+                        >
+                          <RotateCw className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => handleDownload(gen.image_url, gen.prompt)}
+                          title="Download"
                         >
                           <Download className="w-4 h-4" />
                         </Button>
@@ -405,6 +424,7 @@ const Profile = () => {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(gen.id)}
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

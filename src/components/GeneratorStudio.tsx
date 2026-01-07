@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Sparkles, ImagePlus, Image, Maximize2, X, Plus, Zap } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Type, Mic, Settings, Sliders, Sun, Moon, Coins, Sparkles, ImagePlus, Image, Maximize2, X, Plus, Zap, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -63,19 +63,19 @@ const progressStages = [
   { label: "Almost ready...", progress: 95 },
 ];
 
-// Fixed Visual Style options (same for all genres)
+// Fixed Visual Style options with descriptions (same for all genres)
 const visualStyles = [
-  "None",
-  "Realism",
-  "3D Render",
-  "Illustration",
-  "Anime",
-  "Fine Art",
-  "Abstract",
-  "Minimalist",
-  "Cinematic",
-  "Retro",
-  "Other"
+  { id: "None", name: "None", description: "AI chooses the best style for your prompt" },
+  { id: "Realism", name: "Realism", description: "Photorealistic imagery with lifelike detail" },
+  { id: "3D Render", name: "3D Render", description: "Computer-generated 3D graphics and models" },
+  { id: "Illustration", name: "Illustration", description: "Hand-drawn artistic style with creative flair" },
+  { id: "Anime", name: "Anime", description: "Japanese animation style with bold lines and colors" },
+  { id: "Fine Art", name: "Fine Art", description: "Classical painting techniques and aesthetics" },
+  { id: "Abstract", name: "Abstract", description: "Non-representational shapes, colors and forms" },
+  { id: "Minimalist", name: "Minimalist", description: "Clean, simple design with negative space" },
+  { id: "Cinematic", name: "Cinematic", description: "Movie-like dramatic lighting and composition" },
+  { id: "Retro", name: "Retro", description: "Vintage aesthetics from past decades" },
+  { id: "Other", name: "Other", description: "Describe your own custom visual style" },
 ];
 
 // Mood options (same for all genres)
@@ -325,7 +325,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       setGenre(suggestedGenre);
     }
     // Set style if it's in our fixed options
-    if (visualStyles.includes(suggestion.style)) {
+    if (visualStyles.some(vs => vs.id === suggestion.style)) {
       setStyle(suggestion.style);
     }
     setMood(suggestion.mood);
@@ -425,7 +425,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
       setGenre(result.suggestedGenre);
     }
     // Set style if it's in our fixed options
-    if (visualStyles.includes(result.suggestedStyle)) {
+    if (visualStyles.some(vs => vs.id === result.suggestedStyle)) {
       setStyle(result.suggestedStyle);
     }
   };
@@ -547,13 +547,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
                     }`}>
                       <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Basic</span>
+                      <span className="text-[10px] sm:text-xs md:text-sm">Basic</span>
                     </TabsTrigger>
                     <TabsTrigger value="advanced" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
                       themeMode === "light" && studioMode === "advanced" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
                     }`}>
                       <Sliders className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="hidden sm:inline">Advanced</span>
+                      <span className="text-[10px] sm:text-xs md:text-sm">Advanced</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -623,8 +623,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
-                          {visualStyles.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          {visualStyles.map((vs) => (
+                            <SelectItem key={vs.id} value={vs.id}>
+                              <div className="flex items-center gap-2">
+                                <span>{vs.name}</span>
+                                {vs.id !== "None" && (
+                                  <TooltipProvider delayDuration={100}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[200px]">
+                                        <p className="text-xs">{vs.description}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

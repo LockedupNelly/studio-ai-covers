@@ -45,17 +45,31 @@ export function WelcomeModal() {
   const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
+    // Only show for logged-in users
     if (!user || hasChecked) return;
 
     const checkIfNewUser = async () => {
-      // Check if already dismissed
+      // Check if already dismissed for this user
       const dismissed = localStorage.getItem(WELCOME_DISMISSED_KEY);
       if (dismissed === user.id) {
         setHasChecked(true);
         return;
       }
 
-      // Check if user has any generations
+      // Check if user account was created recently (within last 5 minutes) 
+      // This ensures modal only shows for truly new signups, not returning users
+      const userCreatedAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      const isNewlyCreatedAccount = userCreatedAt > fiveMinutesAgo;
+      
+      if (!isNewlyCreatedAccount) {
+        // Not a new account, don't show welcome modal
+        localStorage.setItem(WELCOME_DISMISSED_KEY, user.id);
+        setHasChecked(true);
+        return;
+      }
+
+      // Check if user has any generations (extra safety check)
       try {
         const { data, error } = await supabase
           .from("generations")
@@ -69,7 +83,7 @@ export function WelcomeModal() {
           return;
         }
 
-        // If no generations, show welcome modal
+        // Only show welcome modal for newly created accounts with no generations
         if (!data || data.length === 0) {
           setIsOpen(true);
         }
