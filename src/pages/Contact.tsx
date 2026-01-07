@@ -52,7 +52,8 @@ const Contact = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        {/* Contact Info Cards - Hidden on mobile */}
+        <div className="hidden md:grid md:grid-cols-3 gap-8 mb-12">
           <div className="bg-card border border-border rounded-xl p-6 text-center">
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-primary" />

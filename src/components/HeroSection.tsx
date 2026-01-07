@@ -3,25 +3,9 @@ import logoWhite from "@/assets/logo-white.png";
 
 export const HeroSection = () => {
   return (
-    <section className="relative min-h-[60vh] flex flex-col items-center justify-center pt-24 pb-12 overflow-hidden">
+    <section className="relative min-h-[50vh] flex flex-col items-center justify-center pt-20 pb-8 overflow-hidden">
       {/* Background glow effect */}
       <div className="absolute inset-0 bg-red-glow pointer-events-none" />
-      
-      {/* Status Badges - Horizontal */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-semibold tracking-widest text-primary uppercase">
-            Professional Grade AI
-          </span>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10">
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-          <span className="text-[10px] font-semibold tracking-widest text-primary uppercase">
-            System Online
-          </span>
-        </div>
-      </div>
 
       {/* Main Logo */}
       <img 
@@ -42,10 +26,10 @@ export const HeroSection = () => {
       </p>
 
       {/* Free credit callout */}
-      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 mb-10">
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 mb-8">
         <Sparkles className="w-4 h-4 text-primary" />
-        <span className="text-sm font-semibold text-primary">
-          Sign up free and get 1 credit to create your first cover
+        <span className="text-sm font-semibold text-primary whitespace-nowrap">
+          Sign up free — get 3 credits
         </span>
       </div>
 
