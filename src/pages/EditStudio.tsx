@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -125,6 +125,28 @@ const lightingOptions: LightingOption[] = [
   { id: "fractal-red", name: "Fractal Red", image: "/lighting/fractal-red.jpg", blendMode: "screen", opacity: 1.0 },
 ];
 
+// Parental Advisory options - stored in public/parental-advisory/
+interface ParentalAdvisoryOption {
+  id: string;
+  name: string;
+  image: string;
+}
+
+const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
+  { id: "none", name: "None", image: "" },
+  { id: "standard", name: "Standard", image: "/parental-advisory/standard.png" },
+  { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
+  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png" },
+  { id: "3d", name: "3D", image: "/parental-advisory/3d.png" },
+  { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
+  { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
+  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
+  { id: "sticker", name: "Sticker", image: "/parental-advisory/sticker.png" },
+  { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
+  { id: "smooth", name: "Smooth", image: "/parental-advisory/smooth.png" },
+  { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
+];
+
 const EditStudio = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
@@ -135,7 +157,7 @@ const EditStudio = () => {
   const isMobile = useIsMobile();
   
   // Mobile edit section tabs
-  const [mobileEditTab, setMobileEditTab] = useState<"textures" | "lighting" | "colors" | "style" | "custom">("textures");
+  const [mobileEditTab, setMobileEditTab] = useState<"textures" | "lighting" | "pa" | "colors" | "style" | "custom">("textures");
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   
   // Get passed state from navigation
@@ -172,6 +194,9 @@ const EditStudio = () => {
   const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
+  const [parentalAdvisory, setParentalAdvisory] = useState<string>("none");
+  const [paPosition, setPaPosition] = useState<"bottom-right" | "bottom-left" | "top-right" | "top-left">("bottom-right");
+  const [paInverted, setPaInverted] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
   
   // Version history
@@ -692,6 +717,7 @@ const EditStudio = () => {
     hasTextStyleVariantChange || 
     mainColor || accentColor || 
     textures.length > 0 || lightings.length > 0 || 
+    parentalAdvisory !== "none" ||
     customInstructions.trim();
   
   const canGoPrev = historyIndex > 0;
@@ -805,6 +831,25 @@ const EditStudio = () => {
                       );
                     })}
                     
+                    {/* Parental Advisory Logo Overlay */}
+                    {parentalAdvisory !== "none" && (
+                      <div 
+                        className={`absolute w-[22%] ${
+                          paPosition === "bottom-right" ? "bottom-2 right-2" :
+                          paPosition === "bottom-left" ? "bottom-2 left-2" :
+                          paPosition === "top-right" ? "top-2 right-2" :
+                          "top-2 left-2"
+                        }`}
+                      >
+                        <img 
+                          src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
+                          alt="Parental Advisory"
+                          className="w-full h-auto"
+                          style={{ filter: paInverted ? "invert(1)" : "none" }}
+                        />
+                      </div>
+                    )}
+                    
                     {/* Version indicator */}
                     {editHistory.length > 1 && (
                       <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
@@ -832,6 +877,7 @@ const EditStudio = () => {
                   {[
                     { id: "textures", label: "Textures", icon: Layers, count: textures.length },
                     { id: "lighting", label: "Lighting", icon: Zap, count: lightings.length },
+                    { id: "pa", label: "Advisory", icon: ShieldAlert, count: parentalAdvisory !== "none" ? 1 : 0 },
                     { id: "colors", label: "Colors", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
                     { id: "style", label: "Style", icon: Palette, count: 0 },
                     { id: "custom", label: "Custom", icon: Sparkles, count: customInstructions.trim() ? 1 : 0 },
@@ -975,6 +1021,75 @@ const EditStudio = () => {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                  
+                  {/* Parental Advisory Section - Horizontal Scroll */}
+                  {mobileEditTab === "pa" && (
+                    <div className="space-y-2">
+                      <div 
+                        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {parentalAdvisoryOptions.map(pa => {
+                          const isSelected = parentalAdvisory === pa.id;
+                          return (
+                            <button
+                              key={pa.id}
+                              onClick={() => setParentalAdvisory(pa.id)}
+                              disabled={isEditing}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-center justify-center relative shrink-0 ${
+                                isSelected
+                                  ? "border-primary ring-1 ring-primary/50"
+                                  : "border-border"
+                              }`}
+                              style={{ 
+                                width: 'calc((100% - 1rem) / 3.5)',
+                                background: pa.id === "none" ? "var(--secondary)" : "#1a1a1a"
+                              }}
+                            >
+                              {pa.id !== "none" ? (
+                                <img 
+                                  src={pa.image} 
+                                  alt={pa.name}
+                                  className="w-3/4 h-auto object-contain"
+                                  style={{ filter: paInverted ? "invert(1)" : "none" }}
+                                />
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">None</span>
+                              )}
+                              {isSelected && pa.id !== "none" && (
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {parentalAdvisory !== "none" && (
+                        <div className="flex gap-2 items-center">
+                          <Select value={paPosition} onValueChange={(v: any) => setPaPosition(v)}>
+                            <SelectTrigger className="bg-secondary h-8 text-xs flex-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                              <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                              <SelectItem value="top-right">Top Right</SelectItem>
+                              <SelectItem value="top-left">Top Left</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant={paInverted ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPaInverted(!paInverted)}
+                            className="h-8 text-xs"
+                          >
+                            Invert
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -1143,6 +1258,24 @@ const EditStudio = () => {
                       );
                     })}
                     
+                    {/* Parental Advisory Logo Overlay */}
+                    {parentalAdvisory !== "none" && (
+                      <div 
+                        className={`absolute w-[20%] ${
+                          paPosition === "bottom-right" ? "bottom-3 right-3" :
+                          paPosition === "bottom-left" ? "bottom-3 left-3" :
+                          paPosition === "top-right" ? "top-3 right-3" :
+                          "top-3 left-3"
+                        }`}
+                      >
+                        <img 
+                          src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
+                          alt="Parental Advisory"
+                          className="w-full h-auto"
+                          style={{ filter: paInverted ? "invert(1)" : "none" }}
+                        />
+                      </div>
+                    )}
                     
                     {/* Version indicator */}
                     {editHistory.length > 1 && (
@@ -1481,6 +1614,76 @@ const EditStudio = () => {
                     </div>
                   </div>
                   
+                  
+                  {/* Parental Advisory */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                      <ShieldAlert className="w-4 h-4 text-primary" />
+                      Parental Advisory
+                    </div>
+                    
+                    <div className="grid grid-cols-6 gap-1.5 mb-3">
+                      {parentalAdvisoryOptions.map(pa => {
+                        const isSelected = parentalAdvisory === pa.id;
+                        return (
+                          <button
+                            key={pa.id}
+                            onClick={() => setParentalAdvisory(pa.id)}
+                            disabled={isEditing}
+                            title={pa.name}
+                            className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-center justify-center relative ${
+                              isSelected
+                                ? "border-primary ring-1 ring-primary"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                            style={{ 
+                              background: pa.id === "none" ? "var(--secondary)" : "#1a1a1a"
+                            }}
+                          >
+                            {pa.id !== "none" ? (
+                              <img 
+                                src={pa.image} 
+                                alt={pa.name}
+                                className="w-3/4 h-auto object-contain"
+                                style={{ filter: paInverted ? "invert(1)" : "none" }}
+                              />
+                            ) : (
+                              <span className="text-[9px] text-muted-foreground">None</span>
+                            )}
+                            {isSelected && pa.id !== "none" && (
+                              <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-primary rounded-full flex items-center justify-center">
+                                <Check className="w-2 h-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    {parentalAdvisory !== "none" && (
+                      <div className="flex gap-2">
+                        <Select value={paPosition} onValueChange={(v: any) => setPaPosition(v)}>
+                          <SelectTrigger className="bg-secondary h-8 text-xs flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                            <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                            <SelectItem value="top-right">Top Right</SelectItem>
+                            <SelectItem value="top-left">Top Left</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant={paInverted ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setPaInverted(!paInverted)}
+                          className="h-8 text-xs"
+                        >
+                          Invert
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Custom Instructions - Compact */}
                   <div className="bg-card rounded-xl border border-border p-4">
