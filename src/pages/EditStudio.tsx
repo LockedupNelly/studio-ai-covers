@@ -1162,16 +1162,13 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Colors Section - Visual grid like textures */}
+                  {/* Colors Section - Compact color chips */}
                   {mobileEditTab === "colors" && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Main Color */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">MAIN COLOR</Label>
-                        <div 
-                          className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
+                        <div className="flex flex-wrap gap-1.5">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1180,19 +1177,22 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`shrink-0 w-10 h-10 rounded-lg border-2 transition-all flex items-center justify-center ${
+                                className={`w-8 h-8 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border"
-                                } ${c.id === "white" ? "border-border" : ""}`}
-                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                    : "border-border/50"
+                                }`}
+                                style={isNone ? { background: "var(--secondary)" } : { 
+                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
+                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                }}
                                 title={c.name}
                               >
                                 {isNone && (
-                                  <div className="w-5 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                  <div className="w-4 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !mainColor)) && !isNone && (
-                                  <Check className={`w-4 h-4 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1200,12 +1200,9 @@ const EditStudio = () => {
                         </div>
                       </div>
                       {/* Accent Color */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">ACCENT COLOR</Label>
-                        <div 
-                          className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
+                        <div className="flex flex-wrap gap-1.5">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1214,19 +1211,22 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`shrink-0 w-10 h-10 rounded-lg border-2 transition-all flex items-center justify-center ${
+                                className={`w-8 h-8 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border"
-                                } ${c.id === "white" ? "border-border" : ""}`}
-                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                    : "border-border/50"
+                                }`}
+                                style={isNone ? { background: "var(--secondary)" } : { 
+                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
+                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                }}
                                 title={c.name}
                               >
                                 {isNone && (
-                                  <div className="w-5 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                  <div className="w-4 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !accentColor)) && !isNone && (
-                                  <Check className={`w-4 h-4 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1584,11 +1584,11 @@ const EditStudio = () => {
                       Color Filters
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Main Color */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                        <div className="grid grid-cols-7 gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1597,19 +1597,22 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-lg border-2 transition-all flex items-center justify-center relative ${
+                                className={`w-6 h-6 rounded border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border hover:border-primary/50"
-                                } ${c.id === "white" ? "border-border" : ""}`}
-                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                    : "border-border/50 hover:border-primary/50"
+                                }`}
+                                style={isNone ? { background: "var(--secondary)" } : { 
+                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
+                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                }}
                                 title={c.name}
                               >
                                 {isNone && (
-                                  <div className="w-4 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                  <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !mainColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3 h-3 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1617,9 +1620,9 @@ const EditStudio = () => {
                         </div>
                       </div>
                       {/* Accent Color */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                        <div className="grid grid-cols-7 gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1628,19 +1631,22 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-lg border-2 transition-all flex items-center justify-center relative ${
+                                className={`w-6 h-6 rounded border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border hover:border-primary/50"
-                                } ${c.id === "white" ? "border-border" : ""}`}
-                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                    : "border-border/50 hover:border-primary/50"
+                                }`}
+                                style={isNone ? { background: "var(--secondary)" } : { 
+                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
+                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                }}
                                 title={c.name}
                               >
                                 {isNone && (
-                                  <div className="w-4 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                  <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !accentColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3 h-3 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
