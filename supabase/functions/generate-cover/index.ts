@@ -203,6 +203,69 @@ serve(async (req) => {
       },
     };
 
+  // ========== STYLE PRIORITY FLAGS ==========
+  // High-priority styles completely override genre defaults
+  const stylePriority: Record<string, "high" | "normal"> = {
+    "Retro": "high",
+    "Anime": "high",
+    "Abstract": "high",
+    "Minimalist": "high",
+    "3D Render": "high",
+    "Fine Art": "normal",
+    "Illustration": "normal",
+    "Cinematic": "normal",
+    "Realism": "normal",
+  };
+
+  // ========== STYLE TECHNICAL OVERRIDES ==========
+  const styleTechnicalOverrides: Record<string, string> = {
+    "Minimalist": `
+TECHNICAL REQUIREMENTS (MANDATORY):
+- Vector-clean edges with mathematically precise geometry
+- Flat color rendering - NO gradients, NO noise, NO grain
+- Maximum negative space (60-90% empty)
+- NO atmospheric effects, NO fog, NO particles, NO textures
+- NO photorealistic depth of field
+- Swiss design grid precision`,
+
+    "Abstract": `
+TECHNICAL REQUIREMENTS (MANDATORY):
+- Non-representational forms only
+- Emotional color expression over literal depiction
+- NO realistic depth of field
+- NO recognizable objects, faces, or scenes
+- Pure artistic abstraction
+- Bold texture and surface quality`,
+
+    "Anime": `
+TECHNICAL REQUIREMENTS (MANDATORY):
+- Japanese animation cel-shading technique
+- Bold black outlines with aggressive line weight variation
+- Speed lines, impact frames, motion blur streaks
+- Dramatic lens flares and glowing auras
+- Exaggerated expressions and dynamic poses
+- NOT cute/soft - this is INTENSE, CINEMATIC anime`,
+
+    "3D Render": `
+TECHNICAL REQUIREMENTS (MANDATORY):
+- Octane/Redshift/Arnold render engine aesthetic
+- Studio HDRI lighting with visible light sources
+- Impossibly smooth geometry and perfect surfaces
+- Neon rim lights (cyan, magenta, orange glows)
+- Reflective floors, gradient backgrounds
+- NO film grain, NO organic imperfections
+- That "Cinema 4D Instagram" aesthetic`,
+
+    "Retro": `
+TECHNICAL REQUIREMENTS (MANDATORY):
+- Heavy analog film grain (ISO 400-1600)
+- Faded color science: Kodachrome, Ektachrome, or Polaroid
+- Visible aging: scratches, dust, wear, light leaks
+- Period-accurate color shifts: warm ambers, magenta casts
+- VHS artifacts OR halftone printing dots where appropriate
+- Must feel authentically vintage, not digitally filtered`,
+  };
+
   // ========== VISUAL STYLE MODIFIERS (HIGHLY DETAILED) ==========
   const styleModifiers: Record<string, string> = {
     "Realism": `PHOTOREALISTIC PHOTOGRAPHY - This MUST look like a real photograph taken with a professional camera.
@@ -217,22 +280,29 @@ serve(async (req) => {
 - Must be indistinguishable from a photograph taken in the real world
 - Reference: Annie Leibovitz, Peter Lindbergh, Tim Walker photography`,
 
-    "3D Render": `OCTANE RENDER / CINEMA 4D / BLENDER CGI AESTHETIC - This MUST look like a professional 3D software render, NOT a photograph or illustration.
-- DISTINCTLY DIGITAL 3D AESTHETIC: smooth, clean, impossibly perfect surfaces that scream "CGI"
-- Octane Render / Redshift / Arnold / Cycles render engine look
-- Ultra-smooth geometry with visible subsurface scattering glow on skin
-- Hyper-clean plastic, rubber, or silicone-like material quality
-- Dramatic rim lighting with neon accent lights (cyan, magenta, orange glows)
-- Volumetric fog, god rays, atmospheric depth with visible light beams
-- Perfect edge bevels and impossibly smooth curves on all geometry
-- HDRI studio lighting with gradient backgrounds or abstract 3D environments
-- Reflective floors, floating geometric shapes, abstract platforms
-- That "Cinema 4D Instagram aesthetic": clean, stylized, almost toy-like perfection
-- Subjects should look like high-end 3D character models, NOT real people
-- Reference: Beeple, Peter Tarka, Nikita Diakur, modern C4D/Octane artists
-- NO photorealism, NO film grain, NO imperfections - this is DIGITAL PERFECTION`,
+    "3D Render": `HYPER-STYLIZED CGI / CINEMA 4D AESTHETIC - This MUST look like a 3D SOFTWARE RENDER, absolutely NOT a photograph or illustration.
 
-    "Illustration": `TRADITIONAL ILLUSTRATION - Hand-painted artistic quality.
+MANDATORY CGI CHARACTERISTICS (NON-NEGOTIABLE):
+- IMPOSSIBLY SMOOTH SURFACES: plastic, silicone, or rubber-like materials that scream "CGI"
+- Subjects look like HIGH-END 3D MODELS, collectible figures, or Pixar-quality characters - NOT real humans
+- VISIBLE SUBSURFACE SCATTERING GLOW on all organic materials
+- GLOWING NEON RIM LIGHTS: cyan, magenta, orange accents around every edge
+- Reflective floor/platform with gradient studio background or abstract 3D environment
+- Perfect edge bevels, impossibly smooth curves, no organic imperfections
+- Volumetric god rays, visible light beams, atmospheric fog with glow
+
+STYLE REFERENCES:
+- Beeple, Peter Tarka, Nikita Diakur, trending Behance/Dribbble 3D
+- That "Instagram C4D aesthetic": clean, stylized, toy-like perfection
+- Octane Render / Redshift / Arnold render engine look
+
+FORBIDDEN (WILL FAIL THE BRIEF):
+- NO photorealism, NO real human skin texture
+- NO film grain, NO analog imperfections
+- NO natural/outdoor photography look
+- If this could be mistaken for a photograph, you have FAILED`,
+
+    "Illustration": `TRADITIONAL ILLUSTRATION - Hand-painted artistic quality with visible human craft.
 - Visible brushstrokes, paint texture, artistic mark-making
 - Oil painting, gouache, or watercolor aesthetic
 - Loose, expressive linework with intentional imperfection
@@ -244,21 +314,28 @@ serve(async (req) => {
 - Reference: Drew Struzan, James Jean, Sachin Teng, Jon Foster
 - Must look like it was painted by a human artist with physical media`,
 
-    "Anime": `INTENSE JAPANESE ANIME AESTHETIC - Dramatic, exaggerated, high-impact anime style with MAXIMUM INTENSITY.
-- EXAGGERATED DRAMATIC EXPRESSIONS: intense eyes with multiple highlight reflections, tears streaming, veins visible when angry
-- DYNAMIC ACTION POSES: extreme foreshortening, impossible camera angles, characters bursting out of frame
-- INTENSE LIGHTING: dramatic backlighting silhouettes, lens flares, glowing auras around characters
-- SPEED AND MOTION: speed lines radiating from subject, motion blur streaks, impact frames with white flash
-- OVERSIZED DRAMATIC FEATURES: huge expressive eyes with detailed iris patterns, sharp angular features, exaggerated hair physics
-- HIGH CONTRAST cel-shading with deep blacks and bright highlights, rim lighting on hair and clothes
-- ATMOSPHERIC INTENSITY: wind-blown hair and clothes, debris floating, energy particles, sakura petals or snow
-- EPIC SCALE: characters against massive backdrops, dramatic sky gradients (orange/purple sunsets, stormy clouds)
-- Reference: Attack on Titan intensity, Demon Slayer visual effects, Jujutsu Kaisen action, Chainsaw Man rawness
-- NOT cute/soft anime - this is DRAMATIC, INTENSE, CINEMATIC anime with IMPACT
-- Bold black outlines with aggressive line weight variation, hatching for shadows
-- Color palette: deep saturated colors with neon accent highlights, dramatic color grading`,
+    "Anime": `MAXIMUM INTENSITY JAPANESE ANIME - Dramatic, exaggerated, high-impact anime style with OVERWHELMING visual power.
 
-    "Fine Art": `MUSEUM-QUALITY FINE ART - Classical painting techniques.
+MANDATORY ANIME CHARACTERISTICS (NON-NEGOTIABLE):
+- EXAGGERATED DRAMATIC EXPRESSIONS: intense eyes with multiple highlight reflections, tears streaming, visible veins when intense
+- DYNAMIC ACTION POSES: extreme foreshortening, impossible camera angles, characters bursting out of frame
+- INTENSE BACKLIGHTING: dramatic silhouettes, lens flares, glowing auras radiating from characters
+- SPEED AND MOTION: speed lines radiating from subject, motion blur streaks, impact frames with white flash
+- OVERSIZED DRAMATIC FEATURES: huge expressive eyes with detailed iris patterns, sharp angular jawlines, gravity-defying hair physics
+- HIGH CONTRAST CEL-SHADING: deep blacks, bright highlights, aggressive rim lighting on hair and clothes
+- ATMOSPHERIC INTENSITY: wind-blown hair and clothes, debris floating, energy particles, sakura petals or dramatic weather
+
+STYLE REFERENCES:
+- Attack on Titan intensity, Demon Slayer visual effects, Jujutsu Kaisen action, Chainsaw Man rawness
+- Bold black outlines with aggressive line weight variation
+- Deep saturated colors with neon accent highlights
+
+FORBIDDEN (WILL FAIL THE BRIEF):
+- NO photorealism, NO 3D render aesthetic
+- NOT cute/soft/kawaii anime - this is DRAMATIC, INTENSE, CINEMATIC
+- If this looks like a photograph or Western cartoon, you have FAILED`,
+
+    "Fine Art": `MUSEUM-QUALITY FINE ART - Classical painting techniques worthy of gallery exhibition.
 - Chiaroscuro lighting with dramatic light/shadow contrast
 - Rich, deep blacks and luminous highlights
 - Classical composition: rule of thirds, golden ratio, triangular composition
@@ -270,29 +347,55 @@ serve(async (req) => {
 - Reference: Rembrandt, Caravaggio, John Singer Sargent, Bouguereau
 - Must look like a painting from a museum collection`,
 
-    "Abstract": `ABSTRACT EXPRESSIONISM - Non-representational artistic expression.
-- Bold geometric shapes, organic forms, or pure color fields
-- Emphasis on color, texture, and composition over representation
-- Gestural brushwork, drips, splatters, or precise hard-edge geometry
-- Emotional and psychological impact through pure visual elements
-- Color theory: complementary tensions, harmonious gradients
-- NO recognizable faces or objects rendered realistically
-- Shapes, lines, and colors as the primary subject matter
-- Reference: Kandinsky, Rothko, Pollock, Basquiat, Mondrian
-- Symbolic, evocative imagery that suggests rather than depicts
-- Strong emphasis on texture and surface quality`,
+    "Abstract": `PURE ABSTRACT EXPRESSIONISM - Non-representational artistic expression. The subject IS the color, shape, and texture.
 
-    "Minimalist": `ULTRA-MINIMALIST DESIGN - Maximum impact with minimum elements.
-- Vast negative space (60-80% of the image should be empty)
-- Single dominant focal element, perfectly positioned
-- Extremely limited color palette: 1-3 colors maximum
-- Clean, geometric shapes with precise edges
-- No texture, no noise, no gradients (unless central to the concept)
-- Swiss design principles: grid-based, functional beauty
-- Typography-forward if text is present
-- Reference: Massimo Vignelli, Dieter Rams, Japanese minimalism
-- Whitespace is intentional and meaningful
-- Every element must be essential - remove everything else`,
+MANDATORY ABSTRACT CHARACTERISTICS (NON-NEGOTIABLE):
+- Subject MUST be SHAPES, COLORS, TEXTURES - NOT realistic objects or scenes
+- NO recognizable faces, NO realistic hands, NO literal depictions
+- If the description mentions a "rose" - render it as RED ORGANIC FORMS and color fields
+- If the description mentions a "moon" - render it as CIRCULAR LIGHT MASSES and gradients
+- If the description mentions a "person" - render it as HUMAN-SUGGESTIVE SHAPES, not a realistic figure
+
+ARTISTIC APPROACH:
+- Bold color fields, gestural brushstrokes, drips, splatters, hard-edge geometry
+- Emotional and psychological impact through PURE VISUAL ELEMENTS
+- Color theory: complementary tensions, harmonious gradients, vibrating color relationships
+- Strong emphasis on texture and surface quality
+
+STYLE REFERENCES:
+- Rothko color fields, Pollock action painting, Kandinsky geometry, Basquiat raw expression, Mondrian grids
+- Symbolic, evocative imagery that SUGGESTS rather than DEPICTS
+
+FORBIDDEN (WILL FAIL THE BRIEF):
+- NO photorealism, NO recognizable objects rendered realistically
+- NO faces, NO literal scenes, NO representational imagery
+- If you can identify "what" is in the image, you have FAILED the abstract brief`,
+
+    "Minimalist": `RADICAL MINIMALIST DESIGN - Maximum impact through extreme reduction. Less is EVERYTHING.
+
+MANDATORY MINIMALIST CHARACTERISTICS (NON-NEGOTIABLE):
+- 70-90% of the image MUST be empty negative space
+- Maximum 2-3 visual elements in the ENTIRE composition
+- FLAT colors only - absolutely NO gradients, NO textures, NO grain, NO noise
+- Clean vector-like shapes with mathematically sharp geometric edges
+- Single dominant color with ONE accent maximum (2-3 color palette TOTAL)
+
+APPROACH:
+- This is GRAPHIC DESIGN, not photography or illustration
+- Swiss design principles: grid-based, functional beauty, precision
+- Think: single object floating in vast emptiness
+- Every element must be ESSENTIAL - remove everything else
+
+STYLE REFERENCES:
+- Saul Bass poster design, Japanese minimalism, Muji aesthetic
+- Massimo Vignelli, Dieter Rams, Apple product photography
+
+FORBIDDEN (WILL FAIL THE BRIEF):
+- NO realistic textures, NO detailed backgrounds, NO landscapes, NO cityscapes
+- NO atmospheric effects (fog, particles, grain)
+- NO photorealistic rendering
+- NO complex scenes with multiple subjects
+- If there are more than 3 elements, you have FAILED the minimalist brief`,
 
     "Cinematic": `HOLLYWOOD MOVIE POSTER / FILM STILL - Blockbuster production value.
 - Anamorphic lens characteristics: horizontal lens flares, oval bokeh
@@ -306,17 +409,17 @@ serve(async (req) => {
 - Epic scale with tiny figures against vast environments OR intimate close-ups
 - Must feel like a frame from a $200M film production`,
 
-    "Retro": `VINTAGE/RETRO AESTHETIC - Nostalgic analog era feeling.
-- Film grain: heavy, visible, authentic to 1970s-1990s film stocks
-- Color palette: faded, warm, with lifted blacks and crushed highlights
-- Kodachrome, Ektachrome, or Polaroid color science
-- Light leaks, lens flares, dust and scratches
-- Halftone printing dots, CMYK registration errors
-- VHS tracking lines, analog video artifacts
+    "Retro": `AUTHENTIC VINTAGE AESTHETIC - Genuine analog era feeling, NOT modern retro-filtered.
+- Film grain: HEAVY, visible, authentic to 1970s-1990s film stocks (ISO 400-1600)
+- Color palette: FADED, warm, with lifted blacks and crushed highlights
+- Kodachrome warmth, Ektachrome saturation, or Polaroid softness
+- Light leaks, lens flares, dust and scratches, age wear
+- Halftone printing dots, CMYK registration errors where appropriate
+- VHS tracking lines, analog video artifacts for 80s/90s vibe
 - Vintage typography and graphic design sensibilities
 - Reference: 1970s album covers, 1980s movie posters, 1990s music videos
 - Warm amber tones, magenta shifts, cyan shadows
-- Must feel authentically from a past era, not modern retro-filtered`,
+- Must feel authentically FROM a past era, not modern with a filter applied`,
   };
 
     // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
@@ -339,6 +442,8 @@ serve(async (req) => {
     };
     const visualStyle = styleModifiers[style] || "Photorealistic, cinematic lighting, high detail.";
     const moodStyle = moodLayers[mood] || "Dramatic, atmospheric, emotionally evocative.";
+    const isHighPriorityStyle = stylePriority[style] === "high";
+    const technicalOverride = styleTechnicalOverrides[style] || "";
 
     // ========== TWO-PASS HYBRID GENERATION ==========
     // Pass 1: Generate artwork only (no text)
@@ -368,8 +473,20 @@ serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `You are a world-class concept artist and cinematographer creating album cover artwork. Your task: transform simple descriptions into VIVID, IMMERSIVE scene descriptions that rival Hollywood concept art.
+                  content: `You are a world-class concept artist creating album cover artwork. Your task: transform simple descriptions into VIVID, IMMERSIVE scene descriptions.
 
+${isHighPriorityStyle ? `
+===== CRITICAL STYLE CONSTRAINT: ${style} =====
+This is a HIGH-PRIORITY STYLE that OVERRIDES normal cinematic/photorealistic language.
+
+${style === "Minimalist" ? `For MINIMALIST: Describe vast emptiness, single geometric shapes, flat colors, negative space. Do NOT add fog, particles, textures, or atmospheric effects. Think Saul Bass, Japanese minimalism.` : ""}
+${style === "Abstract" ? `For ABSTRACT: Describe color fields, shapes, textures, emotional color relationships - NOT literal objects. If the user mentions "a rose", describe "organic red forms bleeding into warm gradients". NO recognizable objects or faces.` : ""}
+${style === "3D Render" ? `For 3D RENDER: Describe impossibly smooth CGI surfaces, neon rim lights, reflective floors, gradient backgrounds, toy-like perfection. This is Cinema 4D/Octane aesthetic, NOT photography.` : ""}
+${style === "Anime" ? `For ANIME: Describe intense expressions, speed lines, dramatic backlighting, wind-blown elements, impact frames. This is Attack on Titan intensity, NOT soft/cute anime.` : ""}
+${style === "Retro" ? `For RETRO: Describe faded film colors, heavy grain, light leaks, vintage warmth. The scene should feel like it's FROM the 70s/80s/90s.` : ""}
+
+Your expanded description MUST be written specifically for ${style} rendering. Do NOT add cinematic/realistic language that contradicts this style.
+` : `
 THINK LIKE A DIRECTOR:
 - What is the STORY of this scene? What just happened? What's about to happen?
 - What EMOTION should viewers feel instantly?
@@ -390,16 +507,17 @@ QUALITY KEYWORDS TO WEAVE IN:
 - Photorealistic textures, weathered details
 - Unreal Engine 5 quality, Octane render
 - 8K resolution, hyperdetailed
+`}
 
 OUTPUT RULES:
 - 200-350 words of pure visual poetry
 - NO text/typography references
 - Paint a scene so vivid the reader can FEEL the atmosphere
-- Match ${style} aesthetic, ${mood} emotion, ${genre} genre visuals`
+- Match ${style} aesthetic, ${mood} emotion, ${genre} genre context`
                 },
                 {
                   role: "user",
-                  content: `Transform this into a breathtaking, cinematic scene description:
+                  content: `Transform this into a breathtaking scene description${isHighPriorityStyle ? ` optimized for ${style} style` : ""}:
 
 "${description}"
 
@@ -433,22 +551,26 @@ Write ONLY the expanded scene description - no explanations:`
       }
 
       // ===== PASS 1: ARTWORK ONLY (No Text) =====
-      const artworkPrompt = `Create an EXCEPTIONALLY DETAILED, PROFESSIONAL album cover artwork for a ${genre} song. This MUST be AAA-quality, hyper-detailed, visually stunning artwork.
-
-===== VISION (AI-ENHANCED) =====
-${expandedDescription}
-
-===== VISUAL STYLE: ${style} =====
-${visualStyle}
-
-===== MOOD: ${mood} =====
-${moodStyle}
-
-===== GENRE: ${genre} =====
+      // Build genre section - suppress for high-priority styles that conflict
+      const genreSection = isHighPriorityStyle 
+        ? `===== GENRE CONTEXT: ${genre} =====
+Adapt the ${style} aesthetic to feel appropriate for ${genre} music.
+(Note: The visual STYLE takes priority over genre-typical visuals)`
+        : `===== GENRE: ${genre} =====
 Visual Direction: ${genreDirection.visual}
-Emotional Narrative: ${genreDirection.narrative}
+Emotional Narrative: ${genreDirection.narrative}`;
 
-===== TECHNICAL REQUIREMENTS =====
+      // Build technical requirements - different for high-priority styles
+      const technicalSection = isHighPriorityStyle && technicalOverride
+        ? `===== STYLE-SPECIFIC TECHNICAL REQUIREMENTS =====
+${technicalOverride}
+
+===== COMPOSITION =====
+- Perfect square composition (1024x1024)
+- Album cover framing
+- Edge-to-edge artwork, NO borders
+- NO TEXT, NO LETTERS, NO WORDS - artwork only`
+        : `===== TECHNICAL REQUIREMENTS =====
 - Volumetric fog and atmospheric depth
 - Cinematic lighting with high contrast
 - Ultra-detailed textures and materials
@@ -459,7 +581,27 @@ Emotional Narrative: ${genreDirection.narrative}
 - Edge-to-edge artwork, NO borders
 - NO TEXT, NO LETTERS, NO WORDS - artwork only`;
 
-      logStep("PASS 1: Starting artwork-only generation");
+      const artworkPrompt = `Create ${isHighPriorityStyle ? `a ${style.toUpperCase()} style` : "an EXCEPTIONALLY DETAILED, PROFESSIONAL"} album cover artwork for a ${genre} song.${isHighPriorityStyle ? ` The ${style} aesthetic is NON-NEGOTIABLE and takes priority over all other considerations.` : " This MUST be AAA-quality, hyper-detailed, visually stunning artwork."}
+
+===== VISION${isHighPriorityStyle ? ` (${style.toUpperCase()} INTERPRETATION)` : " (AI-ENHANCED)"} =====
+${expandedDescription}
+
+===== VISUAL STYLE: ${style} (${isHighPriorityStyle ? "HIGH PRIORITY - MUST DOMINATE" : "STANDARD"}) =====
+${visualStyle}
+
+===== MOOD: ${mood} =====
+${moodStyle}
+
+${genreSection}
+
+${technicalSection}`;
+
+      logStep("PASS 1: Starting artwork-only generation", { 
+        style, 
+        isHighPriorityStyle, 
+        hasTechnicalOverride: !!technicalOverride,
+        genreSuppressed: isHighPriorityStyle 
+      });
 
       const controller1 = new AbortController();
       const timeout1 = setTimeout(() => controller1.abort(), 90_000);
