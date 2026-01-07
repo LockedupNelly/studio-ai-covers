@@ -1128,9 +1128,9 @@ const EditStudio = () => {
                         })}
                       </div>
                       {parentalAdvisory !== "none" && (
-                        <div className="flex gap-2 items-center mt-2">
-                          {/* Position selector - rectangular buttons */}
-                          <div className="flex gap-1 flex-1">
+                        <div className="flex gap-2 items-center justify-center mt-2">
+                          {/* Position selector - compact buttons */}
+                          <div className="flex gap-1">
                             {[
                               { id: "bottom-left", label: "Left" },
                               { id: "bottom-center", label: "Center" },
@@ -1139,7 +1139,7 @@ const EditStudio = () => {
                               <button
                                 key={pos.id}
                                 onClick={() => setPaPosition(pos.id as typeof paPosition)}
-                                className={`flex-1 py-2 px-4 rounded text-xs font-medium transition-colors ${
+                                className={`py-1.5 px-3 rounded text-xs font-medium transition-colors ${
                                   paPosition === pos.id
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-secondary text-foreground/70 hover:bg-secondary/80"
@@ -1153,7 +1153,7 @@ const EditStudio = () => {
                             variant={paInverted ? "default" : "outline"}
                             size="sm"
                             onClick={() => setPaInverted(!paInverted)}
-                            className="h-9 text-xs px-4"
+                            className="h-7 text-xs px-3"
                           >
                             Invert
                           </Button>
@@ -1162,13 +1162,13 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Colors Section - Compact color chips */}
+                  {/* Colors Section - Square color chips using grid */}
                   {mobileEditTab === "colors" && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {/* Main Color */}
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Label className="text-xs font-medium text-muted-foreground">MAIN COLOR</Label>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-10 gap-1.5">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             return (
@@ -1176,10 +1176,10 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-10 rounded-lg border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md transition-all flex items-center justify-center relative ${
                                   isSelected
-                                    ? "border-primary ring-1 ring-primary/50"
-                                    : "border-transparent"
+                                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                    : ""
                                 }`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
@@ -1187,7 +1187,7 @@ const EditStudio = () => {
                                 title={c.name}
                               >
                                 {isSelected && (
-                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1195,9 +1195,9 @@ const EditStudio = () => {
                         </div>
                       </div>
                       {/* Accent Color */}
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Label className="text-xs font-medium text-muted-foreground">ACCENT COLOR</Label>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-10 gap-1.5">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             return (
@@ -1205,10 +1205,10 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-10 rounded-lg border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md transition-all flex items-center justify-center relative ${
                                   isSelected
-                                    ? "border-primary ring-1 ring-primary/50"
-                                    : "border-transparent"
+                                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                    : ""
                                 }`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
@@ -1216,7 +1216,7 @@ const EditStudio = () => {
                                 title={c.name}
                               >
                                 {isSelected && (
-                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );

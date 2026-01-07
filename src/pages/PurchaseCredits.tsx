@@ -54,51 +54,52 @@ const PurchaseCredits = () => {
               <Coins className="w-4 h-4 text-primary" />
               <span className="text-sm text-primary font-medium">Purchase Credits</span>
             </div>
-            <h1 className="font-display text-4xl md:text-5xl tracking-wide mb-4">
+            <h1 className="font-display text-3xl md:text-5xl tracking-wide mb-4">
               GET MORE <span className="text-primary">CREDITS</span>
             </h1>
-            <p className="text-foreground/70 max-w-xl mx-auto">
-              Purchase credits to generate more cover art. Each credit = one cover generation.
+            <p className="text-foreground/70 max-w-xl mx-auto text-sm md:text-base">
+              Purchase credits to generate more cover art. Each credit = one generation or one edit session.
             </p>
           </div>
 
           {/* Credit Packages */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6 mb-12">
             {CREDIT_PACKAGES.map((pkg) => (
               <div
                 key={pkg.id}
-                className={`relative bg-card rounded-2xl border p-6 transition-all ${
+                className={`relative bg-card rounded-xl md:rounded-2xl border p-4 md:p-6 transition-all ${
                   pkg.popular
                     ? "border-primary ring-2 ring-primary/20"
                     : "border-border hover:border-primary/50"
                 }`}
               >
                 {pkg.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs">
                     BEST VALUE
                   </Badge>
                 )}
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    pkg.popular ? "bg-primary" : "bg-secondary"
-                  }`}>
-                    <Coins className={`w-6 h-6 ${pkg.popular ? "text-primary-foreground" : "text-foreground"}`} />
+                <div className="flex items-center justify-between md:flex-col md:items-start gap-2 md:gap-0 md:mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center ${
+                      pkg.popular ? "bg-primary" : "bg-secondary"
+                    }`}>
+                      <Coins className={`w-5 h-5 md:w-6 md:h-6 ${pkg.popular ? "text-primary-foreground" : "text-foreground"}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl md:text-2xl">{pkg.credits}</h3>
+                      <p className="text-[10px] md:text-xs text-foreground/60">CREDITS</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-display text-2xl">{pkg.credits}</h3>
-                    <p className="text-xs text-foreground/60">CREDITS</p>
+                  <div className="text-right md:text-left md:mt-4">
+                    <span className="text-2xl md:text-4xl font-bold text-foreground">${pkg.price}</span>
+                    <span className="text-foreground/60 text-xs md:text-sm ml-1">
+                      (${(pkg.price / pkg.credits).toFixed(2)}/credit)
+                    </span>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-foreground">${pkg.price}</span>
-                  <span className="text-foreground/60 text-sm ml-1">
-                    (${(pkg.price / pkg.credits).toFixed(2)}/credit)
-                  </span>
-                </div>
-
-                <ul className="space-y-2 mb-6">
+                <ul className="hidden md:block space-y-2 mb-6">
                   <li className="flex items-center gap-2 text-sm text-foreground/80">
                     <Check className="w-4 h-4 text-primary" />
                     {pkg.credits} cover generations
@@ -115,7 +116,8 @@ const PurchaseCredits = () => {
 
                 <Button
                   variant={pkg.popular ? "studio" : "outline"}
-                  className="w-full"
+                  className="w-full mt-3 md:mt-0"
+                  size="sm"
                   onClick={() => handlePurchase(pkg.id)}
                   disabled={loading === pkg.id}
                 >

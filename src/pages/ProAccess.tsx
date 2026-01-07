@@ -152,32 +152,30 @@ const ProAccess = () => {
             </div>
           )}
 
-          {/* Real Designer Edits Feature - Available to Everyone */}
-          <div className="mb-12 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-2xl p-6 md:p-8">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Palette className="w-8 h-8 text-primary" />
+          {/* Real Designer Edits Feature - Compact for mobile */}
+          <div className="mb-8 md:mb-12 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl md:rounded-2xl p-4 md:p-8">
+            <div className="flex items-center gap-4 md:gap-6">
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Palette className="w-6 h-6 md:w-8 md:h-8 text-primary" />
               </div>
-              <div className="text-center md:text-left">
-                <h3 className="font-display text-xl mb-2">REAL DESIGNER EDITS — FREE FOR ALL</h3>
-                <p className="text-foreground/70">
-                  All users get access to our professional design team. 
-                  Request touch-ups, imperfection fixes, and enhancements on any generated cover. 
-                  Our designers will refine your artwork within 24 hours via email.
+              <div>
+                <h3 className="font-display text-base md:text-xl mb-1 md:mb-2">REAL DESIGNER EDITS</h3>
+                <p className="text-foreground/70 text-xs md:text-base">
+                  All users can request touch-ups and enhancements from our professional design team.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Plans */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             {plans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = subscription.tier === plan.id;
               return (
                 <div
                   key={plan.name}
-                  className={`relative bg-card rounded-2xl border p-6 transition-all ${
+                  className={`relative bg-card rounded-xl md:rounded-2xl border p-4 md:p-6 transition-all ${
                     isCurrentPlan
                       ? "border-green-500 ring-2 ring-green-500/20"
                       : plan.popular
@@ -186,31 +184,32 @@ const ProAccess = () => {
                   }`}
                 >
                   {isCurrentPlan && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white">
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs">
                       YOUR PLAN
                     </Badge>
                   )}
                   {!isCurrentPlan && plan.popular && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs">
                       MOST POPULAR
                     </Badge>
                   )}
 
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      isCurrentPlan ? "bg-green-500" : plan.popular ? "bg-primary" : "bg-secondary"
-                    }`}>
-                      <Icon className={`w-5 h-5 ${isCurrentPlan || plan.popular ? "text-white" : "text-foreground"}`} />
+                  <div className="flex items-center justify-between md:flex-col md:items-start gap-2 md:gap-0 md:mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center ${
+                        isCurrentPlan ? "bg-green-500" : plan.popular ? "bg-primary" : "bg-secondary"
+                      }`}>
+                        <Icon className={`w-4 h-4 md:w-5 md:h-5 ${isCurrentPlan || plan.popular ? "text-white" : "text-foreground"}`} />
+                      </div>
+                      <h3 className="font-display text-lg md:text-xl">{plan.name}</h3>
                     </div>
-                    <h3 className="font-display text-xl">{plan.name}</h3>
+                    <div className="md:mt-4">
+                      <span className="text-2xl md:text-4xl font-bold text-foreground">${plan.price}</span>
+                      <span className="text-foreground/60 text-xs md:text-base">/mo</span>
+                    </div>
                   </div>
 
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-foreground">${plan.price}</span>
-                    <span className="text-foreground/60">/month</span>
-                  </div>
-
-                  <ul className="space-y-3 mb-6">
+                  <ul className="hidden md:block space-y-3 mb-6">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2 text-sm text-foreground/80">
                         <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -221,7 +220,8 @@ const ProAccess = () => {
 
                   <Button
                     variant={isCurrentPlan ? "outline" : plan.popular ? "studio" : "outline"}
-                    className="w-full"
+                    className="w-full mt-3 md:mt-0"
+                    size="sm"
                     onClick={() => isCurrentPlan ? handleManageSubscription() : handleSubscribe(plan.id)}
                     disabled={loading === plan.id || loading === "manage"}
                   >
@@ -233,8 +233,8 @@ const ProAccess = () => {
           </div>
 
           {/* FAQ or Note */}
-          <div className="mt-12 text-center">
-            <p className="text-sm text-foreground/60">
+          <div className="mt-8 md:mt-12 text-center">
+            <p className="text-xs md:text-sm text-foreground/60">
               All subscriptions include a 10% discount on add-on products. Cancel anytime.
             </p>
           </div>

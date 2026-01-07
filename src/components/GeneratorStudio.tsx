@@ -132,7 +132,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [progressStage, setProgressStage] = useState(0);
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const selectedTextStyle = useMemo(() => textStyles.find(t => t.id === textStyle), [textStyle]);
+  
+  // Rotating placeholder messages
+  const placeholderMessages = [
+    { title: "Cover will appear here", subtitle: "Generate to see your cover" },
+    { title: "Quality takes time", subtitle: "Our advanced AI creates stunning, unique artwork" },
+    { title: "Crafting perfection", subtitle: "Every cover is carefully generated for maximum quality" },
+  ];
+  
+  // Rotate placeholder messages every 4 seconds
+  useEffect(() => {
+    if (generatedImage) return; // Don't rotate if we have an image
+    const interval = setInterval(() => {
+      setPlaceholderIndex(prev => (prev + 1) % placeholderMessages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [generatedImage, placeholderMessages.length]);
 
   // Progress animation during generation - tied to actual generation state
   const [smoothProgress, setSmoothProgress] = useState(0);
@@ -649,24 +666,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                     <div className="space-y-2 min-w-0">
                       <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
-                        Main Color
+                        <span className="hidden sm:inline">Main Color</span>
+                        <span className="sm:hidden">Main</span>
                       </label>
                       <ColorPickerPopover
                         label="Color"
                         value={mainColor}
                         onChange={setMainColor}
                         themeMode={themeMode}
+                        hideLabel
                       />
                     </div>
                     <div className="space-y-2 min-w-0">
                       <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
-                        Accent Color
+                        <span className="hidden sm:inline">Accent Color</span>
+                        <span className="sm:hidden">Accent</span>
                       </label>
                       <ColorPickerPopover
                         label="Color"
                         value={accentColor}
                         onChange={setAccentColor}
                         themeMode={themeMode}
+                        hideLabel
                       />
                     </div>
                   </div>
@@ -777,7 +798,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     value={songTitle}
                     onChange={(e) => setSongTitle(e.target.value)}
                     disabled={isGenerating}
-                    className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                    className={`h-9 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -789,7 +810,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
                     disabled={isGenerating}
-                    className={`h-9 text-sm ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                    className={`h-9 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
                   />
                 </div>
               </div>
@@ -1205,11 +1226,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         }`}>
                           <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
                         </div>
-                        <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
-                          Cover(s) will appear here
+                        <h3 className={`font-display text-sm tracking-wide mb-1 transition-opacity duration-300 ${textClass}`}>
+                          {placeholderMessages[placeholderIndex].title}
                         </h3>
-                        <p className={`text-xs px-4 ${mutedTextClass}`}>
-                          Generate to see your cover
+                        <p className={`text-xs px-4 transition-opacity duration-300 ${mutedTextClass}`}>
+                          {placeholderMessages[placeholderIndex].subtitle}
                         </p>
                       </div>
                     </div>

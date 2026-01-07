@@ -8,9 +8,10 @@ interface ColorPickerPopoverProps {
   value: string;
   onChange: (color: string) => void;
   themeMode?: "light" | "dark";
+  hideLabel?: boolean; // For mobile - just show color circle
 }
 
-// Simplified color palette - vibrant colors (no None option - click to toggle)
+// Simplified color palette - vibrant colors (removed brown and blue-grey)
 export const colorPalette = [
   { id: "red", name: "Red", color: "#ff2d2d" },
   { id: "orange", name: "Orange", color: "#ff8800" },
@@ -21,12 +22,10 @@ export const colorPalette = [
   { id: "purple", name: "Purple", color: "#9944ff" },
   { id: "pink", name: "Pink", color: "#ff44aa" },
   { id: "white", name: "White", color: "#ffffff" },
-  { id: "gray", name: "Gray", color: "#7788aa" },
-  { id: "brown", name: "Brown", color: "#bb6633" },
   { id: "black", name: "Black", color: "#1a1a1a" },
 ];
 
-export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" }: ColorPickerPopoverProps) => {
+export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark", hideLabel = false }: ColorPickerPopoverProps) => {
   const [open, setOpen] = useState(false);
   
   const selectedColor = colorPalette.find(c => c.id === value);
@@ -58,37 +57,29 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               className="w-5 h-5 rounded-full border border-border flex-shrink-0 bg-gradient-to-br from-red-500 via-yellow-500 to-blue-500"
             />
           )}
-          <span className="text-sm truncate">
-            {hasSelection ? selectedColor.name : label}
-          </span>
+          {!hideLabel && (
+            <span className="text-sm truncate">
+              {hasSelection ? selectedColor.name : label}
+            </span>
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-3" align="start">
-        <div className="grid grid-cols-7 gap-1.5">
+      <PopoverContent className="w-64 p-3" align="start">
+        <div className="grid grid-cols-5 gap-2">
           {colorPalette.map((color) => (
             <button
               key={color.id}
               onClick={() => handleSelect(color.id)}
-              className={`relative w-8 h-8 rounded-md transition-transform hover:scale-110 ${
+              className={`relative aspect-square rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
-              } ${color.id === "white" ? "border border-border" : ""} ${
-                (color as any).isNone ? "border-2 border-border bg-secondary" : ""
-              }`}
-              style={(color as any).isNone ? {} : { backgroundColor: color.color }}
+              } ${color.id === "white" ? "border border-border" : ""}`}
+              style={{ backgroundColor: color.color }}
               title={color.name}
             >
-              {(color as any).isNone && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
-                </div>
-              )}
-              {value === color.id && !(color as any).isNone && (
+              {value === color.id && (
                 <Check className={`absolute inset-0 m-auto w-4 h-4 ${
                   ["white", "yellow"].includes(color.id) ? "text-gray-800" : "text-white"
                 }`} />
-              )}
-              {value === color.id && (color as any).isNone && (
-                <Check className="absolute -top-1 -right-1 w-3 h-3 text-primary" />
               )}
             </button>
           ))}
@@ -112,5 +103,5 @@ export const getColorValue = (colorId: string): string => {
 export const getColorHex = (colorId: string): string => {
   if (colorId === "none" || !colorId) return "";
   const color = colorPalette.find(c => c.id === colorId);
-  return (color && !(color as any).isNone) ? color.color : "";
+  return color ? color.color : "";
 };
