@@ -1197,7 +1197,7 @@ const EditStudio = () => {
                       value={customInstructions}
                       onChange={(e) => setCustomInstructions(e.target.value)}
                       disabled={isEditing}
-                      className="bg-secondary min-h-[100px] text-sm"
+                      className="bg-secondary min-h-[100px] text-base"
                     />
                   )}
                 </div>
