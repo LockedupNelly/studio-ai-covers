@@ -21,13 +21,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let didSettle = false;
 
-    // Safety: never stay stuck in loading forever
-    const safetyTimeout = window.setTimeout(() => {
+    // Safety: never stay stuck in loading forever - reduced to 5s for faster recovery
+    const safetyTimeout = window.setTimeout(async () => {
       if (!didSettle) {
-        console.warn("[AuthContext] Safety timeout hit; forcing loading=false");
+        console.warn("[AuthContext] Safety timeout hit; attempting recovery");
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log("[AuthContext] Recovery getSession result:", { hasSession: !!session });
+          setSession(session);
+          setUser(session?.user ?? null);
+        } catch (e) {
+          console.error("[AuthContext] Recovery getSession failed", e);
+        }
         setLoading(false);
       }
-    }, 8000);
+    }, 5000);
 
     // Set up auth state listener FIRST
     const {
@@ -57,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // 1) If we have an OAuth `code` in the URL, exchange it for a session ourselves.
-    // This avoids relying on implicit URL detection, which can hang in some environments.
     const url = new URL(window.location.href);
     const oauthCode = url.searchParams.get("code");
     if (oauthCode) {
@@ -68,6 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (error) {
             console.error("[AuthContext] exchangeCodeForSession error", error);
             toast.error("Login error", { description: error.message });
+            didSettle = true;
+            setLoading(false);
             return;
           }
 
@@ -84,9 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error("[AuthContext] exchangeCodeForSession exception", err);
           didSettle = true;
           setLoading(false);
-        })
-        .finally(() => {
-          window.clearTimeout(safetyTimeout);
         });
       return () => {
         window.clearTimeout(safetyTimeout);
@@ -94,24 +100,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
     }
 
-    // 2) Otherwise, try reading the stored session directly (fast + avoids hanging getSession)
+    // 2) Try reading stored session - use correct Supabase localStorage key format
     try {
-      const storageKey = (supabase.auth as any)?.storageKey ?? "supabase.auth.token";
+      const storageKey = `sb-lzgzbowypsvbabpdjdqm-auth-token`;
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const stored = JSON.parse(raw);
-        const storedSession = stored?.access_token ? (stored as Session) : null;
-        console.log("[AuthContext] localStorage session", { hasSession: !!storedSession });
-        didSettle = true;
-        setSession(storedSession);
-        setUser(storedSession?.user ?? null);
-        setLoading(false);
+        // Supabase stores the session directly or under currentSession
+        const storedSession = stored?.access_token ? (stored as Session) : (stored?.currentSession ?? null);
+        console.log("[AuthContext] localStorage session", { hasSession: !!storedSession, storageKey });
+        if (storedSession) {
+          didSettle = true;
+          setSession(storedSession);
+          setUser(storedSession?.user ?? null);
+          setLoading(false);
+        }
       }
     } catch (err) {
       console.warn("[AuthContext] Failed reading stored session", err);
-    } finally {
-      window.clearTimeout(safetyTimeout);
-      if (!didSettle) setLoading(false);
+    }
+
+    // 3) Fallback: call getSession if we didn't find a stored session
+    if (!didSettle) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!didSettle) {
+          console.log("[AuthContext] getSession fallback", { hasSession: !!session });
+          didSettle = true;
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      }).catch((err) => {
+        console.error("[AuthContext] getSession fallback error", err);
+        if (!didSettle) {
+          didSettle = true;
+          setLoading(false);
+        }
+      });
     }
 
     return () => {

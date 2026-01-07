@@ -233,10 +233,10 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-muted-foreground">Loading...</span>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
+          <span className="text-white/80 text-sm">Loading...</span>
         </div>
       </div>
     );
