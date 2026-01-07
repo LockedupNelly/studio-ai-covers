@@ -884,7 +884,7 @@ const EditStudio = () => {
                           src={paOption.image} 
                           alt="Parental Advisory"
                           className="w-full h-auto"
-                          style={{ filter: paInverted ? "invert(1)" : undefined }}
+                          style={{ filter: paInverted ? "invert(1) brightness(0)" : undefined }}
                         />
                       </div>
                     );
