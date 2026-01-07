@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine, Blend } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -913,8 +913,8 @@ const EditStudio = () => {
                   ))}
                 </div>
                 
-                {/* Edit Sections - Compact */}
-                <div className="mt-1">
+                {/* Edit Sections - Fixed height container to prevent button jumping */}
+                <div className="mt-1 min-h-[180px]">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
                     <div 
@@ -959,21 +959,21 @@ const EditStudio = () => {
                               </span>
                             </button>
                             {isSelected && (
-                              <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1.5 py-1">
+                              <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1.5 py-1.5">
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(25, currentIntensity - 25) })}
                                   disabled={isMin}
-                                  className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                                 >
-                                  <Minus className="w-3.5 h-3.5" />
+                                  <Minus className="w-5 h-5" />
                                 </button>
-                                <Layers className={`w-4 h-4 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                <Blend className={`w-5 h-5 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
                                   disabled={isMax}
-                                  className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                                 >
-                                  <Plus className="w-3.5 h-3.5" />
+                                  <Plus className="w-5 h-5" />
                                 </button>
                               </div>
                             )}
@@ -1033,25 +1033,25 @@ const EditStudio = () => {
                               <div className="flex flex-col gap-1">
                                 <button
                                   onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
-                                  className="flex items-center justify-center py-1 rounded bg-secondary"
+                                  className="h-8 flex items-center justify-center rounded bg-secondary"
                                 >
-                                  <RotateCw className="w-3.5 h-3.5" />
+                                  <RotateCw className="w-5 h-5" />
                                 </button>
-                                <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1.5 py-1">
+                                <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1.5 py-1.5">
                                   <button
                                     onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.max(25, currentIntensity - 25) })}
                                     disabled={isMin}
-                                    className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                                   >
-                                    <Minus className="w-3.5 h-3.5" />
+                                    <Minus className="w-5 h-5" />
                                   </button>
-                                  <Zap className={`w-4 h-4 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                  <Zap className={`w-5 h-5 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
                                   <button
                                     onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
                                     disabled={isMax}
-                                    className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                                   >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    <Plus className="w-5 h-5" />
                                   </button>
                                 </div>
                               </div>
@@ -1106,7 +1106,8 @@ const EditStudio = () => {
                         })}
                       </div>
                       {parentalAdvisory !== "none" && (
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-2 items-center mt-2">
+                          {/* Position selector - rectangular buttons */}
                           <div className="flex gap-1 flex-1">
                             {[
                               { id: "bottom-left", label: "Left" },
@@ -1116,10 +1117,10 @@ const EditStudio = () => {
                               <button
                                 key={pos.id}
                                 onClick={() => setPaPosition(pos.id as typeof paPosition)}
-                                className={`flex-1 py-1.5 px-2 rounded text-[10px] font-medium transition-colors ${
+                                className={`flex-1 py-2 px-4 rounded text-xs font-medium transition-colors ${
                                   paPosition === pos.id
                                     ? "bg-primary text-primary-foreground"
-                                    : "bg-secondary text-foreground/70"
+                                    : "bg-secondary text-foreground/70 hover:bg-secondary/80"
                                 }`}
                               >
                                 {pos.label}
@@ -1130,7 +1131,7 @@ const EditStudio = () => {
                             variant={paInverted ? "default" : "outline"}
                             size="sm"
                             onClick={() => setPaInverted(!paInverted)}
-                            className="h-8 text-xs"
+                            className="h-9 text-xs px-4"
                           >
                             Invert
                           </Button>
@@ -1201,8 +1202,9 @@ const EditStudio = () => {
                   )}
                 </div>
                 
-                {/* Action Buttons - 2x2 Grid */}
-                <div className="grid grid-cols-2 gap-2 mt-4 pb-4">
+                {/* Divider + Action Buttons - Always at same position */}
+                <div className="border-t border-border/50 mt-4 pt-4">
+                <div className="grid grid-cols-2 gap-2 pb-4">
                   <Button
                     onClick={handleApplyEdits}
                     disabled={isEditing || isUpscaling || !hasChanges}
@@ -1258,6 +1260,7 @@ const EditStudio = () => {
                       Upscaled
                     </Button>
                   )}
+                </div>
                 </div>
               </div>
             ) : (
