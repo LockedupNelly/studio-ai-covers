@@ -1168,7 +1168,7 @@ const EditStudio = () => {
                       {/* Main Color */}
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">MAIN COLOR</Label>
-                        <div className="grid grid-cols-13 gap-1">
+                        <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1177,7 +1177,7 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`flex-1 h-8 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent"
@@ -1201,7 +1201,7 @@ const EditStudio = () => {
                       {/* Accent Color */}
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">ACCENT COLOR</Label>
-                        <div className="grid grid-cols-13 gap-1">
+                        <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1210,7 +1210,7 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`flex-1 h-8 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent"
@@ -1586,7 +1586,7 @@ const EditStudio = () => {
                       {/* Main Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                        <div className="grid grid-cols-13 gap-1">
+                        <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1595,7 +1595,7 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`flex-1 h-7 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent hover:border-primary/50"
@@ -1619,7 +1619,7 @@ const EditStudio = () => {
                       {/* Accent Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                        <div className="grid grid-cols-13 gap-1">
+                        <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1628,7 +1628,7 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`flex-1 h-7 rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent hover:border-primary/50"
