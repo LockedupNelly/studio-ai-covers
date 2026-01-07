@@ -750,10 +750,10 @@ const EditStudio = () => {
             
             {/* MOBILE LAYOUT */}
             {isMobile ? (
-              <div className="flex flex-col pb-32">
-                {/* Sticky Cover Preview */}
-                <div className="sticky top-16 z-10 bg-background pt-2 pb-3">
-                  <div className="aspect-square max-w-[200px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
+              <div className="flex flex-col">
+                {/* Cover Preview - Larger */}
+                <div className="bg-background pb-2">
+                  <div className="aspect-square w-[75vw] max-w-[320px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -827,32 +827,32 @@ const EditStudio = () => {
                   </div>
                 </div>
                 
-                {/* Horizontal Swipe Tab Navigation */}
+                {/* Compact Horizontal Swipe Tab Navigation */}
                 <div 
                   ref={mobileTabsRef}
-                  className="flex gap-2 overflow-x-auto scrollbar-hide py-3 px-1 -mx-1"
+                  className="flex gap-1.5 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {[
                     { id: "textures", label: "Textures", icon: Layers, count: textures.length },
                     { id: "lighting", label: "Lighting", icon: Zap, count: lightings.length },
                     { id: "colors", label: "Colors", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
-                    { id: "style", label: "Style & Mood", icon: Palette, count: 0 },
+                    { id: "style", label: "Style", icon: Palette, count: 0 },
                     { id: "custom", label: "Custom", icon: Sparkles, count: customInstructions.trim() ? 1 : 0 },
                   ].map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setMobileEditTab(tab.id as typeof mobileEditTab)}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shrink-0 ${
+                      className={`flex items-center gap-1 px-3 py-2 rounded-full whitespace-nowrap text-xs font-medium transition-all shrink-0 ${
                         mobileEditTab === tab.id
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-foreground/70"
                       }`}
                     >
-                      <tab.icon className="w-4 h-4" />
+                      <tab.icon className="w-3.5 h-3.5" />
                       {tab.label}
                       {tab.count > 0 && (
-                        <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${
+                        <span className={`px-1 py-0.5 rounded-full text-[9px] ${
                           mobileEditTab === tab.id ? "bg-white/20" : "bg-primary/20 text-primary"
                         }`}>
                           {tab.count}
@@ -862,270 +862,222 @@ const EditStudio = () => {
                   ))}
                 </div>
                 
-                {/* Full-Width Edit Sections */}
-                <div className="space-y-4 mt-2">
+                {/* Edit Sections - Compact */}
+                <div className="mt-2">
                   {/* Textures Section */}
                   {mobileEditTab === "textures" && (
-                    <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
-                        <Layers className="w-5 h-5 text-primary" />
-                        Textures
-                        {textures.length > 0 && <span className="text-primary">({textures.length} selected)</span>}
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-3">
-                        {textureOptions.filter(t => t.id !== "none").map(t => {
-                          const isSelected = textures.includes(t.id);
-                          const currentIntensity = textureIntensities[t.id] ?? 50;
-                          return (
-                            <div key={t.id} className="flex flex-col gap-2">
-                              <button
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setTextures(textures.filter(id => id !== t.id));
-                                    const { [t.id]: _, ...rest } = textureIntensities;
-                                    setTextureIntensities(rest);
-                                  } else {
-                                    setTextures([...textures, t.id]);
-                                  }
-                                }}
-                                disabled={isEditing}
-                                className={`aspect-square rounded-xl border-2 transition-all overflow-hidden flex items-end justify-center relative ${
-                                  isSelected
-                                    ? "border-primary ring-2 ring-primary/50"
-                                    : "border-border"
-                                }`}
-                                style={{ 
-                                  background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
-                                }}
-                              >
-                                {isSelected && (
-                                  <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-primary-foreground" />
-                                  </div>
-                                )}
-                                <span className="text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-1 rounded-t-lg w-full text-center">
-                                  {t.name}
-                                </span>
-                              </button>
+                    <div className="grid grid-cols-3 gap-2">
+                      {textureOptions.filter(t => t.id !== "none").map(t => {
+                        const isSelected = textures.includes(t.id);
+                        const currentIntensity = textureIntensities[t.id] ?? 50;
+                        return (
+                          <div key={t.id} className="flex flex-col gap-1">
+                            <button
+                              onClick={() => {
+                                if (isSelected) {
+                                  setTextures(textures.filter(id => id !== t.id));
+                                  const { [t.id]: _, ...rest } = textureIntensities;
+                                  setTextureIntensities(rest);
+                                } else {
+                                  setTextures([...textures, t.id]);
+                                }
+                              }}
+                              disabled={isEditing}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                                isSelected
+                                  ? "border-primary ring-1 ring-primary/50"
+                                  : "border-border"
+                              }`}
+                              style={{ 
+                                background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
+                              }}
+                            >
                               {isSelected && (
-                                <div className="flex items-center justify-between gap-2 bg-secondary rounded-lg px-2 py-1.5">
-                                  <button
-                                    onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(0, currentIntensity - 25) })}
-                                    className="w-7 h-7 rounded-full bg-background flex items-center justify-center"
-                                  >
-                                    <Minus className="w-3.5 h-3.5" />
-                                  </button>
-                                  <span className="text-xs font-medium">{currentIntensity}%</span>
-                                  <button
-                                    onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
-                                    className="w-7 h-7 rounded-full bg-background flex items-center justify-center"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                  </button>
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                              <span className="text-[10px] font-medium text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 w-full text-center">
+                                {t.name}
+                              </span>
+                            </button>
+                            {isSelected && (
+                              <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1 py-0.5">
+                                <button
+                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(0, currentIntensity - 25) })}
+                                  className="w-5 h-5 rounded bg-background flex items-center justify-center"
+                                >
+                                  <Minus className="w-2.5 h-2.5" />
+                                </button>
+                                <span className="text-[9px] font-medium">{currentIntensity}%</span>
+                                <button
+                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
+                                  className="w-5 h-5 rounded bg-background flex items-center justify-center"
+                                >
+                                  <Plus className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   
                   {/* Lighting Section */}
                   {mobileEditTab === "lighting" && (
-                    <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
-                        <Zap className="w-5 h-5 text-primary" />
-                        Lighting Effects
-                        {lightings.length > 0 && <span className="text-primary">({lightings.length} selected)</span>}
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-3">
-                        {lightingOptions.filter(l => l.id !== "none").map(l => {
-                          const isSelected = lightings.includes(l.id);
-                          const currentRotation = lightingRotations[l.id] || 0;
-                          return (
-                            <div key={l.id} className="flex flex-col gap-2">
-                              <button
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setLightings(lightings.filter(id => id !== l.id));
-                                    const { [l.id]: _, ...rest } = lightingRotations;
-                                    setLightingRotations(rest);
-                                  } else {
-                                    setLightings([...lightings, l.id]);
-                                  }
-                                }}
-                                disabled={isEditing}
-                                className={`aspect-square rounded-xl border-2 transition-all overflow-hidden flex items-end justify-center relative ${
-                                  isSelected
-                                    ? "border-primary ring-2 ring-primary/50"
-                                    : "border-border"
-                                }`}
-                                style={{ 
-                                  background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
-                                }}
-                              >
-                                {isSelected && (
-                                  <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-primary-foreground" />
-                                  </div>
-                                )}
-                                <span className="text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-1 rounded-t-lg w-full text-center">
-                                  {l.name}
-                                </span>
-                              </button>
-                              {isSelected && l.image && (
-                                <button
-                                  onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
-                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-secondary text-sm"
-                                >
-                                  <RotateCw className="w-3.5 h-3.5" />
-                                  Rotate ({currentRotation}°)
-                                </button>
+                    <div className="grid grid-cols-3 gap-2">
+                      {lightingOptions.filter(l => l.id !== "none").map(l => {
+                        const isSelected = lightings.includes(l.id);
+                        const currentRotation = lightingRotations[l.id] || 0;
+                        return (
+                          <div key={l.id} className="flex flex-col gap-1">
+                            <button
+                              onClick={() => {
+                                if (isSelected) {
+                                  setLightings(lightings.filter(id => id !== l.id));
+                                  const { [l.id]: _, ...rest } = lightingRotations;
+                                  setLightingRotations(rest);
+                                } else {
+                                  setLightings([...lightings, l.id]);
+                                }
+                              }}
+                              disabled={isEditing}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                                isSelected
+                                  ? "border-primary ring-1 ring-primary/50"
+                                  : "border-border"
+                              }`}
+                              style={{ 
+                                background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                </div>
                               )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                              <span className="text-[10px] font-medium text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 w-full text-center">
+                                {l.name}
+                              </span>
+                            </button>
+                            {isSelected && l.image && (
+                              <button
+                                onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
+                                className="flex items-center justify-center gap-1 py-1 rounded bg-secondary text-[10px]"
+                              >
+                                <RotateCw className="w-2.5 h-2.5" />
+                                {currentRotation}°
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   
-                  {/* Colors Section */}
+                  {/* Colors Section - Side by side */}
                   {mobileEditTab === "colors" && (
-                    <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
-                        <Sun className="w-5 h-5 text-primary" />
-                        Color Overlay
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Main</Label>
+                        <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
                       </div>
-                      
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Main Color Overlay</Label>
-                          <p className="text-xs text-muted-foreground mb-2">Applies a color wash across the entire cover</p>
-                          <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Accent Color</Label>
-                          <p className="text-xs text-muted-foreground mb-2">Adds subtle accent lighting to highlights</p>
-                          <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
-                        </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Accent</Label>
+                        <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
                       </div>
                     </div>
                   )}
                   
-                  {/* Style & Mood Section */}
+                  {/* Style & Mood Section - Side by side */}
                   {mobileEditTab === "style" && (
-                    <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
-                        <Palette className="w-5 h-5 text-primary" />
-                        Style & Mood
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Visual Style</Label>
+                        <Select value={style} onValueChange={setStyle} disabled={isEditing}>
+                          <SelectTrigger className="bg-secondary h-10">
+                            <SelectValue placeholder="Style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {visualStyles.map(s => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Visual Style</Label>
-                          <Select value={style} onValueChange={setStyle} disabled={isEditing}>
-                            <SelectTrigger className="bg-secondary h-11 text-base">
-                              <SelectValue placeholder="Select style" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {visualStyles.map(s => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                  {s === currentState.style && s !== "None" && (
-                                    <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                                  )}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Mood / Vibe</Label>
-                          <Select value={mood} onValueChange={setMood} disabled={isEditing}>
-                            <SelectTrigger className="bg-secondary h-11 text-base">
-                              <SelectValue placeholder="Select mood" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {moodOptions.map(m => (
-                                <SelectItem key={m} value={m}>
-                                  {m}
-                                  {m === currentState.mood && m !== "None" && (
-                                    <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                                  )}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Mood</Label>
+                        <Select value={mood} onValueChange={setMood} disabled={isEditing}>
+                          <SelectTrigger className="bg-secondary h-10">
+                            <SelectValue placeholder="Mood" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {moodOptions.map(m => (
+                              <SelectItem key={m} value={m}>
+                                {m}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}
                   
                   {/* Custom Instructions Section */}
                   {mobileEditTab === "custom" && (
-                    <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
-                        <Sparkles className="w-5 h-5 text-primary" />
-                        Custom Instructions
-                      </div>
-                      
-                      <Textarea
-                        placeholder="Describe any other edits you want... (e.g., 'Make background darker', 'Add more contrast', 'Change text color to gold')"
-                        value={customInstructions}
-                        onChange={(e) => setCustomInstructions(e.target.value)}
-                        disabled={isEditing}
-                        className="bg-secondary min-h-[120px] text-base"
-                      />
-                    </div>
+                    <Textarea
+                      placeholder="Describe any edits... (e.g., 'Make darker', 'Add contrast')"
+                      value={customInstructions}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      disabled={isEditing}
+                      className="bg-secondary min-h-[100px] text-sm"
+                    />
                   )}
                 </div>
                 
-                {/* Fixed Bottom Action Bar */}
-                <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50">
-                  <div className="flex gap-2 max-w-7xl mx-auto">
+                {/* Action Buttons - Inline */}
+                <div className="flex gap-2 mt-4 pb-4">
+                  <Button
+                    onClick={handleApplyEdits}
+                    disabled={isEditing || isUpscaling || !hasChanges}
+                    className="flex-1 gap-2 h-11"
+                    size="lg"
+                  >
+                    {isEditing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        APPLY (1 CREDIT)
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleDownload}
+                    variant="outline"
+                    size="lg"
+                    className="h-11 px-4"
+                    disabled={isEditing || isUpscaling}
+                  >
+                    <Download className="w-5 h-5" />
+                  </Button>
+                  {!upscaledImageUrl && (
                     <Button
-                      onClick={handleApplyEdits}
-                      disabled={isEditing || isUpscaling || !hasChanges}
-                      className="flex-1 gap-2 h-12"
-                      size="lg"
-                    >
-                      {isEditing ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Applying...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          Apply (1 credit)
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleDownload}
+                      onClick={handleUpscale}
                       variant="outline"
                       size="lg"
-                      className="h-12 px-4"
+                      className="h-11 px-4"
                       disabled={isEditing || isUpscaling}
                     >
-                      <Download className="w-5 h-5" />
+                      <Maximize2 className="w-5 h-5" />
                     </Button>
-                    {!upscaledImageUrl && (
-                      <Button
-                        onClick={handleUpscale}
-                        variant="outline"
-                        size="lg"
-                        className="h-12 px-4"
-                        disabled={isEditing || isUpscaling}
-                      >
-                        <Maximize2 className="w-5 h-5" />
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             ) : (
