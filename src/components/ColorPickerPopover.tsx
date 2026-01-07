@@ -10,48 +10,19 @@ interface ColorPickerPopoverProps {
   themeMode?: "light" | "dark";
 }
 
-// Color palette with shades - vibrant versions included + AI Select option
-const colorPalette = [
-  // AI Select - first option (no choice, let AI decide)
-  { id: "ai-select", name: "AI Select", color: "none", isAiSelect: true },
-  // Row 1 - Reds (with vibrant)
-  { id: "red-vibrant", name: "Vibrant Red", color: "#ff0000" },
+// Simplified color palette - one color per family + None option
+export const colorPalette = [
+  { id: "none", name: "None", color: "none", isNone: true },
   { id: "red", name: "Red", color: "#ef4444" },
-  { id: "red-dark", name: "Dark Red", color: "#991b1b" },
-  // Row 2 - Oranges (with vibrant)
-  { id: "orange-vibrant", name: "Vibrant Orange", color: "#ff6600" },
   { id: "orange", name: "Orange", color: "#f97316" },
-  { id: "orange-dark", name: "Dark Orange", color: "#c2410c" },
-  // Row 3 - Yellows (with vibrant)
-  { id: "yellow-vibrant", name: "Vibrant Yellow", color: "#ffee00" },
   { id: "yellow", name: "Yellow", color: "#eab308" },
-  { id: "gold", name: "Gold", color: "#d4af37" },
-  // Row 4 - Greens (with vibrant)
-  { id: "green-vibrant", name: "Vibrant Green", color: "#00ff00" },
   { id: "green", name: "Green", color: "#22c55e" },
-  { id: "green-dark", name: "Dark Green", color: "#166534" },
-  // Row 5 - Teals/Cyans (with vibrant)
-  { id: "cyan-vibrant", name: "Vibrant Cyan", color: "#00ffff" },
   { id: "teal", name: "Teal", color: "#14b8a6" },
-  { id: "cyan", name: "Cyan", color: "#06b6d4" },
-  // Row 6 - Blues (with vibrant)
-  { id: "blue-vibrant", name: "Vibrant Blue", color: "#0066ff" },
   { id: "blue", name: "Blue", color: "#3b82f6" },
-  { id: "blue-dark", name: "Dark Blue", color: "#1e40af" },
-  // Row 7 - Purples (with vibrant)
-  { id: "purple-vibrant", name: "Vibrant Purple", color: "#9900ff" },
   { id: "purple", name: "Purple", color: "#8b5cf6" },
-  { id: "purple-dark", name: "Dark Purple", color: "#581c87" },
-  // Row 8 - Pinks (with vibrant)
-  { id: "pink-vibrant", name: "Vibrant Pink", color: "#ff00aa" },
   { id: "pink", name: "Pink", color: "#ec4899" },
-  { id: "pink-dark", name: "Dark Pink", color: "#9d174d" },
-  // Row 9 - Neutrals
   { id: "white", name: "White", color: "#ffffff" },
-  { id: "gray-light", name: "Light Gray", color: "#d1d5db" },
   { id: "gray", name: "Gray", color: "#6b7280" },
-  { id: "gray-dark", name: "Dark Gray", color: "#374151" },
-  { id: "brown-light", name: "Light Brown", color: "#a16207" },
   { id: "brown", name: "Brown", color: "#78350f" },
   { id: "black", name: "Black", color: "#000000" },
 ];
@@ -102,22 +73,22 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
               className={`relative w-8 h-8 rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
               } ${color.id === "white" ? "border border-border" : ""} ${
-                (color as any).isAiSelect ? "border-2 border-border bg-white" : ""
+                (color as any).isNone ? "border-2 border-border bg-secondary" : ""
               }`}
-              style={(color as any).isAiSelect ? {} : { backgroundColor: color.color }}
+              style={(color as any).isNone ? {} : { backgroundColor: color.color }}
               title={color.name}
             >
-              {(color as any).isAiSelect && (
+              {(color as any).isNone && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full h-0.5 bg-red-500 rotate-45 absolute" />
+                  <div className="w-full h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
                 </div>
               )}
-              {value === color.id && !(color as any).isAiSelect && (
+              {value === color.id && !(color as any).isNone && (
                 <Check className={`absolute inset-0 m-auto w-4 h-4 ${
-                  ["white", "yellow-vibrant", "yellow", "gold", "cyan-vibrant", "green-vibrant"].includes(color.id) ? "text-gray-800" : "text-white"
+                  ["white", "yellow"].includes(color.id) ? "text-gray-800" : "text-white"
                 }`} />
               )}
-              {value === color.id && (color as any).isAiSelect && (
+              {value === color.id && (color as any).isNone && (
                 <Check className="absolute -top-1 -right-1 w-3 h-3 text-primary" />
               )}
             </button>
@@ -133,7 +104,14 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" 
 
 // Helper to get actual color value from ID
 export const getColorValue = (colorId: string): string => {
-  if (colorId === "ai" || colorId === "ai-select" || !colorId) return "";
+  if (colorId === "none" || !colorId) return "";
   const color = colorPalette.find(c => c.id === colorId);
   return color?.name || colorId;
+};
+
+// Helper to get hex color value from ID
+export const getColorHex = (colorId: string): string => {
+  if (colorId === "none" || !colorId) return "";
+  const color = colorPalette.find(c => c.id === colorId);
+  return (color && !(color as any).isNone) ? color.color : "";
 };
