@@ -878,13 +878,18 @@ const EditStudio = () => {
                       : isMedium 
                         ? "w-[24%] min-w-[80px] max-w-[130px]" 
                         : "w-[18%] min-w-[60px] max-w-[100px]";
+                    const getInvertFilter = () => {
+                      if (!paInverted) return undefined;
+                      // Standard just needs invert, others need invert + brightness(0) for pure black
+                      return isStandard ? "invert(1)" : "invert(1) brightness(0)";
+                    };
                     return (
                       <div className={`absolute ${positionClasses[paPosition]} ${sizeClass}`}>
                         <img 
                           src={paOption.image} 
                           alt="Parental Advisory"
                           className="w-full h-auto"
-                          style={{ filter: paInverted ? "invert(1) brightness(0)" : undefined }}
+                          style={{ filter: getInvertFilter() }}
                         />
                       </div>
                     );
