@@ -10,21 +10,21 @@ interface ColorPickerPopoverProps {
   themeMode?: "light" | "dark";
 }
 
-// Simplified color palette - one color per family + None option
+// Simplified color palette - one color per family + None option (vibrant colors)
 export const colorPalette = [
   { id: "none", name: "None", color: "none", isNone: true },
-  { id: "red", name: "Red", color: "#ef4444" },
-  { id: "orange", name: "Orange", color: "#f97316" },
-  { id: "yellow", name: "Yellow", color: "#eab308" },
-  { id: "green", name: "Green", color: "#22c55e" },
-  { id: "teal", name: "Teal", color: "#14b8a6" },
-  { id: "blue", name: "Blue", color: "#3b82f6" },
-  { id: "purple", name: "Purple", color: "#8b5cf6" },
-  { id: "pink", name: "Pink", color: "#ec4899" },
+  { id: "red", name: "Red", color: "#ff3b3b" },
+  { id: "orange", name: "Orange", color: "#ff7a00" },
+  { id: "yellow", name: "Yellow", color: "#ffc800" },
+  { id: "green", name: "Green", color: "#00d45a" },
+  { id: "teal", name: "Teal", color: "#00c9b7" },
+  { id: "blue", name: "Blue", color: "#3b8bff" },
+  { id: "purple", name: "Purple", color: "#9855ff" },
+  { id: "pink", name: "Pink", color: "#ff4da6" },
   { id: "white", name: "White", color: "#ffffff" },
   { id: "gray", name: "Gray", color: "#6b7280" },
-  { id: "brown", name: "Brown", color: "#78350f" },
-  { id: "black", name: "Black", color: "#000000" },
+  { id: "brown", name: "Brown", color: "#a0522d" },
+  { id: "black", name: "Black", color: "#0a0a0a" },
 ];
 
 export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark" }: ColorPickerPopoverProps) => {
