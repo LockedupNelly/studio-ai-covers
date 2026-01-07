@@ -301,7 +301,7 @@ const EditStudio = () => {
     }
     
     if (accentColor) {
-      instructions.push(`Apply ${getColorValue(accentColor)} as a subtle accent highlight and secondary lighting influence, not a dominant or overriding color. Use it sparingly and selectively (approximately 10–25% of the image). The accent color may subtly influence elements where color would naturally appear, such as: light sources or glow-emitting areas, reflections on materials (metal, glass, water, surfaces), atmospheric depth or ambient light interaction, select decorative or secondary details, limited portions of typography or objects. This influence must feel natural, cinematic, and physically motivated (e.g. light spill, reflection, glow falloff), not graphic, outlined, or artificially overlaid. IMPORTANT CONSTRAINTS: Accent color must NOT replace the original color palette. Accent color must NOT apply uniformly across the image. Accent color must fade naturally rather than appear flat or solid. Shadows and midtones should remain largely neutral. Some areas must remain completely unaffected by the accent color. The accent color must NOT: outline all typography or elements, apply global color grading or full-scene color washes, introduce abstract lines, HUD elements, waveforms, or graphic shapes, override the base lighting, contrast, or mood. The original composition, lighting hierarchy, and base palette must remain dominant.`);
+      instructions.push(`Apply ${getColorValue(accentColor)} as a subtle accent color that influences secondary elements and details throughout the composition. Apply it to: secondary text, small details, borders or outlines of objects, highlights on materials like metal/glass/water reflections, atmospheric glow or ambient light in darker areas, background elements or decorative accents. The accent color should complement the main composition without dominating it. Use approximately 15-30% coverage. It should feel like a tasteful color accent that ties the design together, NOT a full color grade or overlay. The main subjects and primary elements should remain unaffected. Apply naturally and subtly.`);
     }
     
     // Check if text style variant changed (compare full variant ID, not just category)
@@ -857,9 +857,13 @@ const EditStudio = () => {
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          background: `radial-gradient(ellipse at 30% 20%, ${getColorHex(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorHex(accentColor)} 0%, transparent 40%)`,
+                          background: `
+                            radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                            radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                            radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
+                          `,
                           mixBlendMode: 'color-dodge',
-                          opacity: 0.3,
+                          opacity: 0.35,
                         }}
                       />
                     )}
@@ -1259,15 +1263,20 @@ const EditStudio = () => {
                       </>
                     )}
                   </Button>
-                  <Button
-                    onClick={handleDownload}
-                    variant="outline"
-                    className="h-11 gap-2"
-                    disabled={isEditing || isUpscaling}
-                  >
-                    <Download className="w-4 h-4" />
-                    Download
-                  </Button>
+                  <div className="col-span-2">
+                    <Button
+                      onClick={handleDownload}
+                      variant="outline"
+                      className="h-11 gap-2 w-full"
+                      disabled={isEditing || isUpscaling}
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">
+                      Pending edits must be applied first to appear in download
+                    </p>
+                  </div>
                   <Button
                     onClick={() => setIsFullscreen(true)}
                     variant="outline"
@@ -1408,9 +1417,13 @@ const EditStudio = () => {
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          background: `radial-gradient(ellipse at 30% 20%, ${getColorHex(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorHex(accentColor)} 0%, transparent 40%)`,
+                          background: `
+                            radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                            radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                            radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
+                          `,
                           mixBlendMode: 'color-dodge',
-                          opacity: 0.3,
+                          opacity: 0.35,
                         }}
                       />
                     )}
@@ -1485,39 +1498,46 @@ const EditStudio = () => {
                         </>
                       )}
                     </Button>
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={handleDownload}
-                        variant="outline"
-                        size="lg"
-                        className="gap-2"
-                        disabled={isEditing || isUpscaling}
-                      >
-                        <Download className="w-4 h-4" />
-                        {upscaledImageUrl ? "Download HD" : "Download"}
-                      </Button>
-                      <Button
-                        onClick={() => setIsFullscreen(true)}
-                        variant="outline"
-                        size="lg"
-                        className="gap-2"
-                        disabled={isEditing || isUpscaling || !imageUrl}
-                      >
-                        <Expand className="w-4 h-4" />
-                        Fullscreen
-                      </Button>
-                      {!upscaledImageUrl && (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-3">
+                        <div className="flex flex-col">
+                          <Button
+                            onClick={handleDownload}
+                            variant="outline"
+                            size="lg"
+                            className="gap-2"
+                            disabled={isEditing || isUpscaling}
+                          >
+                            <Download className="w-4 h-4" />
+                            {upscaledImageUrl ? "Download HD" : "Download"}
+                          </Button>
+                          <p className="text-[10px] text-muted-foreground text-center mt-1">
+                            Apply edits first
+                          </p>
+                        </div>
                         <Button
-                          onClick={handleUpscale}
+                          onClick={() => setIsFullscreen(true)}
                           variant="outline"
                           size="lg"
                           className="gap-2"
-                          disabled={isEditing || isUpscaling}
+                          disabled={isEditing || isUpscaling || !imageUrl}
                         >
-                          <ArrowUpFromLine className="w-4 h-4" />
-                          {isUpscaling ? "Upscaling..." : "Upscale HD"}
+                          <Expand className="w-4 h-4" />
+                          Fullscreen
                         </Button>
-                      )}
+                        {!upscaledImageUrl && (
+                          <Button
+                            onClick={handleUpscale}
+                            variant="outline"
+                            size="lg"
+                            className="gap-2"
+                            disabled={isEditing || isUpscaling}
+                          >
+                            <ArrowUpFromLine className="w-4 h-4" />
+                            {isUpscaling ? "Upscaling..." : "Upscale HD"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
@@ -1578,7 +1598,7 @@ const EditStudio = () => {
                       {/* Main Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-10 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             return (
@@ -1586,13 +1606,14 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-9 rounded-lg border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md transition-all flex items-center justify-center relative ${
                                   isSelected
-                                    ? "border-primary ring-1 ring-primary/50"
-                                    : "border-transparent hover:border-primary/50"
+                                    ? `ring-2 ring-offset-1 ring-offset-background`
+                                    : "hover:scale-105"
                                 }`}
                                 style={{ 
-                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`,
+                                  boxShadow: isSelected ? `0 0 0 2px ${c.color}` : undefined
                                 }}
                                 title={c.name}
                               >
@@ -1607,7 +1628,7 @@ const EditStudio = () => {
                       {/* Accent Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-10 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             return (
@@ -1615,13 +1636,14 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-9 rounded-lg border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md transition-all flex items-center justify-center relative ${
                                   isSelected
-                                    ? "border-primary ring-1 ring-primary/50"
-                                    : "border-transparent hover:border-primary/50"
+                                    ? `ring-2 ring-offset-1 ring-offset-background`
+                                    : "hover:scale-105"
                                 }`}
                                 style={{ 
-                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`,
+                                  boxShadow: isSelected ? `0 0 0 2px ${c.color}` : undefined
                                 }}
                                 title={c.name}
                               >
@@ -1920,21 +1942,20 @@ const EditStudio = () => {
       {/* Fullscreen Modal */}
       {isFullscreen && imageUrl && (
         <div 
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4"
           onClick={() => setIsFullscreen(false)}
         >
-          <button
-            onClick={() => setIsFullscreen(false)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-white" />
-          </button>
-          <img
-            src={imageUrl}
-            alt="Cover fullscreen"
-            className="max-w-[95vw] max-h-[95vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="relative">
+            <div className="rounded-xl overflow-hidden border-2 border-white/30">
+              <img
+                src={imageUrl}
+                alt="Cover fullscreen"
+                className="max-w-[90vw] max-h-[80vh] object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+          <p className="text-white/50 text-xs mt-4">tap anywhere to exit</p>
         </div>
       )}
       

@@ -73,7 +73,7 @@ const ProAccess = () => {
       if (data?.error) throw new Error(data.error);
 
       if (data?.url) {
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error("Checkout error:", error);
@@ -152,20 +152,6 @@ const ProAccess = () => {
             </div>
           )}
 
-          {/* Real Designer Edits Feature - Compact for mobile */}
-          <div className="mb-8 md:mb-12 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl md:rounded-2xl p-4 md:p-8">
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Palette className="w-6 h-6 md:w-8 md:h-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-display text-base md:text-xl mb-1 md:mb-2">REAL DESIGNER EDITS</h3>
-                <p className="text-foreground/70 text-xs md:text-base">
-                  All users can request touch-ups and enhancements from our professional design team.
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Plans */}
           <div className="grid md:grid-cols-3 gap-4 md:gap-6">
