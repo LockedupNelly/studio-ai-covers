@@ -913,8 +913,8 @@ const EditStudio = () => {
                   ))}
                 </div>
                 
-                {/* Edit Sections */}
-                <div className="mt-1">
+                {/* Edit Sections - Fixed height for consistent button position */}
+                <div className="mt-2 min-h-[120px]">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
                     <div 
@@ -1203,7 +1203,7 @@ const EditStudio = () => {
                 </div>
                 
                 {/* Divider + Action Buttons - Always at same position */}
-                <div className="border-t border-border/50 mt-4 pt-4">
+                <div className="border-t border-border/50 mt-2 pt-3">
                 <div className="grid grid-cols-2 gap-2 pb-4">
                   <Button
                     onClick={handleApplyEdits}
