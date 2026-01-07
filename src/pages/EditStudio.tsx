@@ -122,7 +122,7 @@ interface TextureOption {
 
 const textureOptions: TextureOption[] = [
   { id: "none", name: "None", image: null },
-  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
+  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.125 },
   { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "lighter", opacity: 0.3 },
   { id: "white-grunge", name: "White Grunge", image: "/textures/white-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
   { id: "paper-grit", name: "Paper Grit", image: "/textures/paper-grit.jpg", blendMode: "lighter", opacity: 0.4 },
