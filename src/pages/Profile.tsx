@@ -375,8 +375,8 @@ const Profile = () => {
                         alt={gen.prompt}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                        <div className="grid grid-cols-2 gap-1.5">
+                      <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-3">
+                        <div className="grid grid-cols-2 gap-2 md:gap-3">
                           <Button
                             size="sm"
                             variant="default"
@@ -393,9 +393,9 @@ const Profile = () => {
                               } 
                             })}
                             title="Edit in Studio"
-                            className="h-8 px-3"
+                            className="h-10 w-10 md:h-11 md:w-11 p-0"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4 md:w-5 md:h-5" />
                           </Button>
                           <Button
                             size="sm"
@@ -411,27 +411,27 @@ const Profile = () => {
                               } 
                             })}
                             title="Rerun in Design Studio"
-                            className="h-8 px-3"
+                            className="h-10 w-10 md:h-11 md:w-11 p-0"
                           >
-                            <RotateCw className="w-3.5 h-3.5" />
+                            <RotateCw className="w-4 h-4 md:w-5 md:h-5" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownload(gen.image_url, gen.prompt)}
                             title="Download"
-                            className="h-8 px-3"
+                            className="h-10 w-10 md:h-11 md:w-11 p-0"
                           >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-4 h-4 md:w-5 md:h-5" />
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDelete(gen.id)}
                             title="Delete"
-                            className="h-8 px-3"
+                            className="h-10 w-10 md:h-11 md:w-11 p-0"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                           </Button>
                         </div>
                       </div>
