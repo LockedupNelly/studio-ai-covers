@@ -913,8 +913,8 @@ const EditStudio = () => {
                   ))}
                 </div>
                 
-                {/* Edit Sections - Fixed height for consistent button position */}
-                <div className="mt-2 min-h-[120px]">
+                {/* Edit Sections */}
+                <div className="mt-2">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
                     <div 
