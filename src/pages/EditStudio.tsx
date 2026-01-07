@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -19,6 +19,8 @@ import { colorPalette, getColorValue, getColorHex } from "@/components/ColorPick
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 
 interface CoverAnalysis {
   dominantColors: string[];
@@ -220,6 +222,10 @@ const EditStudio = () => {
   // Upscale state
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
+  
+  // Long-press preview state
+  const [showingOriginal, setShowingOriginal] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -637,19 +643,70 @@ const EditStudio = () => {
     try {
       const res = await fetch(imageToDownload);
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = upscaledImageUrl ? "cover-art-hd.png" : "cover-art-final.png";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Downloaded!", { description: upscaledImageUrl ? "HD cover saved (4096x4096)" : "Your final cover has been saved" });
+      
+      // Check if running on native platform (iOS/Android)
+      if (Capacitor.isNativePlatform()) {
+        // Convert blob to base64 for native saving
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Data = (reader.result as string).split(',')[1];
+          const fileName = upscaledImageUrl ? `cover-art-hd-${Date.now()}.png` : `cover-art-${Date.now()}.png`;
+          
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Documents,
+            });
+            toast.success("Saved!", { description: "Cover saved to Documents folder" });
+          } catch (fsError) {
+            console.error("Filesystem write error:", fsError);
+            // Fallback to browser download
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = upscaledImageUrl ? "cover-art-hd.png" : "cover-art-final.png";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            toast.success("Downloaded!", { description: upscaledImageUrl ? "HD cover saved" : "Cover saved" });
+          }
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // Browser download
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = upscaledImageUrl ? "cover-art-hd.png" : "cover-art-final.png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        toast.success("Downloaded!", { description: upscaledImageUrl ? "HD cover saved (4096x4096)" : "Your final cover has been saved" });
+      }
     } catch (error) {
       toast.error("Download failed");
     }
   };
+  
+  // Long-press handlers for original preview
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (historyIndex === 0) return; // Already showing original
+    e.preventDefault();
+    longPressTimerRef.current = setTimeout(() => {
+      setShowingOriginal(true);
+    }, 400);
+  }, [historyIndex]);
+  
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setShowingOriginal(false);
+  }, []);
   
   const handleUpscale = async () => {
     if (!imageUrl || isUpscaling) return;
@@ -781,12 +838,18 @@ const EditStudio = () => {
             {/* MOBILE LAYOUT */}
             {isMobile ? (
               <div className="flex flex-col">
-                {/* Cover Preview - Larger */}
+                {/* Cover Preview - Larger with long-press support */}
                 <div className="bg-background pb-1">
-                  <div className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
+                  <div 
+                    className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
                     {imageUrl ? (
                       <img
-                        src={imageUrl}
+                        src={showingOriginal ? originalState.imageUrl : imageUrl}
                         alt="Cover preview"
                         className="w-full h-full object-cover"
                       />
@@ -796,8 +859,8 @@ const EditStudio = () => {
                       </div>
                     )}
                     
-                    {/* Lighting Preview Overlays */}
-                    {lightings.map(lightingId => {
+                    {/* Lighting Preview Overlays - hide when showing original */}
+                    {!showingOriginal && lightings.map(lightingId => {
                       const lightingOption = lightingOptions.find(l => l.id === lightingId);
                       if (!lightingOption?.image) return null;
                       const rotation = lightingRotations[lightingId] || 0;
@@ -820,8 +883,8 @@ const EditStudio = () => {
                       );
                     })}
                     
-                    {/* Texture Preview Overlays */}
-                    {textures.map(textureId => {
+                    {/* Texture Preview Overlays - hide when showing original */}
+                    {!showingOriginal && textures.map(textureId => {
                       const textureOption = textureOptions.find(t => t.id === textureId);
                       if (!textureOption?.image) return null;
                       const baseOpacity = textureOption.opacity || 0.5;
@@ -842,8 +905,8 @@ const EditStudio = () => {
                       );
                     })}
                     
-                    {/* Color Filter Overlays - Real-time preview */}
-                    {mainColor && getColorHex(mainColor) && (
+                    {/* Color Filter Overlays - Real-time preview, hide when showing original */}
+                    {!showingOriginal && mainColor && getColorHex(mainColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
@@ -853,7 +916,7 @@ const EditStudio = () => {
                         }}
                       />
                     )}
-                    {accentColor && getColorHex(accentColor) && (
+                    {!showingOriginal && accentColor && getColorHex(accentColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
@@ -868,8 +931,8 @@ const EditStudio = () => {
                       />
                     )}
                     
-                    {/* Parental Advisory Logo Overlay */}
-                    {parentalAdvisory !== "none" && (
+                    {/* Parental Advisory Logo Overlay - hide when showing original */}
+                    {!showingOriginal && parentalAdvisory !== "none" && (
                       <div 
                         className={`absolute w-[22%] ${
                           paPosition === "bottom-right" ? "bottom-2 right-2" :
@@ -886,11 +949,22 @@ const EditStudio = () => {
                       </div>
                     )}
                     
-                    {/* Version indicator */}
-                    {editHistory.length > 1 && (
+                    {/* Version indicator / Long-press indicator */}
+                    {showingOriginal ? (
+                      <div className="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] flex items-center gap-1 text-primary-foreground font-medium">
+                        Viewing Original
+                      </div>
+                    ) : editHistory.length > 1 ? (
                       <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
                         <History className="w-2.5 h-2.5" />
                         {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                      </div>
+                    ) : null}
+                    
+                    {/* Long-press hint */}
+                    {historyIndex > 0 && !showingOriginal && (
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-[9px] text-muted-foreground">
+                        hold to see original
                       </div>
                     )}
                     
@@ -1243,9 +1317,9 @@ const EditStudio = () => {
                   )}
                 </div>
                 
-                {/* Divider + Action Buttons - Always at same position */}
-                <div className="border-t border-border/50 mt-2 pt-3">
-                <div className="grid grid-cols-2 gap-2 pb-4">
+                {/* Divider + Action Buttons - Fixed height container to prevent jumping */}
+                <div className="border-t border-border/50 mt-2 pt-3 mt-auto">
+                <div className="grid grid-cols-2 gap-2 pb-4 min-h-[180px]">
                   <Button
                     onClick={handleApplyEdits}
                     disabled={isEditing || isUpscaling || !hasChanges}
