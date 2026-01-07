@@ -1168,7 +1168,7 @@ const EditStudio = () => {
                       {/* Main Color */}
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">MAIN COLOR</Label>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="grid grid-cols-13 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1177,14 +1177,13 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`w-8 h-8 rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border/50"
+                                    : "border-transparent"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)" } : { 
-                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
-                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
+                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
                                 }}
                                 title={c.name}
                               >
@@ -1202,7 +1201,7 @@ const EditStudio = () => {
                       {/* Accent Color */}
                       <div className="space-y-1">
                         <Label className="text-xs font-medium text-muted-foreground">ACCENT COLOR</Label>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="grid grid-cols-13 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1211,14 +1210,13 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`w-8 h-8 rounded-md border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border/50"
+                                    : "border-transparent"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)" } : { 
-                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
-                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
+                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
                                 }}
                                 title={c.name}
                               >
@@ -1588,7 +1586,7 @@ const EditStudio = () => {
                       {/* Main Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="grid grid-cols-13 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1597,14 +1595,13 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setMainColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`w-6 h-6 rounded border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !mainColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border/50 hover:border-primary/50"
+                                    : "border-transparent hover:border-primary/50"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)" } : { 
-                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
-                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
+                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
                                 }}
                                 title={c.name}
                               >
@@ -1612,7 +1609,7 @@ const EditStudio = () => {
                                   <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !mainColor)) && !isNone && (
-                                  <Check className={`w-3 h-3 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1622,7 +1619,7 @@ const EditStudio = () => {
                       {/* Accent Color */}
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="grid grid-cols-13 gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
                             const isNone = (c as any).isNone;
@@ -1631,14 +1628,13 @@ const EditStudio = () => {
                                 key={c.id}
                                 onClick={() => setAccentColor(isNone ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`w-6 h-6 rounded border transition-all flex items-center justify-center relative ${
+                                className={`aspect-square rounded-md border transition-all flex items-center justify-center relative ${
                                   isSelected || (isNone && !accentColor)
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-border/50 hover:border-primary/50"
+                                    : "border-transparent hover:border-primary/50"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)" } : { 
-                                  background: `linear-gradient(135deg, ${c.color} 0%, ${c.color}99 100%)`,
-                                  boxShadow: `inset 0 1px 0 ${c.color}66, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
+                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
                                 }}
                                 title={c.name}
                               >
@@ -1646,7 +1642,7 @@ const EditStudio = () => {
                                   <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
                                 )}
                                 {(isSelected || (isNone && !accentColor)) && !isNone && (
-                                  <Check className={`w-3 h-3 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
