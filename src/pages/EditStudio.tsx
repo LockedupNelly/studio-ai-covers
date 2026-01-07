@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine } from "lucide-react";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -194,8 +194,12 @@ const EditStudio = () => {
   const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
+  const [lightingIntensities, setLightingIntensities] = useState<Record<string, number>>({}); // Track intensity per lighting ID (25-100)
   const [parentalAdvisory, setParentalAdvisory] = useState<string>("none");
-  const [paPosition, setPaPosition] = useState<"bottom-right" | "bottom-left" | "top-right" | "top-left">("bottom-right");
+  const [paPosition, setPaPosition] = useState<"bottom-right" | "bottom-left" | "bottom-center">("bottom-right");
+  
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [paInverted, setPaInverted] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
   
@@ -555,11 +559,13 @@ const EditStudio = () => {
       lightings.forEach(lightingId => {
         const lightingOption = lightingOptions.find(l => l.id === lightingId);
         if (lightingOption?.image && lightingOption.blendMode && lightingOption.opacity) {
+          const baseOpacity = lightingOption.opacity;
+          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
           overlays.push({
             imageUrl: lightingOption.image,
             options: {
               blendMode: lightingOption.blendMode,
-              opacity: lightingOption.opacity,
+              opacity: baseOpacity * intensityMultiplier,
               rotation: lightingRotations[lightingId] || 0,
             },
           });
@@ -600,6 +606,7 @@ const EditStudio = () => {
       setTextureIntensities({});
       setLightings([]);
       setLightingRotations({});
+      setLightingIntensities({});
       setCustomInstructions("");
       
       toast.success("Edits applied!", { 
@@ -793,6 +800,9 @@ const EditStudio = () => {
                       const lightingOption = lightingOptions.find(l => l.id === lightingId);
                       if (!lightingOption?.image) return null;
                       const rotation = lightingRotations[lightingId] || 0;
+                      const baseOpacity = lightingOption.opacity || 1;
+                      const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+                      const finalOpacity = baseOpacity * intensityMultiplier;
                       return (
                         <div 
                           key={lightingId}
@@ -802,7 +812,7 @@ const EditStudio = () => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                            opacity: lightingOption.opacity || 1,
+                            opacity: finalOpacity,
                             transform: rotation ? `rotate(${rotation}deg)` : undefined,
                           }}
                         />
@@ -837,8 +847,7 @@ const EditStudio = () => {
                         className={`absolute w-[22%] ${
                           paPosition === "bottom-right" ? "bottom-2 right-2" :
                           paPosition === "bottom-left" ? "bottom-2 left-2" :
-                          paPosition === "top-right" ? "top-2 right-2" :
-                          "top-2 left-2"
+                          "bottom-2 left-1/2 -translate-x-1/2"
                         }`}
                       >
                         <img 
@@ -915,6 +924,8 @@ const EditStudio = () => {
                       {textureOptions.filter(t => t.id !== "none").map(t => {
                         const isSelected = textures.includes(t.id);
                         const currentIntensity = textureIntensities[t.id] ?? 50;
+                        const isMin = currentIntensity <= 25;
+                        const isMax = currentIntensity >= 100;
                         return (
                           <div key={t.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
                             <button
@@ -925,6 +936,7 @@ const EditStudio = () => {
                                   setTextureIntensities(rest);
                                 } else {
                                   setTextures([...textures, t.id]);
+                                  setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
                                 }
                               }}
                               disabled={isEditing}
@@ -947,19 +959,21 @@ const EditStudio = () => {
                               </span>
                             </button>
                             {isSelected && (
-                              <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1 py-0.5">
+                              <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1.5 py-1">
                                 <button
-                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(0, currentIntensity - 25) })}
-                                  className="w-4 h-4 rounded bg-background flex items-center justify-center"
+                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(25, currentIntensity - 25) })}
+                                  disabled={isMin}
+                                  className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                                 >
-                                  <Minus className="w-2 h-2" />
+                                  <Minus className="w-3.5 h-3.5" />
                                 </button>
-                                <span className="text-[8px] font-medium">{currentIntensity}%</span>
+                                <Layers className={`w-4 h-4 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
-                                  className="w-4 h-4 rounded bg-background flex items-center justify-center"
+                                  disabled={isMax}
+                                  className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                                 >
-                                  <Plus className="w-2 h-2" />
+                                  <Plus className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}
@@ -978,6 +992,9 @@ const EditStudio = () => {
                       {lightingOptions.filter(l => l.id !== "none").map(l => {
                         const isSelected = lightings.includes(l.id);
                         const currentRotation = lightingRotations[l.id] || 0;
+                        const currentIntensity = lightingIntensities[l.id] ?? 100;
+                        const isMin = currentIntensity <= 25;
+                        const isMax = currentIntensity >= 100;
                         return (
                           <div key={l.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
                             <button
@@ -986,8 +1003,11 @@ const EditStudio = () => {
                                   setLightings(lightings.filter(id => id !== l.id));
                                   const { [l.id]: _, ...rest } = lightingRotations;
                                   setLightingRotations(rest);
+                                  const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                  setLightingIntensities(restIntensity);
                                 } else {
                                   setLightings([...lightings, l.id]);
+                                  setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
                                 }
                               }}
                               disabled={isEditing}
@@ -1010,13 +1030,31 @@ const EditStudio = () => {
                               </span>
                             </button>
                             {isSelected && l.image && (
-                              <button
-                                onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
-                                className="flex items-center justify-center gap-0.5 py-0.5 rounded bg-secondary text-[9px]"
-                              >
-                                <RotateCw className="w-2 h-2" />
-                                {currentRotation}°
-                              </button>
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
+                                  className="flex items-center justify-center py-1 rounded bg-secondary"
+                                >
+                                  <RotateCw className="w-3.5 h-3.5" />
+                                </button>
+                                <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1.5 py-1">
+                                  <button
+                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.max(25, currentIntensity - 25) })}
+                                    disabled={isMin}
+                                    className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <Zap className={`w-4 h-4 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                  <button
+                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
+                                    disabled={isMax}
+                                    className={`w-6 h-6 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         );
@@ -1069,17 +1107,25 @@ const EditStudio = () => {
                       </div>
                       {parentalAdvisory !== "none" && (
                         <div className="flex gap-2 items-center">
-                          <Select value={paPosition} onValueChange={(v: any) => setPaPosition(v)}>
-                            <SelectTrigger className="bg-secondary h-8 text-xs flex-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                              <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                              <SelectItem value="top-right">Top Right</SelectItem>
-                              <SelectItem value="top-left">Top Left</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-1 flex-1">
+                            {[
+                              { id: "bottom-left", label: "Left" },
+                              { id: "bottom-center", label: "Center" },
+                              { id: "bottom-right", label: "Right" },
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => setPaPosition(pos.id as typeof paPosition)}
+                                className={`flex-1 py-1.5 px-2 rounded text-[10px] font-medium transition-colors ${
+                                  paPosition === pos.id
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-secondary text-foreground/70"
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
                           <Button
                             variant={paInverted ? "default" : "outline"}
                             size="sm"
@@ -1155,13 +1201,12 @@ const EditStudio = () => {
                   )}
                 </div>
                 
-                {/* Action Buttons - Inline */}
-                <div className="flex gap-2 mt-4 pb-4">
+                {/* Action Buttons - 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-2 mt-4 pb-4">
                   <Button
                     onClick={handleApplyEdits}
                     disabled={isEditing || isUpscaling || !hasChanges}
-                    className="flex-1 gap-2 h-11"
-                    size="lg"
+                    className="gap-2 h-11"
                   >
                     {isEditing ? (
                       <>
@@ -1171,28 +1216,46 @@ const EditStudio = () => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        APPLY (1 CREDIT)
+                        Apply (1 Credit)
                       </>
                     )}
                   </Button>
                   <Button
                     onClick={handleDownload}
                     variant="outline"
-                    size="lg"
-                    className="h-11 px-4"
+                    className="h-11 gap-2"
                     disabled={isEditing || isUpscaling}
                   >
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4" />
+                    Download
                   </Button>
-                  {!upscaledImageUrl && (
+                  <Button
+                    onClick={() => setIsFullscreen(true)}
+                    variant="outline"
+                    className="h-11 gap-2"
+                    disabled={isEditing || isUpscaling || !imageUrl}
+                  >
+                    <Expand className="w-4 h-4" />
+                    Fullscreen
+                  </Button>
+                  {!upscaledImageUrl ? (
                     <Button
                       onClick={handleUpscale}
                       variant="outline"
-                      size="lg"
-                      className="h-11 px-4"
+                      className="h-11 gap-2"
                       disabled={isEditing || isUpscaling}
                     >
-                      <Maximize2 className="w-5 h-5" />
+                      <ArrowUpFromLine className="w-4 h-4" />
+                      {isUpscaling ? "Upscaling..." : "Upscale HD"}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="h-11 gap-2"
+                      disabled
+                    >
+                      <Check className="w-4 h-4" />
+                      Upscaled
                     </Button>
                   )}
                 </div>
@@ -1220,6 +1283,9 @@ const EditStudio = () => {
                       const lightingOption = lightingOptions.find(l => l.id === lightingId);
                       if (!lightingOption?.image) return null;
                       const rotation = lightingRotations[lightingId] || 0;
+                      const baseOpacity = lightingOption.opacity || 1;
+                      const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+                      const finalOpacity = baseOpacity * intensityMultiplier;
                       return (
                         <div 
                           key={lightingId}
@@ -1229,7 +1295,7 @@ const EditStudio = () => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                            opacity: lightingOption.opacity || 1,
+                            opacity: finalOpacity,
                             transform: rotation ? `rotate(${rotation}deg)` : undefined,
                           }}
                         />
@@ -1264,8 +1330,7 @@ const EditStudio = () => {
                         className={`absolute w-[20%] ${
                           paPosition === "bottom-right" ? "bottom-3 right-3" :
                           paPosition === "bottom-left" ? "bottom-3 left-3" :
-                          paPosition === "top-right" ? "top-3 right-3" :
-                          "top-3 left-3"
+                          "bottom-3 left-1/2 -translate-x-1/2"
                         }`}
                       >
                         <img 
@@ -1340,6 +1405,16 @@ const EditStudio = () => {
                         <Download className="w-4 h-4" />
                         {upscaledImageUrl ? "Download HD" : "Download"}
                       </Button>
+                      <Button
+                        onClick={() => setIsFullscreen(true)}
+                        variant="outline"
+                        size="lg"
+                        className="gap-2"
+                        disabled={isEditing || isUpscaling || !imageUrl}
+                      >
+                        <Expand className="w-4 h-4" />
+                        Fullscreen
+                      </Button>
                       {!upscaledImageUrl && (
                         <Button
                           onClick={handleUpscale}
@@ -1348,8 +1423,8 @@ const EditStudio = () => {
                           className="gap-2"
                           disabled={isEditing || isUpscaling}
                         >
-                          <Maximize2 className="w-4 h-4" />
-                          {isUpscaling ? "Upscaling..." : "Upscale to HD"}
+                          <ArrowUpFromLine className="w-4 h-4" />
+                          {isUpscaling ? "Upscaling..." : "Upscale HD"}
                         </Button>
                       )}
                     </div>
@@ -1560,6 +1635,9 @@ const EditStudio = () => {
                         {lightingOptions.filter(l => l.id !== "none").map(l => {
                           const isSelected = lightings.includes(l.id);
                           const currentRotation = lightingRotations[l.id] || 0;
+                          const currentIntensity = lightingIntensities[l.id] ?? 100;
+                          const isMin = currentIntensity <= 25;
+                          const isMax = currentIntensity >= 100;
                           return (
                             <div key={l.id} className="flex flex-col gap-1">
                               <button
@@ -1568,8 +1646,11 @@ const EditStudio = () => {
                                     setLightings(lightings.filter(id => id !== l.id));
                                     const { [l.id]: _, ...rest } = lightingRotations;
                                     setLightingRotations(rest);
+                                    const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                    setLightingIntensities(restIntensity);
                                   } else {
                                     setLightings([...lightings, l.id]);
+                                    setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
                                   }
                                 }}
                                 disabled={isEditing}
@@ -1595,17 +1676,35 @@ const EditStudio = () => {
                                 </span>
                               </button>
                               {isSelected && l.image && (
-                                <button
-                                  onClick={() => {
-                                    const nextRotation = (currentRotation + 90) % 360;
-                                    setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
-                                  }}
-                                  disabled={isEditing}
-                                  className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
-                                >
-                                  <RotateCw className="w-3 h-3" />
-                                  Rotate
-                                </button>
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => {
+                                      const nextRotation = (currentRotation + 90) % 360;
+                                      setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
+                                    }}
+                                    disabled={isEditing}
+                                    className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
+                                  >
+                                    <RotateCw className="w-3 h-3" />
+                                  </button>
+                                  <div className="flex items-center justify-between gap-1 py-0.5">
+                                    <button
+                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.max(25, currentIntensity - 25) })}
+                                      disabled={isEditing || isMin}
+                                      className={`w-6 h-6 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMin ? 'text-destructive' : 'text-muted-foreground'}`}
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <Zap className={`w-3 h-3 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                    <button
+                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
+                                      disabled={isEditing || isMax}
+                                      className={`w-6 h-6 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMax ? 'text-destructive' : 'text-muted-foreground'}`}
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           );
@@ -1661,18 +1760,26 @@ const EditStudio = () => {
                     </div>
                     
                     {parentalAdvisory !== "none" && (
-                      <div className="flex gap-2">
-                        <Select value={paPosition} onValueChange={(v: any) => setPaPosition(v)}>
-                          <SelectTrigger className="bg-secondary h-8 text-xs flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                            <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                            <SelectItem value="top-right">Top Right</SelectItem>
-                            <SelectItem value="top-left">Top Left</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex gap-2 items-center">
+                        <div className="flex gap-1 flex-1">
+                          {[
+                            { id: "bottom-left", label: "Left" },
+                            { id: "bottom-center", label: "Center" },
+                            { id: "bottom-right", label: "Right" },
+                          ].map(pos => (
+                            <button
+                              key={pos.id}
+                              onClick={() => setPaPosition(pos.id as typeof paPosition)}
+                              className={`flex-1 py-1.5 px-2 rounded text-[10px] font-medium transition-colors ${
+                                paPosition === pos.id
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-secondary text-foreground/70 hover:bg-secondary/80"
+                              }`}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
+                        </div>
                         <Button
                           variant={paInverted ? "default" : "outline"}
                           size="sm"
@@ -1717,6 +1824,27 @@ const EditStudio = () => {
           onSelectVariant={handleVariantSelect}
           selectedVariantId={selectedVariant?.id}
         />
+      )}
+      
+      {/* Fullscreen Modal */}
+      {isFullscreen && imageUrl && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setIsFullscreen(false)}
+        >
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-white" />
+          </button>
+          <img
+            src={imageUrl}
+            alt="Cover fullscreen"
+            className="max-w-[95vw] max-h-[95vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
       
       <Footer />
