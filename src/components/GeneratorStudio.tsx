@@ -430,7 +430,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
   };
 
-  const estimatedTime = coverCount === "2" ? "< 20 Seconds" : "< 15 Seconds";
+  const estimatedTime = "~ 45 Seconds";
 
   // Light mode specific text classes
   const labelClass = themeMode === "light" ? "text-gray-700" : "text-primary";
@@ -442,7 +442,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const cardBgClass = themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/50 border-border";
 
   return (
-    <section className="py-12 relative z-10 bg-background">
+    <section className="py-8 relative z-10 bg-background">
       <div className="container mx-auto px-4">
         <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 transition-opacity ${
           themeMode === "light" 
@@ -489,32 +489,25 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 </div>
               </div>
 
-              {/* Controls Row */}
+              {/* Controls Row - Mobile: put mode toggle and theme on same row, expanded */}
               <div className="flex flex-wrap items-center gap-3 md:gap-4">
-                {/* Covers to Generate */}
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold tracking-widest uppercase ${labelClass}`}>
-                    Covers
-                  </span>
-                  <RadioGroup
-                    value={coverCount}
-                    onValueChange={(v) => setCoverCount(v as "1" | "2")}
-                    className="flex gap-3 items-center"
-                  >
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="1" id="cover-1" className="w-4 h-4" />
-                      <Label htmlFor="cover-1" className={`cursor-pointer text-xs ${textClass}`}>
-                        1
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <RadioGroupItem value="2" id="cover-2" className="w-4 h-4" />
-                      <Label htmlFor="cover-2" className={`cursor-pointer text-xs ${textClass}`}>
-                        2
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                {/* Studio Mode Toggle - wider on mobile */}
+                <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")} className="flex-1 sm:flex-none">
+                  <TabsList className={`w-full sm:w-auto ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
+                    <TabsTrigger value="basic" className={`flex-1 sm:flex-none flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-3 md:px-4 ${
+                      themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
+                    }`}>
+                      <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <span className="text-xs md:text-sm">Basic</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="advanced" className={`flex-1 sm:flex-none flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-3 md:px-4 ${
+                      themeMode === "light" && studioMode === "advanced" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
+                    }`}>
+                      <Sliders className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <span className="text-xs md:text-sm">Advanced</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
                 {/* Theme Toggle */}
                 <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
@@ -539,24 +532,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </button>
                 </div>
-
-                {/* Studio Mode Toggle */}
-                <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")}>
-                  <TabsList className={themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}>
-                    <TabsTrigger value="basic" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
-                      themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
-                    }`}>
-                      <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="text-[10px] sm:text-xs md:text-sm">Basic</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="advanced" className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3 ${
-                      themeMode === "light" && studioMode === "advanced" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
-                    }`}>
-                      <Sliders className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="text-[10px] sm:text-xs md:text-sm">Advanced</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
               </div>
             </div>
           </div>
@@ -820,18 +795,18 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               </div>
 
               {/* Upload Inspiration - 5 clickable boxes with + icons */}
-              <div className={`p-4 rounded-lg border ${cardBgClass}`}>
+              <div className={`p-4 rounded-lg border ${cardBgClass} max-w-full`}>
                 <label className={`text-xs font-semibold tracking-wider uppercase mb-3 block ${labelClass}`}>
                   Upload Inspiration ({inspirationImages.length}/5)
                 </label>
-                <div className="flex items-start gap-3">
+                <div className="grid grid-cols-5 gap-2">
                   {[0, 1, 2, 3, 4].map((idx) => {
                     const img = inspirationImages[idx];
                     return (
-                      <div key={idx} className="relative">
+                      <div key={idx} className="relative aspect-square">
                         {img ? (
                           <>
-                            <div className="w-16 h-16 rounded-lg border-2 border-transparent overflow-hidden">
+                            <div className="w-full h-full rounded-lg border-2 border-transparent overflow-hidden">
                               <img src={img} alt={`Inspiration ${idx + 1}`} className="w-full h-full object-cover" />
                             </div>
                             <button
@@ -842,7 +817,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             </button>
                           </>
                         ) : (
-                          <label className={`w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                          <label className={`w-full h-full rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
                             themeMode === "light" 
                               ? "border-gray-400 bg-gray-100 hover:bg-gray-200" 
                               : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
@@ -913,7 +888,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     }`}
                   >
                     <ImagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    UPLOAD IMAGE
+                    <span className="hidden sm:inline">UPLOAD IMAGE</span>
+                    <span className="sm:hidden">UPLOAD</span>
                   </button>
                 </div>
 
@@ -1049,7 +1025,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     ) : (
                       <>
                         <Wand2 className="w-5 h-5" />
-                        Generate {coverCount === "2" ? "2 Covers" : "Cover Art"}
+                        Generate Cover Art
                       </>
                     )}
                   </Button>
@@ -1125,8 +1101,40 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </p>
                       )}
                       <div className="flex flex-col gap-3 mt-3 w-full">
-                        {/* Primary actions row */}
-                        <div className="flex gap-2">
+                        {/* Mobile: Stack buttons vertically with Edit Cover prominent */}
+                        <div className="flex flex-col sm:hidden gap-2">
+                          <Button
+                            variant="studio"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => navigate("/edit-studio", {
+                              state: {
+                                imageUrl: upscaledImageUrl || generatedImage,
+                                genre,
+                                style,
+                                mood,
+                                textStyle,
+                                songTitle: songTitle.trim(),
+                                artistName: artistName.trim(),
+                              }
+                            })}
+                            disabled={isGenerating}
+                          >
+                            Edit Cover
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="w-full"
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            {upscaledImageUrl ? "Download 4K" : "Download"}
+                          </Button>
+                        </div>
+                        
+                        {/* Desktop: Horizontal row */}
+                        <div className="hidden sm:flex gap-2">
                           <Button
                             variant="default"
                             size="sm"
@@ -1169,18 +1177,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           </Button>
                         </div>
                         
-                        {/* Links row */}
-                        <div className="flex items-center justify-between pt-1">
-                          <button
-                            onClick={() => setShowDesignerEditDialog(true)}
-                            className={`text-xs font-medium transition-colors ${
-                              themeMode === "light" 
-                                ? "text-primary hover:text-primary/80" 
-                                : "text-primary hover:text-primary/80"
-                            }`}
-                          >
-                            Request free designer edits
-                          </button>
+                        {/* Links row - remove designer edits link */}
+                        <div className="flex items-center justify-center pt-1">
                           <button
                             onClick={() => navigate("/profile")}
                             className={`text-xs font-medium transition-colors underline ${

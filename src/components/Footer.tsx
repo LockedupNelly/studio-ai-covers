@@ -9,7 +9,7 @@ export const Footer = () => {
             <span className="font-display text-lg tracking-wide">
               COVER ART <span className="text-primary">MAKER</span>
             </span>
-            <p className="text-xs text-foreground/60 mt-1">DESIGN DIVISION</p>
+            <p className="text-xs text-foreground/60 mt-1">Toronto, Canada</p>
           </div>
           <nav className="flex items-center gap-6 text-sm text-foreground/70">
             <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>

@@ -153,7 +153,7 @@ export const Header = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                     <User className="w-4 h-4 mr-2" />
-                    My Profile
+                    My Creations
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/pro-access")} className="cursor-pointer">
                     <CreditCard className="w-4 h-4 mr-2" />
@@ -216,10 +216,10 @@ export const Header = () => {
               Menu
             </SheetTitle>
           </SheetHeader>
-          <nav className="flex flex-col gap-2 mt-6">
+          <nav className="flex flex-col gap-0 mt-6">
             <button 
               onClick={() => { navigate("/"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
             >
               <Home className="w-5 h-5" />
               Home
@@ -227,17 +227,17 @@ export const Header = () => {
             {user && (
               <button 
                 onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
               >
                 <User className="w-5 h-5" />
-                My Profile
+                My Creations
               </button>
             )}
             <a 
               href="https://coverartmarket.com/cde"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
               onClick={() => setMobileMenuOpen(false)}
             >
               <Sparkles className="w-5 h-5" />
@@ -245,21 +245,21 @@ export const Header = () => {
             </a>
             <button 
               onClick={() => { navigate("/addons"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
             >
               <Sparkles className="w-5 h-5" />
               Add-Ons
             </button>
             <button 
               onClick={() => { navigate("/purchase-credits"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
             >
               <Coins className="w-5 h-5" />
               Purchase Credits
             </button>
             <button 
               onClick={() => { navigate("/pro-access"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-left bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-left bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-b border-border/50"
             >
               <Sparkles className="w-5 h-5" />
               PRO ACCESS
@@ -268,7 +268,7 @@ export const Header = () => {
             {!user && (
               <Button 
                 variant="secondary" 
-                className="mt-4"
+                className="mt-4 mx-4"
                 onClick={() => { navigate("/auth"); setMobileMenuOpen(false); }}
               >
                 Sign in
