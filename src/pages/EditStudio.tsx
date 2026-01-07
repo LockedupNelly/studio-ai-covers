@@ -13,7 +13,8 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine, Blend } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine } from "lucide-react";
+import { IntensityBar } from "@/components/IntensityIcon";
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
@@ -750,8 +751,8 @@ const EditStudio = () => {
       <main className={isMobile ? "pt-16 pb-4" : "pt-24 pb-16"}>
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
-            {/* Header - Compact on mobile */}
-            <div className={`flex items-center gap-2 ${isMobile ? "py-2" : "gap-4 mb-6"}`}>
+            {/* Header - Compact on mobile, aligned with tokens */}
+            <div className={`flex items-center gap-2 ${isMobile ? "py-1 h-9" : "gap-4 mb-6"}`}>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -766,13 +767,13 @@ const EditStudio = () => {
                     artistName: currentState.artistName,
                   } 
                 })}
-                className="px-2 md:px-3 h-8"
+                className="px-2 md:px-3 h-7 md:h-8"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </Button>
-              <h1 className="font-display text-lg md:text-3xl tracking-wide flex-1">EDIT STUDIO</h1>
-              <div className="flex items-center gap-1 text-xs bg-secondary px-2 py-1 rounded-lg">
-                <Coins className="w-3.5 h-3.5 text-primary" />
+              <h1 className="font-display text-base md:text-3xl tracking-wide flex-1">EDIT STUDIO</h1>
+              <div className="flex items-center gap-1 text-xs bg-secondary px-2 py-1 h-7 rounded-lg">
+                <Coins className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
                 <span>{hasUnlimitedGenerations ? "∞" : credits ?? 0}</span>
               </div>
             </div>
@@ -841,6 +842,28 @@ const EditStudio = () => {
                       );
                     })}
                     
+                    {/* Color Filter Overlays - Real-time preview */}
+                    {mainColor && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          backgroundColor: getColorValue(mainColor),
+                          mixBlendMode: 'overlay',
+                          opacity: 0.45,
+                        }}
+                      />
+                    )}
+                    {accentColor && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          background: `radial-gradient(ellipse at 30% 20%, ${getColorValue(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorValue(accentColor)} 0%, transparent 40%)`,
+                          mixBlendMode: 'color-dodge',
+                          opacity: 0.3,
+                        }}
+                      />
+                    )}
+                    
                     {/* Parental Advisory Logo Overlay */}
                     {parentalAdvisory !== "none" && (
                       <div 
@@ -887,8 +910,7 @@ const EditStudio = () => {
                     { id: "textures", label: "Textures", icon: Layers, count: textures.length },
                     { id: "lighting", label: "Lighting", icon: Zap, count: lightings.length },
                     { id: "pa", label: "Advisory", icon: ShieldAlert, count: parentalAdvisory !== "none" ? 1 : 0 },
-                    { id: "colors", label: "Colors", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
-                    { id: "style", label: "Style", icon: Palette, count: 0 },
+                    { id: "colors", label: "Color Filters", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
                     { id: "custom", label: "Custom", icon: Sparkles, count: customInstructions.trim() ? 1 : 0 },
                   ].map((tab) => (
                     <button
@@ -967,7 +989,7 @@ const EditStudio = () => {
                                 >
                                   <Minus className="w-5 h-5" />
                                 </button>
-                                <Blend className={`w-5 h-5 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                <IntensityBar intensity={currentIntensity} className="w-5 h-4" />
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
                                   disabled={isMax}
@@ -1045,7 +1067,7 @@ const EditStudio = () => {
                                   >
                                     <Minus className="w-5 h-5" />
                                   </button>
-                                  <Zap className={`w-5 h-5 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                  <IntensityBar intensity={currentIntensity} className="w-5 h-4" />
                                   <button
                                     onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
                                     disabled={isMax}
@@ -1154,41 +1176,6 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Style & Mood Section - Side by side */}
-                  {mobileEditTab === "style" && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-medium">Visual Style</Label>
-                        <Select value={style} onValueChange={setStyle} disabled={isEditing}>
-                          <SelectTrigger className="bg-secondary h-10">
-                            <SelectValue placeholder="Style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {visualStyles.map(s => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-medium">Mood</Label>
-                        <Select value={mood} onValueChange={setMood} disabled={isEditing}>
-                          <SelectTrigger className="bg-secondary h-10">
-                            <SelectValue placeholder="Mood" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {moodOptions.map(m => (
-                              <SelectItem key={m} value={m}>
-                                {m}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
                   
                   {/* Custom Instructions Section */}
                   {mobileEditTab === "custom" && (
@@ -1261,6 +1248,35 @@ const EditStudio = () => {
                     </Button>
                   )}
                 </div>
+                
+                {/* Mobile Edit History Navigation */}
+                {totalVersions > 1 && (
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    <Button
+                      onClick={handlePrevVersion}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 gap-1"
+                      disabled={isEditing || !canGoPrev}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Undo
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                    </span>
+                    <Button
+                      onClick={handleNextVersion}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 gap-1"
+                      disabled={isEditing || !canGoNext}
+                    >
+                      Redo
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
                 </div>
               </div>
             ) : (
@@ -1326,6 +1342,28 @@ const EditStudio = () => {
                         />
                       );
                     })}
+                    
+                    {/* Color Filter Overlays - Real-time preview */}
+                    {mainColor && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          backgroundColor: getColorValue(mainColor),
+                          mixBlendMode: 'overlay',
+                          opacity: 0.45,
+                        }}
+                      />
+                    )}
+                    {accentColor && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ 
+                          background: `radial-gradient(ellipse at 30% 20%, ${getColorValue(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorValue(accentColor)} 0%, transparent 40%)`,
+                          mixBlendMode: 'color-dodge',
+                          opacity: 0.3,
+                        }}
+                      />
+                    )}
                     
                     {/* Parental Advisory Logo Overlay */}
                     {parentalAdvisory !== "none" && (
@@ -1479,59 +1517,11 @@ const EditStudio = () => {
                 
                 {/* Right: Editing Options - Tighter layout */}
                 <div className="space-y-3">
-                  {/* Style & Mood - Combined row */}
-                  <div className="bg-card rounded-xl border border-border p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                      <Palette className="w-4 h-4 text-primary" />
-                      Style & Mood
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Visual Style</Label>
-                        <Select value={style} onValueChange={setStyle} disabled={isEditing}>
-                          <SelectTrigger className="bg-secondary h-9">
-                            <SelectValue placeholder="Select style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {visualStyles.map(s => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                                {s === currentState.style && s !== "None" && (
-                                  <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                                )}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Mood / Vibe</Label>
-                        <Select value={mood} onValueChange={setMood} disabled={isEditing}>
-                          <SelectTrigger className="bg-secondary h-9">
-                            <SelectValue placeholder="Select mood" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {moodOptions.map(m => (
-                              <SelectItem key={m} value={m}>
-                                {m}
-                                {m === currentState.mood && m !== "None" && (
-                                  <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                                )}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Colors - Compact */}
+                  {/* Colors / Color Filters - Compact */}
                   <div className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                       <Sun className="w-4 h-4 text-primary" />
-                      Colors
+                      Color Filters
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
@@ -1545,8 +1535,6 @@ const EditStudio = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  
                   {/* Visual selectors row: Textures + Lighting */}
                   <div className="grid grid-cols-2 gap-3">
                     {/* Textures - Visual squares (multi-select) */}
