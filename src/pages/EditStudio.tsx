@@ -1171,27 +1171,23 @@ const EditStudio = () => {
                         <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
-                            const isNone = (c as any).isNone;
                             return (
                               <button
                                 key={c.id}
-                                onClick={() => setMainColor(isNone ? "" : c.id)}
+                                onClick={() => setMainColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-8 rounded-md border transition-all flex items-center justify-center relative ${
-                                  isSelected || (isNone && !mainColor)
+                                className={`flex-1 h-10 rounded-lg border transition-all flex items-center justify-center relative ${
+                                  isSelected
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
-                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
+                                style={{ 
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
                                 title={c.name}
                               >
-                                {isNone && (
-                                  <div className="w-4 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
-                                )}
-                                {(isSelected || (isNone && !mainColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                {isSelected && (
+                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1204,27 +1200,23 @@ const EditStudio = () => {
                         <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
-                            const isNone = (c as any).isNone;
                             return (
                               <button
                                 key={c.id}
-                                onClick={() => setAccentColor(isNone ? "" : c.id)}
+                                onClick={() => setAccentColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-8 rounded-md border transition-all flex items-center justify-center relative ${
-                                  isSelected || (isNone && !accentColor)
+                                className={`flex-1 h-10 rounded-lg border transition-all flex items-center justify-center relative ${
+                                  isSelected
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
-                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
+                                style={{ 
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
                                 title={c.name}
                               >
-                                {isNone && (
-                                  <div className="w-4 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
-                                )}
-                                {(isSelected || (isNone && !accentColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                {isSelected && (
+                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1589,27 +1581,23 @@ const EditStudio = () => {
                         <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
-                            const isNone = (c as any).isNone;
                             return (
                               <button
                                 key={c.id}
-                                onClick={() => setMainColor(isNone ? "" : c.id)}
+                                onClick={() => setMainColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-7 rounded-md border transition-all flex items-center justify-center relative ${
-                                  isSelected || (isNone && !mainColor)
+                                className={`flex-1 h-9 rounded-lg border transition-all flex items-center justify-center relative ${
+                                  isSelected
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent hover:border-primary/50"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
-                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
+                                style={{ 
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
                                 title={c.name}
                               >
-                                {isNone && (
-                                  <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
-                                )}
-                                {(isSelected || (isNone && !mainColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                {isSelected && (
+                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
@@ -1622,27 +1610,23 @@ const EditStudio = () => {
                         <div className="flex gap-1">
                           {colorPalette.map(c => {
                             const isSelected = accentColor === c.id;
-                            const isNone = (c as any).isNone;
                             return (
                               <button
                                 key={c.id}
-                                onClick={() => setAccentColor(isNone ? "" : c.id)}
+                                onClick={() => setAccentColor(isSelected ? "" : c.id)}
                                 disabled={isEditing}
-                                className={`flex-1 h-7 rounded-md border transition-all flex items-center justify-center relative ${
-                                  isSelected || (isNone && !accentColor)
+                                className={`flex-1 h-9 rounded-lg border transition-all flex items-center justify-center relative ${
+                                  isSelected
                                     ? "border-primary ring-1 ring-primary/50"
                                     : "border-transparent hover:border-primary/50"
                                 }`}
-                                style={isNone ? { background: "var(--secondary)", borderColor: "var(--border)" } : { 
-                                  background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}dd 100%)`
+                                style={{ 
+                                  background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
                                 title={c.name}
                               >
-                                {isNone && (
-                                  <div className="w-3 h-0.5 bg-muted-foreground/40 rotate-45 absolute" />
-                                )}
-                                {(isSelected || (isNone && !accentColor)) && !isNone && (
-                                  <Check className={`w-3.5 h-3.5 drop-shadow-sm ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                {isSelected && (
+                                  <Check className={`w-4 h-4 drop-shadow-md ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
                                 )}
                               </button>
                             );
