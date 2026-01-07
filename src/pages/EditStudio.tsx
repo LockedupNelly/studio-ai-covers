@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -17,6 +17,7 @@ import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers
 import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CoverAnalysis {
   dominantColors: string[];
@@ -131,6 +132,11 @@ const EditStudio = () => {
   const { applyTextureOverlay, applyMultipleOverlays, isCompositing: isApplyingTexture } = useTextureCompositing();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  // Mobile edit section tabs
+  const [mobileEditTab, setMobileEditTab] = useState<"textures" | "lighting" | "colors" | "style" | "custom">("textures");
+  const mobileTabsRef = useRef<HTMLDivElement>(null);
   
   // Get passed state from navigation
   const passedState = location.state as EditState | null;
@@ -711,8 +717,8 @@ const EditStudio = () => {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
+            {/* Header - Compact on mobile */}
+            <div className="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -727,441 +733,819 @@ const EditStudio = () => {
                     artistName: currentState.artistName,
                   } 
                 })}
+                className="px-2 md:px-3"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                <span className="hidden sm:inline ml-1">Back</span>
               </Button>
-              <div className="flex-1">
-                <h1 className="font-display text-3xl tracking-wide">EDIT STUDIO</h1>
-                <p className="text-muted-foreground text-sm">Finalize your cover with custom edits</p>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-display text-xl md:text-3xl tracking-wide truncate">EDIT STUDIO</h1>
+                <p className="text-muted-foreground text-xs md:text-sm hidden sm:block">Finalize your cover with custom edits</p>
               </div>
-              <div className="flex items-center gap-2 text-sm bg-secondary px-3 py-1.5 rounded-lg">
-                <Coins className="w-4 h-4 text-primary" />
-                <span>{hasUnlimitedGenerations ? "Unlimited" : `${credits ?? 0} credits`}</span>
+              <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm bg-secondary px-2 md:px-3 py-1 md:py-1.5 rounded-lg shrink-0">
+                <Coins className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                <span>{hasUnlimitedGenerations ? "∞" : credits ?? 0}</span>
               </div>
             </div>
             
-            {/* Main Layout: Cover on left, Options on right */}
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Left: Cover Preview */}
-              <div className="space-y-4">
-                <div className="aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
-                    </div>
-                  )}
-                  
-                  {/* Lighting Preview Overlays */}
-                  {lightings.map(lightingId => {
-                    const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                    if (!lightingOption?.image) return null;
-                    const rotation = lightingRotations[lightingId] || 0;
-                    return (
-                      <div 
-                        key={lightingId}
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          backgroundImage: `url(${lightingOption.image})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                          opacity: lightingOption.opacity || 1,
-                          transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                        }}
+            {/* MOBILE LAYOUT */}
+            {isMobile ? (
+              <div className="flex flex-col pb-32">
+                {/* Sticky Cover Preview */}
+                <div className="sticky top-16 z-10 bg-background pt-2 pb-3">
+                  <div className="aspect-square max-w-[200px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
                       />
-                    );
-                  })}
-                  
-                  {/* Texture Preview Overlays */}
-                  {textures.map(textureId => {
-                    const textureOption = textureOptions.find(t => t.id === textureId);
-                    if (!textureOption?.image) return null;
-                    const baseOpacity = textureOption.opacity || 0.5;
-                    // 50% = 1x base, 0% = 0x, 100% = 2.5x for stronger max effect
-                    const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-                    const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-                    return (
-                      <div 
-                        key={textureId}
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          backgroundImage: `url(${textureOption.image})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                          opacity: finalOpacity,
-                        }}
-                      />
-                    );
-                  })}
-                  
-                  
-                  {/* Version indicator */}
-                  {editHistory.length > 1 && (
-                    <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
-                      <History className="w-3 h-3" />
-                      {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
-                    </div>
-                  )}
-                  
-                  {/* Progress overlay during editing */}
-                  {isEditing && (
-                    <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
-                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                      <div className="text-center">
-                        <p className="text-lg font-semibold mb-2">Applying edits...</p>
-                        <Progress value={progress} className="w-48" />
-                        <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    
+                    {/* Lighting Preview Overlays */}
+                    {lightings.map(lightingId => {
+                      const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                      if (!lightingOption?.image) return null;
+                      const rotation = lightingRotations[lightingId] || 0;
+                      return (
+                        <div 
+                          key={lightingId}
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ 
+                            backgroundImage: `url(${lightingOption.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
+                            opacity: lightingOption.opacity || 1,
+                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                          }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Texture Preview Overlays */}
+                    {textures.map(textureId => {
+                      const textureOption = textureOptions.find(t => t.id === textureId);
+                      if (!textureOption?.image) return null;
+                      const baseOpacity = textureOption.opacity || 0.5;
+                      const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+                      const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                      return (
+                        <div 
+                          key={textureId}
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ 
+                            backgroundImage: `url(${textureOption.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
+                            opacity: finalOpacity,
+                          }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Version indicator */}
+                    {editHistory.length > 1 && (
+                      <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                        <History className="w-2.5 h-2.5" />
+                        {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                      </div>
+                    )}
+                    
+                    {/* Progress overlay */}
+                    {(isEditing || isUpscaling) && (
+                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-medium">{isEditing ? "Applying..." : "Upscaling..."}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Horizontal Swipe Tab Navigation */}
+                <div 
+                  ref={mobileTabsRef}
+                  className="flex gap-2 overflow-x-auto scrollbar-hide py-3 px-1 -mx-1"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {[
+                    { id: "textures", label: "Textures", icon: Layers, count: textures.length },
+                    { id: "lighting", label: "Lighting", icon: Zap, count: lightings.length },
+                    { id: "colors", label: "Colors", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
+                    { id: "style", label: "Style & Mood", icon: Palette, count: 0 },
+                    { id: "custom", label: "Custom", icon: Sparkles, count: customInstructions.trim() ? 1 : 0 },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setMobileEditTab(tab.id as typeof mobileEditTab)}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shrink-0 ${
+                        mobileEditTab === tab.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-foreground/70"
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                      {tab.count > 0 && (
+                        <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${
+                          mobileEditTab === tab.id ? "bg-white/20" : "bg-primary/20 text-primary"
+                        }`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Full-Width Edit Sections */}
+                <div className="space-y-4 mt-2">
+                  {/* Textures Section */}
+                  {mobileEditTab === "textures" && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
+                        <Layers className="w-5 h-5 text-primary" />
+                        Textures
+                        {textures.length > 0 && <span className="text-primary">({textures.length} selected)</span>}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-3">
+                        {textureOptions.filter(t => t.id !== "none").map(t => {
+                          const isSelected = textures.includes(t.id);
+                          const currentIntensity = textureIntensities[t.id] ?? 50;
+                          return (
+                            <div key={t.id} className="flex flex-col gap-2">
+                              <button
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setTextures(textures.filter(id => id !== t.id));
+                                    const { [t.id]: _, ...rest } = textureIntensities;
+                                    setTextureIntensities(rest);
+                                  } else {
+                                    setTextures([...textures, t.id]);
+                                  }
+                                }}
+                                disabled={isEditing}
+                                className={`aspect-square rounded-xl border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                                  isSelected
+                                    ? "border-primary ring-2 ring-primary/50"
+                                    : "border-border"
+                                }`}
+                                style={{ 
+                                  background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
+                                }}
+                              >
+                                {isSelected && (
+                                  <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-1 rounded-t-lg w-full text-center">
+                                  {t.name}
+                                </span>
+                              </button>
+                              {isSelected && (
+                                <div className="flex items-center justify-between gap-2 bg-secondary rounded-lg px-2 py-1.5">
+                                  <button
+                                    onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(0, currentIntensity - 25) })}
+                                    className="w-7 h-7 rounded-full bg-background flex items-center justify-center"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="text-xs font-medium">{currentIntensity}%</span>
+                                  <button
+                                    onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
+                                    className="w-7 h-7 rounded-full bg-background flex items-center justify-center"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                   
-                  {/* Progress overlay during upscaling */}
-                  {isUpscaling && (
-                    <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
-                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                      <div className="text-center">
-                        <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
-                        <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
+                  {/* Lighting Section */}
+                  {mobileEditTab === "lighting" && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
+                        <Zap className="w-5 h-5 text-primary" />
+                        Lighting Effects
+                        {lightings.length > 0 && <span className="text-primary">({lightings.length} selected)</span>}
                       </div>
+                      
+                      <div className="grid grid-cols-3 gap-3">
+                        {lightingOptions.filter(l => l.id !== "none").map(l => {
+                          const isSelected = lightings.includes(l.id);
+                          const currentRotation = lightingRotations[l.id] || 0;
+                          return (
+                            <div key={l.id} className="flex flex-col gap-2">
+                              <button
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setLightings(lightings.filter(id => id !== l.id));
+                                    const { [l.id]: _, ...rest } = lightingRotations;
+                                    setLightingRotations(rest);
+                                  } else {
+                                    setLightings([...lightings, l.id]);
+                                  }
+                                }}
+                                disabled={isEditing}
+                                className={`aspect-square rounded-xl border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                                  isSelected
+                                    ? "border-primary ring-2 ring-primary/50"
+                                    : "border-border"
+                                }`}
+                                style={{ 
+                                  background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
+                                }}
+                              >
+                                {isSelected && (
+                                  <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-1 rounded-t-lg w-full text-center">
+                                  {l.name}
+                                </span>
+                              </button>
+                              {isSelected && l.image && (
+                                <button
+                                  onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-secondary text-sm"
+                                >
+                                  <RotateCw className="w-3.5 h-3.5" />
+                                  Rotate ({currentRotation}°)
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Colors Section */}
+                  {mobileEditTab === "colors" && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
+                        <Sun className="w-5 h-5 text-primary" />
+                        Color Overlay
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Main Color Overlay</Label>
+                          <p className="text-xs text-muted-foreground mb-2">Applies a color wash across the entire cover</p>
+                          <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Accent Color</Label>
+                          <p className="text-xs text-muted-foreground mb-2">Adds subtle accent lighting to highlights</p>
+                          <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Style & Mood Section */}
+                  {mobileEditTab === "style" && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
+                        <Palette className="w-5 h-5 text-primary" />
+                        Style & Mood
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Visual Style</Label>
+                          <Select value={style} onValueChange={setStyle} disabled={isEditing}>
+                            <SelectTrigger className="bg-secondary h-11 text-base">
+                              <SelectValue placeholder="Select style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {visualStyles.map(s => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                  {s === currentState.style && s !== "None" && (
+                                    <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                                  )}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Mood / Vibe</Label>
+                          <Select value={mood} onValueChange={setMood} disabled={isEditing}>
+                            <SelectTrigger className="bg-secondary h-11 text-base">
+                              <SelectValue placeholder="Select mood" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {moodOptions.map(m => (
+                                <SelectItem key={m} value={m}>
+                                  {m}
+                                  {m === currentState.mood && m !== "None" && (
+                                    <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                                  )}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Custom Instructions Section */}
+                  {mobileEditTab === "custom" && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase mb-4">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                        Custom Instructions
+                      </div>
+                      
+                      <Textarea
+                        placeholder="Describe any other edits you want... (e.g., 'Make background darker', 'Add more contrast', 'Change text color to gold')"
+                        value={customInstructions}
+                        onChange={(e) => setCustomInstructions(e.target.value)}
+                        disabled={isEditing}
+                        className="bg-secondary min-h-[120px] text-base"
+                      />
                     </div>
                   )}
                 </div>
                 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    onClick={handleApplyEdits}
-                    disabled={isEditing || isUpscaling || !hasChanges}
-                    className="flex-1 min-w-[200px] gap-2"
-                    size="lg"
-                  >
-                    {isEditing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Applying...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        Apply Edits (1 credit)
-                      </>
-                    )}
-                  </Button>
-                  <div className="flex gap-3">
+                {/* Fixed Bottom Action Bar */}
+                <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50">
+                  <div className="flex gap-2 max-w-7xl mx-auto">
+                    <Button
+                      onClick={handleApplyEdits}
+                      disabled={isEditing || isUpscaling || !hasChanges}
+                      className="flex-1 gap-2 h-12"
+                      size="lg"
+                    >
+                      {isEditing ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Applying...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Apply (1 credit)
+                        </>
+                      )}
+                    </Button>
                     <Button
                       onClick={handleDownload}
                       variant="outline"
                       size="lg"
-                      className="gap-2"
+                      className="h-12 px-4"
                       disabled={isEditing || isUpscaling}
                     >
-                      <Download className="w-4 h-4" />
-                      {upscaledImageUrl ? "Download HD" : "Download"}
+                      <Download className="w-5 h-5" />
                     </Button>
                     {!upscaledImageUrl && (
                       <Button
                         onClick={handleUpscale}
                         variant="outline"
                         size="lg"
-                        className="gap-2"
+                        className="h-12 px-4"
                         disabled={isEditing || isUpscaling}
                       >
-                        <Maximize2 className="w-4 h-4" />
-                        {isUpscaling ? "Upscaling..." : "Upscale to HD"}
+                        <Maximize2 className="w-5 h-5" />
                       </Button>
                     )}
                   </div>
                 </div>
-                
-                {/* Version Navigation */}
-                {totalVersions > 1 && (
-                  <div className="flex items-center justify-center gap-2">
-                    <Button
-                      onClick={handlePrevVersion}
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground gap-1"
-                      disabled={isEditing || !canGoPrev}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Prev
-                    </Button>
-                    <span className="text-sm text-muted-foreground px-3">
-                      {isAtOriginal ? "Original" : `Edit ${historyIndex}`} / {totalVersions - 1} {totalVersions - 1 === 1 ? "edit" : "edits"}
-                    </span>
-                    <Button
-                      onClick={handleNextVersion}
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground gap-1"
-                      disabled={isEditing || !canGoNext}
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-                
-                {/* Revert to original button */}
-                <div className="flex justify-center">
-                  <Button
-                    onClick={handleRevertToOriginal}
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground gap-1"
-                    disabled={isEditing || isAtOriginal}
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Revert to Original
-                  </Button>
-                </div>
               </div>
-              
-              {/* Right: Editing Options - Tighter layout */}
-              <div className="space-y-3">
-                {/* Style & Mood - Combined row */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                    <Palette className="w-4 h-4 text-primary" />
-                    Style & Mood
+            ) : (
+              /* DESKTOP LAYOUT */
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Left: Cover Preview */}
+                <div className="space-y-4">
+                  <div className="aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    
+                    {/* Lighting Preview Overlays */}
+                    {lightings.map(lightingId => {
+                      const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                      if (!lightingOption?.image) return null;
+                      const rotation = lightingRotations[lightingId] || 0;
+                      return (
+                        <div 
+                          key={lightingId}
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ 
+                            backgroundImage: `url(${lightingOption.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
+                            opacity: lightingOption.opacity || 1,
+                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                          }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Texture Preview Overlays */}
+                    {textures.map(textureId => {
+                      const textureOption = textureOptions.find(t => t.id === textureId);
+                      if (!textureOption?.image) return null;
+                      const baseOpacity = textureOption.opacity || 0.5;
+                      const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+                      const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                      return (
+                        <div 
+                          key={textureId}
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ 
+                            backgroundImage: `url(${textureOption.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
+                            opacity: finalOpacity,
+                          }}
+                        />
+                      );
+                    })}
+                    
+                    
+                    {/* Version indicator */}
+                    {editHistory.length > 1 && (
+                      <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
+                        <History className="w-3 h-3" />
+                        {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                      </div>
+                    )}
+                    
+                    {/* Progress overlay during editing */}
+                    {isEditing && (
+                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="text-center">
+                          <p className="text-lg font-semibold mb-2">Applying edits...</p>
+                          <Progress value={progress} className="w-48" />
+                          <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Progress overlay during upscaling */}
+                    {isUpscaling && (
+                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="text-center">
+                          <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
+                          <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Visual Style</Label>
-                      <Select value={style} onValueChange={setStyle} disabled={isEditing}>
-                        <SelectTrigger className="bg-secondary h-9">
-                          <SelectValue placeholder="Select style" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {visualStyles.map(s => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                              {s === currentState.style && s !== "None" && (
-                                <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={handleApplyEdits}
+                      disabled={isEditing || isUpscaling || !hasChanges}
+                      className="flex-1 min-w-[200px] gap-2"
+                      size="lg"
+                    >
+                      {isEditing ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Applying...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Apply Edits (1 credit)
+                        </>
+                      )}
+                    </Button>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={handleDownload}
+                        variant="outline"
+                        size="lg"
+                        className="gap-2"
+                        disabled={isEditing || isUpscaling}
+                      >
+                        <Download className="w-4 h-4" />
+                        {upscaledImageUrl ? "Download HD" : "Download"}
+                      </Button>
+                      {!upscaledImageUrl && (
+                        <Button
+                          onClick={handleUpscale}
+                          variant="outline"
+                          size="lg"
+                          className="gap-2"
+                          disabled={isEditing || isUpscaling}
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                          {isUpscaling ? "Upscaling..." : "Upscale to HD"}
+                        </Button>
+                      )}
                     </div>
-                    
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Mood / Vibe</Label>
-                      <Select value={mood} onValueChange={setMood} disabled={isEditing}>
-                        <SelectTrigger className="bg-secondary h-9">
-                          <SelectValue placeholder="Select mood" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {moodOptions.map(m => (
-                            <SelectItem key={m} value={m}>
-                              {m}
-                              {m === currentState.mood && m !== "None" && (
-                                <span className="ml-2 text-muted-foreground text-xs">• current</span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  </div>
+                  
+                  {/* Version Navigation */}
+                  {totalVersions > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        onClick={handlePrevVersion}
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground gap-1"
+                        disabled={isEditing || !canGoPrev}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Prev
+                      </Button>
+                      <span className="text-sm text-muted-foreground px-3">
+                        {isAtOriginal ? "Original" : `Edit ${historyIndex}`} / {totalVersions - 1} {totalVersions - 1 === 1 ? "edit" : "edits"}
+                      </span>
+                      <Button
+                        onClick={handleNextVersion}
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground gap-1"
+                        disabled={isEditing || !canGoNext}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
                     </div>
+                  )}
+                  
+                  {/* Revert to original button */}
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleRevertToOriginal}
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground gap-1"
+                      disabled={isEditing || isAtOriginal}
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Revert to Original
+                    </Button>
                   </div>
                 </div>
                 
-                {/* Colors - Compact */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                    <Sun className="w-4 h-4 text-primary" />
-                    Colors
+                {/* Right: Editing Options - Tighter layout */}
+                <div className="space-y-3">
+                  {/* Style & Mood - Combined row */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                      <Palette className="w-4 h-4 text-primary" />
+                      Style & Mood
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Visual Style</Label>
+                        <Select value={style} onValueChange={setStyle} disabled={isEditing}>
+                          <SelectTrigger className="bg-secondary h-9">
+                            <SelectValue placeholder="Select style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {visualStyles.map(s => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                                {s === currentState.style && s !== "None" && (
+                                  <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                                )}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Mood / Vibe</Label>
+                        <Select value={mood} onValueChange={setMood} disabled={isEditing}>
+                          <SelectTrigger className="bg-secondary h-9">
+                            <SelectValue placeholder="Select mood" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {moodOptions.map(m => (
+                              <SelectItem key={m} value={m}>
+                                {m}
+                                {m === currentState.mood && m !== "None" && (
+                                  <span className="ml-2 text-muted-foreground text-xs">• current</span>
+                                )}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                   
+                  {/* Colors - Compact */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                      <Sun className="w-4 h-4 text-primary" />
+                      Colors
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
+                        <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
+                        <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  
+                  {/* Visual selectors row: Textures + Lighting */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                      <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                      <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
-                    </div>
-                  </div>
-                </div>
-                
-                
-                {/* Visual selectors row: Textures + Lighting */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Textures - Visual squares (multi-select) */}
-                  <div className="bg-card rounded-xl border border-border p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                      <Layers className="w-4 h-4 text-primary" />
-                      Textures
-                      {textures.length > 0 && <span className="text-primary">({textures.length})</span>}
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {textureOptions.filter(t => t.id !== "none").map(t => {
-                        const isSelected = textures.includes(t.id);
-                        const currentIntensity = textureIntensities[t.id] ?? 50;
-                        return (
-                          <div key={t.id} className="flex flex-col gap-1">
-                            <button
-                              onClick={() => {
-                                if (isSelected) {
-                                  setTextures(textures.filter(id => id !== t.id));
-                                  // Also remove intensity when deselecting
-                                  const { [t.id]: _, ...rest } = textureIntensities;
-                                  setTextureIntensities(rest);
-                                } else {
-                                  setTextures([...textures, t.id]);
-                                }
-                              }}
-                              disabled={isEditing}
-                              title={t.name}
-                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                                isSelected
-                                  ? "border-primary ring-1 ring-primary"
-                                  : "border-border hover:border-primary/50"
-                              }`}
-                              style={{ 
-                                background: t.image 
-                                  ? `url(${t.image}) center/cover` 
-                                  : t.gradient || "var(--secondary)" 
-                              }}
-                            >
-                              {isSelected && (
-                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                </div>
-                              )}
-                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                                {t.name}
-                              </span>
-                            </button>
-                            {/* Intensity controls shown only when selected */}
-                            {isSelected && (
-                              <div className="flex items-center justify-between gap-1 py-0.5">
-                                <button
-                                  onClick={() => {
-                                    const newIntensity = Math.max(0, currentIntensity - 25);
-                                    setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
-                                  }}
-                                  disabled={isEditing || currentIntensity <= 0}
-                                  className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </button>
-                                <span className="text-[9px] text-muted-foreground">{currentIntensity}%</span>
-                                <button
-                                  onClick={() => {
-                                    const newIntensity = Math.min(100, currentIntensity + 25);
-                                    setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
-                                  }}
-                                  disabled={isEditing || currentIntensity >= 100}
-                                  className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  
-                  {/* Lighting - Visual squares (multi-select) */}
-                  <div className="bg-card rounded-xl border border-border p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                      <Zap className="w-4 h-4 text-primary" />
-                      Lighting
-                      {lightings.length > 0 && <span className="text-primary">({lightings.length})</span>}
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {lightingOptions.filter(l => l.id !== "none").map(l => {
-                        const isSelected = lightings.includes(l.id);
-                        const currentRotation = lightingRotations[l.id] || 0;
-                        return (
-                          <div key={l.id} className="flex flex-col gap-1">
-                            <button
-                              onClick={() => {
-                                if (isSelected) {
-                                  setLightings(lightings.filter(id => id !== l.id));
-                                  // Also remove rotation when deselecting
-                                  const { [l.id]: _, ...rest } = lightingRotations;
-                                  setLightingRotations(rest);
-                                } else {
-                                  setLightings([...lightings, l.id]);
-                                }
-                              }}
-                              disabled={isEditing}
-                              title={l.name}
-                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                                isSelected
-                                  ? "border-primary ring-1 ring-primary"
-                                  : "border-border hover:border-primary/50"
-                              }`}
-                              style={{ 
-                                background: l.image 
-                                  ? `url(${l.image}) center/cover` 
-                                  : l.gradient || "var(--secondary)" 
-                              }}
-                            >
-                              {isSelected && (
-                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                </div>
-                              )}
-                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                                {l.name}
-                              </span>
-                            </button>
-                            {/* Simple rotate button shown only when selected and has image */}
-                            {isSelected && l.image && (
+                    {/* Textures - Visual squares (multi-select) */}
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                        <Layers className="w-4 h-4 text-primary" />
+                        Textures
+                        {textures.length > 0 && <span className="text-primary">({textures.length})</span>}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {textureOptions.filter(t => t.id !== "none").map(t => {
+                          const isSelected = textures.includes(t.id);
+                          const currentIntensity = textureIntensities[t.id] ?? 50;
+                          return (
+                            <div key={t.id} className="flex flex-col gap-1">
                               <button
                                 onClick={() => {
-                                  const nextRotation = (currentRotation + 90) % 360;
-                                  setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
+                                  if (isSelected) {
+                                    setTextures(textures.filter(id => id !== t.id));
+                                    const { [t.id]: _, ...rest } = textureIntensities;
+                                    setTextureIntensities(rest);
+                                  } else {
+                                    setTextures([...textures, t.id]);
+                                  }
                                 }}
                                 disabled={isEditing}
-                                className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
+                                title={t.name}
+                                className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                  isSelected
+                                    ? "border-primary ring-1 ring-primary"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                                style={{ 
+                                  background: t.image 
+                                    ? `url(${t.image}) center/cover` 
+                                    : t.gradient || "var(--secondary)" 
+                                }}
                               >
-                                <RotateCw className="w-3 h-3" />
-                                Rotate
+                                {isSelected && (
+                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                  {t.name}
+                                </span>
                               </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {isSelected && (
+                                <div className="flex items-center justify-between gap-1 py-0.5">
+                                  <button
+                                    onClick={() => {
+                                      const newIntensity = Math.max(0, currentIntensity - 25);
+                                      setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
+                                    }}
+                                    disabled={isEditing || currentIntensity <= 0}
+                                    className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="text-[9px] text-muted-foreground">{currentIntensity}%</span>
+                                  <button
+                                    onClick={() => {
+                                      const newIntensity = Math.min(100, currentIntensity + 25);
+                                      setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
+                                    }}
+                                    disabled={isEditing || currentIntensity >= 100}
+                                    className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Lighting - Visual squares (multi-select) */}
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
+                        <Zap className="w-4 h-4 text-primary" />
+                        Lighting
+                        {lightings.length > 0 && <span className="text-primary">({lightings.length})</span>}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {lightingOptions.filter(l => l.id !== "none").map(l => {
+                          const isSelected = lightings.includes(l.id);
+                          const currentRotation = lightingRotations[l.id] || 0;
+                          return (
+                            <div key={l.id} className="flex flex-col gap-1">
+                              <button
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setLightings(lightings.filter(id => id !== l.id));
+                                    const { [l.id]: _, ...rest } = lightingRotations;
+                                    setLightingRotations(rest);
+                                  } else {
+                                    setLightings([...lightings, l.id]);
+                                  }
+                                }}
+                                disabled={isEditing}
+                                title={l.name}
+                                className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                  isSelected
+                                    ? "border-primary ring-1 ring-primary"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                                style={{ 
+                                  background: l.image 
+                                    ? `url(${l.image}) center/cover` 
+                                    : l.gradient || "var(--secondary)" 
+                                }}
+                              >
+                                {isSelected && (
+                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                  {l.name}
+                                </span>
+                              </button>
+                              {isSelected && l.image && (
+                                <button
+                                  onClick={() => {
+                                    const nextRotation = (currentRotation + 90) % 360;
+                                    setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
+                                  }}
+                                  disabled={isEditing}
+                                  className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
+                                >
+                                  <RotateCw className="w-3 h-3" />
+                                  Rotate
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                
-                {/* Custom Instructions - Compact */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    Custom Instructions
-                  </div>
                   
-                  <Textarea
-                    placeholder="Describe any other edits... (e.g., 'Make background darker', 'Add more contrast')"
-                    value={customInstructions}
-                    onChange={(e) => setCustomInstructions(e.target.value)}
-                    disabled={isEditing}
-                    className="bg-secondary min-h-[60px] text-sm"
-                  />
+                  
+                  {/* Custom Instructions - Compact */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Custom Instructions
+                    </div>
+                    
+                    <Textarea
+                      placeholder="Describe any other edits... (e.g., 'Make background darker', 'Add more contrast')"
+                      value={customInstructions}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      disabled={isEditing}
+                      className="bg-secondary min-h-[60px] text-sm"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
