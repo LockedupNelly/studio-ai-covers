@@ -224,6 +224,15 @@ export const Header = () => {
               <Home className="w-5 h-5" />
               Home
             </button>
+            {user && (
+              <button 
+                onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
+              >
+                <User className="w-5 h-5" />
+                My Profile
+              </button>
+            )}
             <a 
               href="https://coverartmarket.com/cde"
               target="_blank"
