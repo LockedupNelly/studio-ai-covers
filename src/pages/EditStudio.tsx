@@ -122,7 +122,7 @@ interface TextureOption {
 
 const textureOptions: TextureOption[] = [
   { id: "none", name: "None", image: null },
-  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.25 },
+  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
   { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "lighter", opacity: 0.3 },
   { id: "white-grunge", name: "White Grunge", image: "/textures/white-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
   { id: "paper-grit", name: "Paper Grit", image: "/textures/paper-grit.jpg", blendMode: "lighter", opacity: 0.4 },
@@ -143,8 +143,9 @@ interface LightingOption {
 const lightingOptions: LightingOption[] = [
   { id: "none", name: "None", image: null },
   { id: "golden-hour", name: "Golden Hour", image: null, blendMode: "screen", opacity: 0.4, gradient: "linear-gradient(135deg, rgba(255,180,100,0.6) 0%, rgba(255,100,50,0.3) 100%)" },
-  { id: "blue-heaven", name: "BlueHeaven", image: "/lighting/blue-heaven.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "prism-leak", name: "Prism Leak", image: null, blendMode: "screen", opacity: 0.35, gradient: "linear-gradient(135deg, rgba(255,0,0,0.3) 0%, rgba(255,255,0,0.3) 25%, rgba(0,255,0,0.3) 50%, rgba(0,255,255,0.3) 75%, rgba(255,0,255,0.3) 100%)" },
+  { id: "heavenly-light", name: "Heavenly Light", image: "/lighting/heavenly-light.jpg", blendMode: "screen", opacity: 1.0 },
+  { id: "blue-light", name: "Blue Light", image: "/lighting/blue-heaven.jpg", blendMode: "screen", opacity: 1.0 },
+  { id: "prism-leak", name: "Prism Leak", image: "/lighting/prism-leak.jpg", blendMode: "screen", opacity: 1.0 },
   { id: "side-flash", name: "SideFlash", image: "/lighting/side-flash.jpg", blendMode: "screen", opacity: 1.0 },
   { id: "fractal-red", name: "Fractal Red", image: "/lighting/fractal-red.jpg", blendMode: "screen", opacity: 1.0 },
 ];
