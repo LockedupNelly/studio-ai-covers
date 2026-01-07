@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine } from "lucide-react";
 import { IntensityBar } from "@/components/IntensityIcon";
-import { ColorPickerPopover, getColorValue } from "@/components/ColorPickerPopover";
+import { colorPalette, getColorValue, getColorHex } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
 import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -843,21 +843,21 @@ const EditStudio = () => {
                     })}
                     
                     {/* Color Filter Overlays - Real-time preview */}
-                    {mainColor && (
+                    {mainColor && getColorHex(mainColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          backgroundColor: getColorValue(mainColor),
+                          backgroundColor: getColorHex(mainColor),
                           mixBlendMode: 'overlay',
                           opacity: 0.45,
                         }}
                       />
                     )}
-                    {accentColor && (
+                    {accentColor && getColorHex(accentColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          background: `radial-gradient(ellipse at 30% 20%, ${getColorValue(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorValue(accentColor)} 0%, transparent 40%)`,
+                          background: `radial-gradient(ellipse at 30% 20%, ${getColorHex(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorHex(accentColor)} 0%, transparent 40%)`,
                           mixBlendMode: 'color-dodge',
                           opacity: 0.3,
                         }}
@@ -1162,16 +1162,76 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Colors Section - Side by side */}
+                  {/* Colors Section - Visual grid like textures */}
                   {mobileEditTab === "colors" && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
+                      {/* Main Color */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-medium">Main</Label>
-                        <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
+                        <Label className="text-xs font-medium text-muted-foreground">MAIN COLOR</Label>
+                        <div 
+                          className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          {colorPalette.map(c => {
+                            const isSelected = mainColor === c.id;
+                            const isNone = (c as any).isNone;
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => setMainColor(isNone ? "" : c.id)}
+                                disabled={isEditing}
+                                className={`shrink-0 w-10 h-10 rounded-lg border-2 transition-all flex items-center justify-center ${
+                                  isSelected || (isNone && !mainColor)
+                                    ? "border-primary ring-1 ring-primary/50"
+                                    : "border-border"
+                                } ${c.id === "white" ? "border-border" : ""}`}
+                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                title={c.name}
+                              >
+                                {isNone && (
+                                  <div className="w-5 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                )}
+                                {(isSelected || (isNone && !mainColor)) && !isNone && (
+                                  <Check className={`w-4 h-4 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
+                      {/* Accent Color */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-medium">Accent</Label>
-                        <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
+                        <Label className="text-xs font-medium text-muted-foreground">ACCENT COLOR</Label>
+                        <div 
+                          className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          {colorPalette.map(c => {
+                            const isSelected = accentColor === c.id;
+                            const isNone = (c as any).isNone;
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => setAccentColor(isNone ? "" : c.id)}
+                                disabled={isEditing}
+                                className={`shrink-0 w-10 h-10 rounded-lg border-2 transition-all flex items-center justify-center ${
+                                  isSelected || (isNone && !accentColor)
+                                    ? "border-primary ring-1 ring-primary/50"
+                                    : "border-border"
+                                } ${c.id === "white" ? "border-border" : ""}`}
+                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                title={c.name}
+                              >
+                                {isNone && (
+                                  <div className="w-5 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                )}
+                                {(isSelected || (isNone && !accentColor)) && !isNone && (
+                                  <Check className={`w-4 h-4 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1344,21 +1404,21 @@ const EditStudio = () => {
                     })}
                     
                     {/* Color Filter Overlays - Real-time preview */}
-                    {mainColor && (
+                    {mainColor && getColorHex(mainColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          backgroundColor: getColorValue(mainColor),
+                          backgroundColor: getColorHex(mainColor),
                           mixBlendMode: 'overlay',
                           opacity: 0.45,
                         }}
                       />
                     )}
-                    {accentColor && (
+                    {accentColor && getColorHex(accentColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
-                          background: `radial-gradient(ellipse at 30% 20%, ${getColorValue(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorValue(accentColor)} 0%, transparent 40%)`,
+                          background: `radial-gradient(ellipse at 30% 20%, ${getColorHex(accentColor)} 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, ${getColorHex(accentColor)} 0%, transparent 40%)`,
                           mixBlendMode: 'color-dodge',
                           opacity: 0.3,
                         }}
@@ -1517,21 +1577,75 @@ const EditStudio = () => {
                 
                 {/* Right: Editing Options - Tighter layout */}
                 <div className="space-y-3">
-                  {/* Colors / Color Filters - Compact */}
+                  {/* Colors / Color Filters - Visual grid like other sections */}
                   <div className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
                       <Sun className="w-4 h-4 text-primary" />
                       Color Filters
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
+                      {/* Main Color */}
                       <div className="space-y-1.5">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
-                        <ColorPickerPopover value={mainColor} onChange={setMainColor} label="Main" />
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {colorPalette.map(c => {
+                            const isSelected = mainColor === c.id;
+                            const isNone = (c as any).isNone;
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => setMainColor(isNone ? "" : c.id)}
+                                disabled={isEditing}
+                                className={`aspect-square rounded-lg border-2 transition-all flex items-center justify-center relative ${
+                                  isSelected || (isNone && !mainColor)
+                                    ? "border-primary ring-1 ring-primary/50"
+                                    : "border-border hover:border-primary/50"
+                                } ${c.id === "white" ? "border-border" : ""}`}
+                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                title={c.name}
+                              >
+                                {isNone && (
+                                  <div className="w-4 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                )}
+                                {(isSelected || (isNone && !mainColor)) && !isNone && (
+                                  <Check className={`w-3.5 h-3.5 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
+                      {/* Accent Color */}
                       <div className="space-y-1.5">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Accent Color</Label>
-                        <ColorPickerPopover value={accentColor} onChange={setAccentColor} label="Accent" />
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {colorPalette.map(c => {
+                            const isSelected = accentColor === c.id;
+                            const isNone = (c as any).isNone;
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => setAccentColor(isNone ? "" : c.id)}
+                                disabled={isEditing}
+                                className={`aspect-square rounded-lg border-2 transition-all flex items-center justify-center relative ${
+                                  isSelected || (isNone && !accentColor)
+                                    ? "border-primary ring-1 ring-primary/50"
+                                    : "border-border hover:border-primary/50"
+                                } ${c.id === "white" ? "border-border" : ""}`}
+                                style={isNone ? { background: "var(--secondary)" } : { backgroundColor: c.color }}
+                                title={c.name}
+                              >
+                                {isNone && (
+                                  <div className="w-4 h-0.5 bg-muted-foreground/50 rotate-45 absolute" />
+                                )}
+                                {(isSelected || (isNone && !accentColor)) && !isNone && (
+                                  <Check className={`w-3.5 h-3.5 ${["white", "yellow"].includes(c.id) ? "text-gray-800" : "text-white"}`} />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
