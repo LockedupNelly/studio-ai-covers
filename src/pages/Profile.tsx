@@ -375,59 +375,65 @@ const Profile = () => {
                         alt={gen.prompt}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => navigate("/edit-studio", { 
-                            state: { 
-                              imageUrl: gen.image_url, 
-                              genre: gen.genre, 
-                              style: gen.style, 
-                              mood: gen.mood,
-                              prompt: gen.prompt,
-                              songTitle: gen.song_title,
-                              artistName: gen.artist_name,
-                              coverAnalysis: gen.cover_analysis,
-                            } 
-                          })}
-                          title="Edit in Studio"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => navigate("/", { 
-                            state: { 
-                              returnedImage: gen.image_url,
-                              genre: gen.genre,
-                              style: gen.style,
-                              mood: gen.mood,
-                              songTitle: gen.song_title,
-                              artistName: gen.artist_name,
-                            } 
-                          })}
-                          title="Rerun in Design Studio"
-                        >
-                          <RotateCw className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownload(gen.image_url, gen.prompt)}
-                          title="Download"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(gen.id)}
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => navigate("/edit-studio", { 
+                              state: { 
+                                imageUrl: gen.image_url, 
+                                genre: gen.genre, 
+                                style: gen.style, 
+                                mood: gen.mood,
+                                prompt: gen.prompt,
+                                songTitle: gen.song_title,
+                                artistName: gen.artist_name,
+                                coverAnalysis: gen.cover_analysis,
+                              } 
+                            })}
+                            title="Edit in Studio"
+                            className="h-8 px-3"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => navigate("/", { 
+                              state: { 
+                                returnedImage: gen.image_url,
+                                genre: gen.genre,
+                                style: gen.style,
+                                mood: gen.mood,
+                                songTitle: gen.song_title,
+                                artistName: gen.artist_name,
+                              } 
+                            })}
+                            title="Rerun in Design Studio"
+                            className="h-8 px-3"
+                          >
+                            <RotateCw className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownload(gen.image_url, gen.prompt)}
+                            title="Download"
+                            className="h-8 px-3"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(gen.id)}
+                            title="Delete"
+                            className="h-8 px-3"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     <div className="p-3 md:p-4">

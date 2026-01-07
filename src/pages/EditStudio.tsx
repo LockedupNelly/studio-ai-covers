@@ -714,11 +714,11 @@ const EditStudio = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="pt-24 pb-16">
+      <main className={isMobile ? "pt-16 pb-4" : "pt-24 pb-16"}>
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
             {/* Header - Compact on mobile */}
-            <div className="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
+            <div className={`flex items-center gap-2 ${isMobile ? "py-2" : "gap-4 mb-6"}`}>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -733,17 +733,13 @@ const EditStudio = () => {
                     artistName: currentState.artistName,
                   } 
                 })}
-                className="px-2 md:px-3"
+                className="px-2 md:px-3 h-8"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1">Back</span>
               </Button>
-              <div className="flex-1 min-w-0">
-                <h1 className="font-display text-xl md:text-3xl tracking-wide truncate">EDIT STUDIO</h1>
-                <p className="text-muted-foreground text-xs md:text-sm hidden sm:block">Finalize your cover with custom edits</p>
-              </div>
-              <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm bg-secondary px-2 md:px-3 py-1 md:py-1.5 rounded-lg shrink-0">
-                <Coins className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+              <h1 className="font-display text-lg md:text-3xl tracking-wide flex-1">EDIT STUDIO</h1>
+              <div className="flex items-center gap-1 text-xs bg-secondary px-2 py-1 rounded-lg">
+                <Coins className="w-3.5 h-3.5 text-primary" />
                 <span>{hasUnlimitedGenerations ? "∞" : credits ?? 0}</span>
               </div>
             </div>
@@ -752,8 +748,8 @@ const EditStudio = () => {
             {isMobile ? (
               <div className="flex flex-col">
                 {/* Cover Preview - Larger */}
-                <div className="bg-background pb-2">
-                  <div className="aspect-square w-[75vw] max-w-[320px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
+                <div className="bg-background pb-1">
+                  <div className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -830,7 +826,7 @@ const EditStudio = () => {
                 {/* Compact Horizontal Swipe Tab Navigation */}
                 <div 
                   ref={mobileTabsRef}
-                  className="flex gap-1.5 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1"
+                  className="flex gap-1 overflow-x-auto scrollbar-hide py-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {[
@@ -843,16 +839,16 @@ const EditStudio = () => {
                     <button
                       key={tab.id}
                       onClick={() => setMobileEditTab(tab.id as typeof mobileEditTab)}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-full whitespace-nowrap text-xs font-medium transition-all shrink-0 ${
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full whitespace-nowrap text-[11px] font-medium transition-all shrink-0 ${
                         mobileEditTab === tab.id
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-foreground/70"
                       }`}
                     >
-                      <tab.icon className="w-3.5 h-3.5" />
+                      <tab.icon className="w-3 h-3" />
                       {tab.label}
                       {tab.count > 0 && (
-                        <span className={`px-1 py-0.5 rounded-full text-[9px] ${
+                        <span className={`px-1 rounded-full text-[9px] ${
                           mobileEditTab === tab.id ? "bg-white/20" : "bg-primary/20 text-primary"
                         }`}>
                           {tab.count}
@@ -863,15 +859,18 @@ const EditStudio = () => {
                 </div>
                 
                 {/* Edit Sections - Compact */}
-                <div className="mt-2">
-                  {/* Textures Section */}
+                <div className="mt-1">
+                  {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div 
+                      className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
                       {textureOptions.filter(t => t.id !== "none").map(t => {
                         const isSelected = textures.includes(t.id);
                         const currentIntensity = textureIntensities[t.id] ?? 50;
                         return (
-                          <div key={t.id} className="flex flex-col gap-1">
+                          <div key={t.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
                             <button
                               onClick={() => {
                                 if (isSelected) {
@@ -897,24 +896,24 @@ const EditStudio = () => {
                                   <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                              <span className="text-[10px] font-medium text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 w-full text-center">
+                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate">
                                 {t.name}
                               </span>
                             </button>
                             {isSelected && (
-                              <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1 py-0.5">
+                              <div className="flex items-center justify-between gap-0.5 bg-secondary rounded px-1 py-0.5">
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(0, currentIntensity - 25) })}
-                                  className="w-5 h-5 rounded bg-background flex items-center justify-center"
+                                  className="w-4 h-4 rounded bg-background flex items-center justify-center"
                                 >
-                                  <Minus className="w-2.5 h-2.5" />
+                                  <Minus className="w-2 h-2" />
                                 </button>
-                                <span className="text-[9px] font-medium">{currentIntensity}%</span>
+                                <span className="text-[8px] font-medium">{currentIntensity}%</span>
                                 <button
                                   onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
-                                  className="w-5 h-5 rounded bg-background flex items-center justify-center"
+                                  className="w-4 h-4 rounded bg-background flex items-center justify-center"
                                 >
-                                  <Plus className="w-2.5 h-2.5" />
+                                  <Plus className="w-2 h-2" />
                                 </button>
                               </div>
                             )}
@@ -924,14 +923,17 @@ const EditStudio = () => {
                     </div>
                   )}
                   
-                  {/* Lighting Section */}
+                  {/* Lighting Section - Horizontal Scroll */}
                   {mobileEditTab === "lighting" && (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div 
+                      className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
                       {lightingOptions.filter(l => l.id !== "none").map(l => {
                         const isSelected = lightings.includes(l.id);
                         const currentRotation = lightingRotations[l.id] || 0;
                         return (
-                          <div key={l.id} className="flex flex-col gap-1">
+                          <div key={l.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
                             <button
                               onClick={() => {
                                 if (isSelected) {
@@ -957,16 +959,16 @@ const EditStudio = () => {
                                   <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                              <span className="text-[10px] font-medium text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 w-full text-center">
+                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate">
                                 {l.name}
                               </span>
                             </button>
                             {isSelected && l.image && (
                               <button
                                 onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
-                                className="flex items-center justify-center gap-1 py-1 rounded bg-secondary text-[10px]"
+                                className="flex items-center justify-center gap-0.5 py-0.5 rounded bg-secondary text-[9px]"
                               >
-                                <RotateCw className="w-2.5 h-2.5" />
+                                <RotateCw className="w-2 h-2" />
                                 {currentRotation}°
                               </button>
                             )}
