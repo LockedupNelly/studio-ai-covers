@@ -623,32 +623,29 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <SelectTrigger className={`h-10 flex-1 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border" side="bottom" align="start" sideOffset={4}>
+                          <SelectContent className="bg-card border-border" position="popper" side="bottom" align="start" sideOffset={4}>
                             {visualStyles.map((vs, idx) => (
                               <div key={vs.id} className="relative">
                                 {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
                                 <SelectItem value={vs.id} className="py-2 pr-8">
                                   {vs.name}
                                 </SelectItem>
-                                {/* Info icon positioned absolutely on the right */}
+                                {/* Info icon positioned absolutely on the right - uses alert for mobile */}
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
-                                  <TooltipProvider delayDuration={0}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button 
-                                          type="button" 
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="p-0.5"
-                                        >
-                                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
-                                        <p className="text-sm font-medium mb-1">{vs.name}</p>
-                                        <p className="text-xs text-muted-foreground">{vs.description}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <button 
+                                    type="button" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      toast.info(vs.name, {
+                                        description: vs.description,
+                                        duration: 3000,
+                                      });
+                                    }}
+                                    className="p-0.5"
+                                  >
+                                    <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                                  </button>
                                 </div>
                               </div>
                             ))}
@@ -658,22 +655,18 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         {style && style !== "None" && (() => {
                           const selectedStyle = visualStyles.find(vs => vs.id === style);
                           return selectedStyle ? (
-                            <TooltipProvider delayDuration={0}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button 
-                                    type="button"
-                                    className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                                  >
-                                    <Info className="w-4 h-4 text-muted-foreground" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
-                                  <p className="text-sm font-medium mb-1">{selectedStyle.name}</p>
-                                  <p className="text-xs text-muted-foreground">{selectedStyle.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                toast.info(selectedStyle.name, {
+                                  description: selectedStyle.description,
+                                  duration: 3000,
+                                });
+                              }}
+                              className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                            >
+                              <Info className="w-4 h-4 text-muted-foreground" />
+                            </button>
                           ) : null;
                         })()}
                       </div>
