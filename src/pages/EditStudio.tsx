@@ -1052,7 +1052,7 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-3 py-4 mt-2">
+                          <div className="flex items-center justify-center gap-3 py-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
@@ -1152,7 +1152,7 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-3 py-4 mt-2">
+                          <div className="flex items-center justify-center gap-3 py-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
@@ -1332,11 +1332,11 @@ const EditStudio = () => {
                   {/* Custom Instructions Section */}
                   {mobileEditTab === "custom" && (
                     <Textarea
-                      placeholder="Describe changes to objects, camera angle, or composition... (e.g., 'Change background to a city skyline', 'Add more dramatic lighting from the left', 'Zoom in on the subject')"
+                      placeholder="e.g., 'Change background', 'Zoom in on subject', 'Add dramatic lighting'"
                       value={customInstructions}
                       onChange={(e) => setCustomInstructions(e.target.value)}
                       disabled={isEditing}
-                      className="bg-secondary min-h-[100px] text-base"
+                      className="bg-secondary min-h-[72px] max-h-[72px] text-base resize-none"
                     />
                   )}
                 </div>
