@@ -990,7 +990,7 @@ const EditStudio = () => {
                   {mobileEditTab === "textures" && (
                     <div className="flex flex-col"  style={{ height: textures.length > 0 ? 'auto' : 'auto' }}>
                       <div 
-                        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                        className="flex gap-2 overflow-x-auto scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       >
                         {textureOptions.filter(t => t.id !== "none").map(t => {
@@ -1052,16 +1052,16 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 py-3">
+                          <div className="flex items-center justify-center gap-2 py-4">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
-                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-11 h-11 flex items-center justify-center rounded-lg bg-secondary border border-border"
                             >
                               <RotateCw className="w-4 h-4" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-10 border border-border">
+                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-11 border border-border">
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
@@ -1090,7 +1090,7 @@ const EditStudio = () => {
                   {mobileEditTab === "lighting" && (
                     <div className="flex flex-col">
                       <div 
-                        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                        className="flex gap-2 overflow-x-auto scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       >
                         {lightingOptions.filter(l => l.id !== "none").map(l => {
@@ -1152,16 +1152,16 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 py-3">
+                          <div className="flex items-center justify-center gap-2 py-4">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
-                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-11 h-11 flex items-center justify-center rounded-lg bg-secondary border border-border"
                             >
                               <RotateCw className="w-4 h-4" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-10 border border-border">
+                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-11 border border-border">
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
