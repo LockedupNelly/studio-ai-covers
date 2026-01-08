@@ -625,24 +625,31 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           </SelectTrigger>
                           <SelectContent className="bg-card border-border" side="bottom" align="start">
                             {visualStyles.map((vs, idx) => (
-                              <div key={vs.id}>
+                              <div key={vs.id} className="relative">
                                 {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
-                                <SelectItem value={vs.id} className="py-2">
-                                  <div className="flex items-center justify-between w-full gap-2">
-                                    <span>{vs.name}</span>
-                                    <TooltipProvider delayDuration={0}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                          <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
-                                          <p className="text-sm font-medium mb-1">{vs.name}</p>
-                                          <p className="text-xs text-muted-foreground">{vs.description}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
+                                <SelectItem value={vs.id} className="py-2 pr-8">
+                                  {vs.name}
                                 </SelectItem>
+                                {/* Info icon positioned absolutely on the right */}
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+                                  <TooltipProvider delayDuration={0}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          type="button" 
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="p-0.5"
+                                        >
+                                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
+                                        <p className="text-sm font-medium mb-1">{vs.name}</p>
+                                        <p className="text-xs text-muted-foreground">{vs.description}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                               </div>
                             ))}
                           </SelectContent>
