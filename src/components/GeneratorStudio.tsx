@@ -620,9 +620,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </label>
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Select" />
+                          <div className="flex items-center gap-2 w-full">
+                            <SelectValue placeholder="Select" />
+                            {style && style !== "" && (
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 ml-auto mr-1" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
+                                    <p className="text-sm font-medium mb-1">{visualStyles.find(vs => vs.id === style)?.name}</p>
+                                    <p className="text-xs text-muted-foreground">{visualStyles.find(vs => vs.id === style)?.description}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
                         </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
+                        <SelectContent className="bg-card border-border" side="bottom" align="start">
                           {visualStyles.map((vs, idx) => (
                             <div key={vs.id}>
                               {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
@@ -634,7 +649,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                       <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
                                         <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                                       </TooltipTrigger>
-                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg">
+                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
                                         <p className="text-sm font-medium mb-1">{vs.name}</p>
                                         <p className="text-xs text-muted-foreground">{vs.description}</p>
                                       </TooltipContent>
@@ -657,47 +672,49 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe + Main Color + Accent Color row - all in one row */}
-                  <div className="grid grid-cols-[1.2fr_0.9fr_0.9fr] gap-2 items-end">
-                    <div className="space-y-1">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                        Mood / Vibe
-                      </label>
-                      <Select value={mood} onValueChange={setMood}>
-                        <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {moodOptions.map((m) => (
-                            <SelectItem key={m} value={m}>{m}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                        Main Color
-                      </label>
-                      <ColorPickerPopover
-                        label="Color"
-                        value={mainColor}
-                        onChange={setMainColor}
-                        themeMode={themeMode}
-                        hideLabel
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                        Accent Color
-                      </label>
-                      <ColorPickerPopover
-                        label="Color"
-                        value={accentColor}
-                        onChange={setAccentColor}
-                        themeMode={themeMode}
-                        hideLabel
-                      />
-                    </div>
+                  {/* Mood / Vibe + Main Color + Accent Color row - labels on same row, controls below */}
+                  <div className="grid grid-cols-[1.2fr_0.9fr_0.9fr] gap-2">
+                    {/* Labels row */}
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                      Mood / Vibe
+                    </label>
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} hidden md:block`}>
+                      Main Color
+                    </label>
+                    <label className={`text-[10px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} md:hidden`}>
+                      Main Color
+                    </label>
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} hidden md:block`}>
+                      Accent Color
+                    </label>
+                    <label className={`text-[10px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} md:hidden`}>
+                      Accent
+                    </label>
+                    {/* Controls row */}
+                    <Select value={mood} onValueChange={setMood}>
+                      <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {moodOptions.map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ColorPickerPopover
+                      label="Color"
+                      value={mainColor}
+                      onChange={setMainColor}
+                      themeMode={themeMode}
+                      hideLabel
+                    />
+                    <ColorPickerPopover
+                      label="Color"
+                      value={accentColor}
+                      onChange={setAccentColor}
+                      themeMode={themeMode}
+                      hideLabel
+                    />
                   </div>
 
                   {/* Text Style Selector */}
@@ -904,20 +921,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("text")}
                     disabled={isGenerating}
-                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "text"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
                     <Type className="w-3.5 h-3.5" />
-                    TEXT PROMPT
+                    TEXT
                   </button>
                   <div className={`h-6 w-px ${themeMode === "light" ? "bg-gray-300" : "bg-border"}`} />
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("audio")}
                     disabled={isGenerating}
-                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "audio"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
@@ -930,7 +947,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("image")}
                     disabled={isGenerating}
-                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "image"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"

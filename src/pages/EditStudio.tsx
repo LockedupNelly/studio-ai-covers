@@ -195,6 +195,7 @@ const EditStudio = () => {
   const [accentColor, setAccentColor] = useState("");
   const [textures, setTextures] = useState<string[]>([]);
   const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
+  const [textureRotations, setTextureRotations] = useState<Record<string, number>>({}); // Track rotation per texture ID
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
   const [lightingIntensities, setLightingIntensities] = useState<Record<string, number>>({}); // Track intensity per lighting ID (25-100)
@@ -869,6 +870,7 @@ const EditStudio = () => {
                       const baseOpacity = textureOption.opacity || 0.5;
                       const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
                       const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                      const rotation = textureRotations[textureId] || 0;
                       return (
                         <div 
                           key={textureId}
@@ -879,6 +881,7 @@ const EditStudio = () => {
                             backgroundPosition: 'center',
                             mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
                             opacity: finalOpacity,
+                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
                           }}
                         />
                       );
@@ -1000,6 +1003,8 @@ const EditStudio = () => {
                                   setTextures(textures.filter(id => id !== t.id));
                                   const { [t.id]: _, ...rest } = textureIntensities;
                                   setTextureIntensities(rest);
+                                  const { [t.id]: __, ...restRotations } = textureRotations;
+                                  setTextureRotations(restRotations);
                                 } else {
                                   setTextures([...textures, t.id]);
                                   setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
@@ -1028,38 +1033,45 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Compact Controls for Active Texture */}
-                      {textures.length > 0 && (
-                        <div className="flex items-center justify-center gap-3">
-                          {/* Intensity controls for all selected textures */}
-                          {textures.map(textureId => {
-                            const currentIntensity = textureIntensities[textureId] ?? 50;
-                            const isMin = currentIntensity <= 25;
-                            const isMax = currentIntensity >= 100;
-                            return (
-                              <div key={textureId} className="flex items-center gap-2 bg-secondary rounded-lg px-2 py-1.5">
-                                <button
-                                  onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.max(25, currentIntensity - 25) })}
-                                  disabled={isMin}
-                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
-                                >
-                                  <Minus className="w-4 h-4" />
-                                </button>
-                                <div className="w-10 text-center">
-                                  <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
-                                </div>
-                                <button
-                                  onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.min(100, currentIntensity + 25) })}
-                                  disabled={isMax}
-                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
+                      {/* Single Control Row for Active Texture - always shows for the most recently selected */}
+                      {textures.length > 0 && (() => {
+                        const activeTextureId = textures[textures.length - 1];
+                        const currentIntensity = textureIntensities[activeTextureId] ?? 50;
+                        const currentRotation = textureRotations[activeTextureId] || 0;
+                        const isMin = currentIntensity <= 25;
+                        const isMax = currentIntensity >= 100;
+                        return (
+                          <div className="flex items-center justify-center gap-3">
+                            {/* Rotate button */}
+                            <button
+                              onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary"
+                            >
+                              <RotateCw className="w-5 h-5" />
+                            </button>
+                            {/* Intensity controls */}
+                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-3 py-2">
+                              <button
+                                onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
+                                disabled={isMin}
+                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                              >
+                                <Minus className="w-5 h-5" />
+                              </button>
+                              <div className="w-12 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                              <button
+                                onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.min(100, currentIntensity + 25) })}
+                                disabled={isMax}
+                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                              >
+                                <Plus className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   
@@ -1110,49 +1122,45 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Compact Controls for Active Lighting */}
-                      {lightings.length > 0 && (
-                        <div className="flex items-center justify-center gap-3">
-                          {/* Controls for all selected lightings */}
-                          {lightings.map(lightingId => {
-                            const currentRotation = lightingRotations[lightingId] || 0;
-                            const currentIntensity = lightingIntensities[lightingId] ?? 100;
-                            const isMin = currentIntensity <= 25;
-                            const isMax = currentIntensity >= 100;
-                            return (
-                              <div key={lightingId} className="flex items-center gap-2">
-                                {/* Rotate button */}
-                                <button
-                                  onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: (currentRotation + 90) % 360 })}
-                                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-secondary"
-                                >
-                                  <RotateCw className="w-5 h-5" />
-                                </button>
-                                {/* Intensity controls */}
-                                <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 py-1.5">
-                                  <button
-                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.max(25, currentIntensity - 25) })}
-                                    disabled={isMin}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
-                                  >
-                                    <Minus className="w-4 h-4" />
-                                  </button>
-                                  <div className="w-10 text-center">
-                                    <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
-                                  </div>
-                                  <button
-                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.min(100, currentIntensity + 25) })}
-                                    disabled={isMax}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </div>
+                      {/* Single Control Row for Active Lighting - always shows for the most recently selected */}
+                      {lightings.length > 0 && (() => {
+                        const activeLightingId = lightings[lightings.length - 1];
+                        const currentRotation = lightingRotations[activeLightingId] || 0;
+                        const currentIntensity = lightingIntensities[activeLightingId] ?? 100;
+                        const isMin = currentIntensity <= 25;
+                        const isMax = currentIntensity >= 100;
+                        return (
+                          <div className="flex items-center justify-center gap-3">
+                            {/* Rotate button */}
+                            <button
+                              onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary"
+                            >
+                              <RotateCw className="w-5 h-5" />
+                            </button>
+                            {/* Intensity controls */}
+                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-3 py-2">
+                              <button
+                                onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
+                                disabled={isMin}
+                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                              >
+                                <Minus className="w-5 h-5" />
+                              </button>
+                              <div className="w-12 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                              <button
+                                onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.min(100, currentIntensity + 25) })}
+                                disabled={isMax}
+                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                              >
+                                <Plus className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   
@@ -1455,6 +1463,7 @@ const EditStudio = () => {
                       const baseOpacity = textureOption.opacity || 0.5;
                       const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
                       const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                      const rotation = textureRotations[textureId] || 0;
                       return (
                         <div 
                           key={textureId}
@@ -1465,6 +1474,7 @@ const EditStudio = () => {
                             backgroundPosition: 'center',
                             mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
                             opacity: finalOpacity,
+                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
                           }}
                         />
                       );
