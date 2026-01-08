@@ -195,11 +195,11 @@ const ProAccess = () => {
                     </div>
                   </div>
 
-                  <ul className="hidden md:block space-y-3 mb-6">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-foreground/80">
-                        <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        {feature}
+                  <ul className="space-y-2 mb-4 md:mb-6">
+                    {plan.features.slice(0, 3).map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-xs md:text-sm text-foreground/80">
+                        <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>

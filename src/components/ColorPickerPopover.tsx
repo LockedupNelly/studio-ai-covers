@@ -41,7 +41,7 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={`w-full h-10 justify-start gap-2 ${
+          className={`h-10 justify-start gap-2 min-w-[100px] max-w-[140px] ${
             themeMode === "light" 
               ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50" 
               : "bg-secondary border-border text-foreground hover:bg-secondary/80"
@@ -49,12 +49,12 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
         >
           {hasSelection ? (
             <div
-              className="w-5 h-5 rounded-full border border-border flex-shrink-0"
+              className={`w-6 h-4 rounded border border-border flex-shrink-0 ${selectedColor.id === "black" ? "ring-1 ring-white/40" : ""}`}
               style={{ backgroundColor: selectedColor.color }}
             />
           ) : (
             <div
-              className="w-5 h-5 rounded-full border border-border flex-shrink-0 bg-gradient-to-br from-red-500 via-yellow-500 to-blue-500"
+              className="w-6 h-4 rounded border border-border flex-shrink-0 bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500"
             />
           )}
           {!hideLabel && (
@@ -72,7 +72,7 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
               onClick={() => handleSelect(color.id)}
               className={`relative aspect-square rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
-              } ${color.id === "white" ? "border border-border" : ""}`}
+              } ${color.id === "white" ? "border border-border" : ""} ${color.id === "black" ? "ring-1 ring-white/40" : ""}`}
               style={{ backgroundColor: color.color }}
               title={color.name}
             >
