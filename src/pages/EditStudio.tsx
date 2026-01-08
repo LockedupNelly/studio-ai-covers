@@ -988,7 +988,7 @@ const EditStudio = () => {
                 <div className="mt-2">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div 
                         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -1000,11 +1000,20 @@ const EditStudio = () => {
                               key={t.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  setTextures(textures.filter(id => id !== t.id));
-                                  const { [t.id]: _, ...rest } = textureIntensities;
-                                  setTextureIntensities(rest);
-                                  const { [t.id]: __, ...restRotations } = textureRotations;
-                                  setTextureRotations(restRotations);
+                                  // First click on selected: just show controls (move to end)
+                                  // Second click: remove
+                                  const isLastItem = textures[textures.length - 1] === t.id;
+                                  if (isLastItem) {
+                                    // Already active, so remove it
+                                    setTextures(textures.filter(id => id !== t.id));
+                                    const { [t.id]: _, ...rest } = textureIntensities;
+                                    setTextureIntensities(rest);
+                                    const { [t.id]: __, ...restRotations } = textureRotations;
+                                    setTextureRotations(restRotations);
+                                  } else {
+                                    // Move to end to make it the active one
+                                    setTextures([...textures.filter(id => id !== t.id), t.id]);
+                                  }
                                 } else {
                                   setTextures([...textures, t.id]);
                                   setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
@@ -1033,7 +1042,7 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Single Control Row for Active Texture - always shows for the most recently selected */}
+                      {/* Single Control Row for Active Texture - centered between thumbnails and divider */}
                       {textures.length > 0 && (() => {
                         const activeTextureId = textures[textures.length - 1];
                         const currentIntensity = textureIntensities[activeTextureId] ?? 50;
@@ -1041,32 +1050,32 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-3">
+                          <div className="flex items-center justify-center gap-4 py-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
-                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary"
+                              className="w-14 h-14 flex items-center justify-center rounded-xl bg-secondary"
                             >
-                              <RotateCw className="w-5 h-5" />
+                              <RotateCw className="w-6 h-6" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2 bg-secondary rounded-xl px-4 py-3">
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
-                                <Minus className="w-5 h-5" />
+                                <Minus className="w-6 h-6" />
                               </button>
-                              <div className="w-12 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
+                              <div className="w-14 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-8 h-6 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-6 h-6" />
                               </button>
                             </div>
                           </div>
@@ -1077,7 +1086,7 @@ const EditStudio = () => {
                   
                   {/* Lighting Section - Horizontal Scroll */}
                   {mobileEditTab === "lighting" && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div 
                         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -1089,11 +1098,20 @@ const EditStudio = () => {
                               key={l.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  setLightings(lightings.filter(id => id !== l.id));
-                                  const { [l.id]: _, ...rest } = lightingRotations;
-                                  setLightingRotations(rest);
-                                  const { [l.id]: __, ...restIntensity } = lightingIntensities;
-                                  setLightingIntensities(restIntensity);
+                                  // First click on selected: just show controls (move to end)
+                                  // Second click: remove
+                                  const isLastItem = lightings[lightings.length - 1] === l.id;
+                                  if (isLastItem) {
+                                    // Already active, so remove it
+                                    setLightings(lightings.filter(id => id !== l.id));
+                                    const { [l.id]: _, ...rest } = lightingRotations;
+                                    setLightingRotations(rest);
+                                    const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                    setLightingIntensities(restIntensity);
+                                  } else {
+                                    // Move to end to make it the active one
+                                    setLightings([...lightings.filter(id => id !== l.id), l.id]);
+                                  }
                                 } else {
                                   setLightings([...lightings, l.id]);
                                   setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
@@ -1122,7 +1140,7 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Single Control Row for Active Lighting - always shows for the most recently selected */}
+                      {/* Single Control Row for Active Lighting - centered between thumbnails and divider */}
                       {lightings.length > 0 && (() => {
                         const activeLightingId = lightings[lightings.length - 1];
                         const currentRotation = lightingRotations[activeLightingId] || 0;
@@ -1130,32 +1148,32 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-3">
+                          <div className="flex items-center justify-center gap-4 py-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
-                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary"
+                              className="w-14 h-14 flex items-center justify-center rounded-xl bg-secondary"
                             >
-                              <RotateCw className="w-5 h-5" />
+                              <RotateCw className="w-6 h-6" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2 bg-secondary rounded-xl px-4 py-3">
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
-                                <Minus className="w-5 h-5" />
+                                <Minus className="w-6 h-6" />
                               </button>
-                              <div className="w-12 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
+                              <div className="w-14 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-8 h-6 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-10 h-10 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-6 h-6" />
                               </button>
                             </div>
                           </div>
