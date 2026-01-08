@@ -1056,26 +1056,26 @@ const EditStudio = () => {
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
-                              className="w-11 h-11 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary border border-border"
                             >
-                              <RotateCw className="w-4 h-4" />
+                              <RotateCw className="w-5 h-5" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-11 border border-border">
+                            <div className="flex items-center gap-1.5 bg-secondary rounded-lg px-2.5 h-12 border border-border">
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
                               <div className="w-10 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
+                                <IntensityBar intensity={currentIntensity} className="w-5 h-5 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -1156,26 +1156,26 @@ const EditStudio = () => {
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
-                              className="w-11 h-11 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary border border-border"
                             >
-                              <RotateCw className="w-4 h-4" />
+                              <RotateCw className="w-5 h-5" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-11 border border-border">
+                            <div className="flex items-center gap-1.5 bg-secondary rounded-lg px-2.5 h-12 border border-border">
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
                               <div className="w-10 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
+                                <IntensityBar intensity={currentIntensity} className="w-5 h-5 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
