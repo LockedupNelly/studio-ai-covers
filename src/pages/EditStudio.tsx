@@ -988,7 +988,7 @@ const EditStudio = () => {
                 <div className="mt-2">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
-                    <div className="space-y-4">
+                    <div className="flex flex-col"  style={{ height: textures.length > 0 ? 'auto' : 'auto' }}>
                       <div 
                         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -1044,7 +1044,7 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Single Control Row for Active Texture - tightly centered */}
+                      {/* Single Control Row for Active Texture - centered in remaining space */}
                       {textures.length > 0 && (() => {
                         const activeTextureId = textures[textures.length - 1];
                         const currentIntensity = textureIntensities[activeTextureId] ?? 50;
@@ -1052,7 +1052,7 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 mt-2">
+                          <div className="flex items-center justify-center gap-2 py-3">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
@@ -1088,7 +1088,7 @@ const EditStudio = () => {
                   
                   {/* Lighting Section - Horizontal Scroll */}
                   {mobileEditTab === "lighting" && (
-                    <div className="space-y-4">
+                    <div className="flex flex-col">
                       <div 
                         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -1144,7 +1144,7 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Single Control Row for Active Lighting - tightly centered */}
+                      {/* Single Control Row for Active Lighting - centered in remaining space */}
                       {lightings.length > 0 && (() => {
                         const activeLightingId = lightings[lightings.length - 1];
                         const currentRotation = lightingRotations[activeLightingId] || 0;
@@ -1152,7 +1152,7 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 mt-2">
+                          <div className="flex items-center justify-center gap-2 py-3">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
