@@ -5,7 +5,7 @@ export const Footer = () => {
     <footer className="border-t border-border py-8 mt-16">
       <div className="container mx-auto px-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
+          <div className="text-center sm:text-left">
             <span className="font-display text-lg tracking-wide">
               COVER ART <span className="text-primary">MAKER</span>
             </span>

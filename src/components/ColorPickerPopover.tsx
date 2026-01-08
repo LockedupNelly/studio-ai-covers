@@ -32,7 +32,12 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
   const hasSelection = !!value && !!selectedColor;
   
   const handleSelect = (colorId: string) => {
-    onChange(colorId);
+    // If clicking the same color, deselect it
+    if (colorId === value) {
+      onChange("");
+    } else {
+      onChange(colorId);
+    }
     setOpen(false);
   };
 
