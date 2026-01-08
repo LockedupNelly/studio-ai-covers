@@ -985,18 +985,16 @@ const EditStudio = () => {
                 <div className="mt-2">
                   {/* Textures Section - Horizontal Scroll */}
                   {mobileEditTab === "textures" && (
-                    <div 
-                      className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      {textureOptions.filter(t => t.id !== "none").map(t => {
-                        const isSelected = textures.includes(t.id);
-                        const currentIntensity = textureIntensities[t.id] ?? 50;
-                        const isMin = currentIntensity <= 25;
-                        const isMax = currentIntensity >= 100;
-                        return (
-                          <div key={t.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
+                    <div className="space-y-3">
+                      <div 
+                        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {textureOptions.filter(t => t.id !== "none").map(t => {
+                          const isSelected = textures.includes(t.id);
+                          return (
                             <button
+                              key={t.id}
                               onClick={() => {
                                 if (isSelected) {
                                   setTextures(textures.filter(id => id !== t.id));
@@ -1008,12 +1006,13 @@ const EditStudio = () => {
                                 }
                               }}
                               disabled={isEditing}
-                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
                                   ? "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
                               style={{ 
+                                width: 'calc((100% - 1rem) / 3.5)',
                                 background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
                               }}
                             >
@@ -1026,46 +1025,61 @@ const EditStudio = () => {
                                 {t.name}
                               </span>
                             </button>
-                            {isSelected && (
-                              <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1.5 py-1.5">
-                                <button
-                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.max(25, currentIntensity - 25) })}
-                                  disabled={isMin}
-                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
-                                >
-                                  <Minus className="w-5 h-5" />
-                                </button>
-                                <IntensityBar intensity={currentIntensity} className="w-5 h-4" />
-                                <button
-                                  onClick={() => setTextureIntensities({ ...textureIntensities, [t.id]: Math.min(100, currentIntensity + 25) })}
-                                  disabled={isMax}
-                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                >
-                                  <Plus className="w-5 h-5" />
-                                </button>
+                          );
+                        })}
+                      </div>
+                      {/* Universal Editor Block for Selected Textures */}
+                      {textures.length > 0 && (
+                        <div className="bg-card rounded-xl border border-border p-3 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">Adjust Intensity</p>
+                          {textures.map(textureId => {
+                            const texture = textureOptions.find(t => t.id === textureId);
+                            const currentIntensity = textureIntensities[textureId] ?? 50;
+                            const isMin = currentIntensity <= 25;
+                            const isMax = currentIntensity >= 100;
+                            if (!texture) return null;
+                            return (
+                              <div key={textureId} className="flex items-center justify-between gap-3">
+                                <span className="text-sm font-medium truncate flex-1">{texture.name}</span>
+                                <div className="flex items-center gap-2 bg-secondary rounded-lg px-2 py-1.5">
+                                  <button
+                                    onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.max(25, currentIntensity - 25) })}
+                                    disabled={isMin}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </button>
+                                  <div className="w-10 text-center">
+                                    <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
+                                  </div>
+                                  <button
+                                    onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.min(100, currentIntensity + 25) })}
+                                    disabled={isMax}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                   
                   {/* Lighting Section - Horizontal Scroll */}
                   {mobileEditTab === "lighting" && (
-                    <div 
-                      className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      {lightingOptions.filter(l => l.id !== "none").map(l => {
-                        const isSelected = lightings.includes(l.id);
-                        const currentRotation = lightingRotations[l.id] || 0;
-                        const currentIntensity = lightingIntensities[l.id] ?? 100;
-                        const isMin = currentIntensity <= 25;
-                        const isMax = currentIntensity >= 100;
-                        return (
-                          <div key={l.id} className="flex flex-col gap-1 shrink-0" style={{ width: 'calc((100% - 1rem) / 3.5)' }}>
+                    <div className="space-y-3">
+                      <div 
+                        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {lightingOptions.filter(l => l.id !== "none").map(l => {
+                          const isSelected = lightings.includes(l.id);
+                          return (
                             <button
+                              key={l.id}
                               onClick={() => {
                                 if (isSelected) {
                                   setLightings(lightings.filter(id => id !== l.id));
@@ -1079,12 +1093,13 @@ const EditStudio = () => {
                                 }
                               }}
                               disabled={isEditing}
-                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative ${
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
                                   ? "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
                               style={{ 
+                                width: 'calc((100% - 1rem) / 3.5)',
                                 background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
                               }}
                             >
@@ -1097,36 +1112,53 @@ const EditStudio = () => {
                                 {l.name}
                               </span>
                             </button>
-                            {isSelected && l.image && (
-                              <div className="flex flex-col gap-1">
-                                <button
-                                  onClick={() => setLightingRotations({ ...lightingRotations, [l.id]: (currentRotation + 90) % 360 })}
-                                  className="h-8 flex items-center justify-center rounded bg-secondary"
-                                >
-                                  <RotateCw className="w-5 h-5" />
-                                </button>
-                                <div className="flex items-center justify-between gap-1 bg-secondary rounded px-1.5 py-1.5">
+                          );
+                        })}
+                      </div>
+                      {/* Universal Editor Block for Selected Lightings */}
+                      {lightings.length > 0 && (
+                        <div className="bg-card rounded-xl border border-border p-3 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">Adjust Lighting</p>
+                          {lightings.map(lightingId => {
+                            const lighting = lightingOptions.find(l => l.id === lightingId);
+                            const currentRotation = lightingRotations[lightingId] || 0;
+                            const currentIntensity = lightingIntensities[lightingId] ?? 100;
+                            const isMin = currentIntensity <= 25;
+                            const isMax = currentIntensity >= 100;
+                            if (!lighting) return null;
+                            return (
+                              <div key={lightingId} className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium truncate flex-1">{lighting.name}</span>
+                                <div className="flex items-center gap-1.5">
                                   <button
-                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.max(25, currentIntensity - 25) })}
-                                    disabled={isMin}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                    onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: (currentRotation + 90) % 360 })}
+                                    className="w-8 h-8 flex items-center justify-center rounded bg-secondary"
                                   >
-                                    <Minus className="w-5 h-5" />
+                                    <RotateCw className="w-4 h-4" />
                                   </button>
-                                  <IntensityBar intensity={currentIntensity} className="w-5 h-4" />
-                                  <button
-                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
-                                    disabled={isMax}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                  >
-                                    <Plus className="w-5 h-5" />
-                                  </button>
+                                  <div className="flex items-center gap-1 bg-secondary rounded-lg px-1.5 py-1">
+                                    <button
+                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.max(25, currentIntensity - 25) })}
+                                      disabled={isMin}
+                                      className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                    >
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <IntensityBar intensity={currentIntensity} className="w-4 h-3.5" />
+                                    <button
+                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.min(100, currentIntensity + 25) })}
+                                      disabled={isMax}
+                                      className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                   
