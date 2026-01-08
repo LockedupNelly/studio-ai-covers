@@ -1028,38 +1028,33 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Universal Editor Block for Selected Textures */}
+                      {/* Compact Controls for Active Texture */}
                       {textures.length > 0 && (
-                        <div className="bg-card rounded-xl border border-border p-3 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground">Adjust Intensity</p>
+                        <div className="flex items-center justify-center gap-3">
+                          {/* Intensity controls for all selected textures */}
                           {textures.map(textureId => {
-                            const texture = textureOptions.find(t => t.id === textureId);
                             const currentIntensity = textureIntensities[textureId] ?? 50;
                             const isMin = currentIntensity <= 25;
                             const isMax = currentIntensity >= 100;
-                            if (!texture) return null;
                             return (
-                              <div key={textureId} className="flex items-center justify-between gap-3">
-                                <span className="text-sm font-medium truncate flex-1">{texture.name}</span>
-                                <div className="flex items-center gap-2 bg-secondary rounded-lg px-2 py-1.5">
-                                  <button
-                                    onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.max(25, currentIntensity - 25) })}
-                                    disabled={isMin}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
-                                  >
-                                    <Minus className="w-4 h-4" />
-                                  </button>
-                                  <div className="w-10 text-center">
-                                    <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
-                                  </div>
-                                  <button
-                                    onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.min(100, currentIntensity + 25) })}
-                                    disabled={isMax}
-                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
+                              <div key={textureId} className="flex items-center gap-2 bg-secondary rounded-lg px-2 py-1.5">
+                                <button
+                                  onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.max(25, currentIntensity - 25) })}
+                                  disabled={isMin}
+                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </button>
+                                <div className="w-10 text-center">
+                                  <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
                                 </div>
+                                <button
+                                  onClick={() => setTextureIntensities({ ...textureIntensities, [textureId]: Math.min(100, currentIntensity + 25) })}
+                                  disabled={isMax}
+                                  className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
                               </div>
                             );
                           })}
@@ -1115,44 +1110,43 @@ const EditStudio = () => {
                           );
                         })}
                       </div>
-                      {/* Universal Editor Block for Selected Lightings */}
+                      {/* Compact Controls for Active Lighting */}
                       {lightings.length > 0 && (
-                        <div className="bg-card rounded-xl border border-border p-3 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground">Adjust Lighting</p>
+                        <div className="flex items-center justify-center gap-3">
+                          {/* Controls for all selected lightings */}
                           {lightings.map(lightingId => {
-                            const lighting = lightingOptions.find(l => l.id === lightingId);
                             const currentRotation = lightingRotations[lightingId] || 0;
                             const currentIntensity = lightingIntensities[lightingId] ?? 100;
                             const isMin = currentIntensity <= 25;
                             const isMax = currentIntensity >= 100;
-                            if (!lighting) return null;
                             return (
-                              <div key={lightingId} className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium truncate flex-1">{lighting.name}</span>
-                                <div className="flex items-center gap-1.5">
+                              <div key={lightingId} className="flex items-center gap-2">
+                                {/* Rotate button */}
+                                <button
+                                  onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: (currentRotation + 90) % 360 })}
+                                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-secondary"
+                                >
+                                  <RotateCw className="w-5 h-5" />
+                                </button>
+                                {/* Intensity controls */}
+                                <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 py-1.5">
                                   <button
-                                    onClick={() => setLightingRotations({ ...lightingRotations, [lightingId]: (currentRotation + 90) % 360 })}
-                                    className="w-8 h-8 flex items-center justify-center rounded bg-secondary"
+                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.max(25, currentIntensity - 25) })}
+                                    disabled={isMin}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                                   >
-                                    <RotateCw className="w-4 h-4" />
+                                    <Minus className="w-4 h-4" />
                                   </button>
-                                  <div className="flex items-center gap-1 bg-secondary rounded-lg px-1.5 py-1">
-                                    <button
-                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.max(25, currentIntensity - 25) })}
-                                      disabled={isMin}
-                                      className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
-                                    >
-                                      <Minus className="w-3.5 h-3.5" />
-                                    </button>
-                                    <IntensityBar intensity={currentIntensity} className="w-4 h-3.5" />
-                                    <button
-                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.min(100, currentIntensity + 25) })}
-                                      disabled={isMax}
-                                      className={`w-7 h-7 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                    </button>
+                                  <div className="w-10 text-center">
+                                    <IntensityBar intensity={currentIntensity} className="w-5 h-4 mx-auto" />
                                   </div>
+                                  <button
+                                    onClick={() => setLightingIntensities({ ...lightingIntensities, [lightingId]: Math.min(100, currentIntensity + 25) })}
+                                    disabled={isMax}
+                                    className={`w-8 h-8 rounded bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -1322,62 +1316,65 @@ const EditStudio = () => {
                   <p className="text-[10px] text-muted-foreground text-center mb-2">
                     Edits must be applied first to appear in download
                   </p>
-                  <div className="grid grid-cols-2 gap-2 pb-4 min-h-[140px]">
-                    <Button
-                      onClick={handleApplyEdits}
-                      disabled={isEditing || isUpscaling || !hasChanges}
-                      className="gap-2 h-11"
-                    >
-                      {isEditing ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Applying...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          Apply (1 Credit)
-                        </>
-                      )}
-                    </Button>
+                  {/* Apply Edit button - full width row */}
+                  <Button
+                    onClick={handleApplyEdits}
+                    disabled={isEditing || isUpscaling || !hasChanges}
+                    className="w-full gap-2 h-11 mb-2"
+                  >
+                    {isEditing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Apply Edit (1 Credit)
+                      </>
+                    )}
+                  </Button>
+                  {/* Three buttons row - smaller */}
+                  <div className="grid grid-cols-3 gap-2 pb-4">
                     <Button
                       onClick={handleDownload}
                       variant="outline"
-                      className="h-11 gap-2"
+                      className="h-9 gap-1 text-xs"
                       disabled={isEditing || isUpscaling}
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3.5 h-3.5" />
                       Download
                     </Button>
-                  <Button
-                    onClick={() => setIsFullscreen(true)}
-                    variant="outline"
-                    className="h-11 gap-2"
-                    disabled={isEditing || isUpscaling || !imageUrl}
-                  >
-                    <Expand className="w-4 h-4" />
-                    Fullscreen
-                  </Button>
-                  {!upscaledImageUrl ? (
                     <Button
-                      onClick={handleUpscale}
+                      onClick={() => setIsFullscreen(true)}
                       variant="outline"
-                      className="h-11 gap-2"
-                      disabled={isEditing || isUpscaling}
+                      className="h-9 gap-1 text-xs"
+                      disabled={isEditing || isUpscaling || !imageUrl}
                     >
-                      <ArrowUpFromLine className="w-4 h-4" />
-                      {isUpscaling ? "Upscaling..." : "Upscale HD"}
+                      <Expand className="w-3.5 h-3.5" />
+                      Fullscreen
                     </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="h-11 gap-2"
-                      disabled
-                    >
-                      <Check className="w-4 h-4" />
-                      Upscaled
-                    </Button>
-                  )}
+                    {!upscaledImageUrl ? (
+                      <Button
+                        onClick={handleUpscale}
+                        variant="outline"
+                        className="h-9 gap-1 text-xs"
+                        disabled={isEditing || isUpscaling}
+                      >
+                        <ArrowUpFromLine className="w-3.5 h-3.5" />
+                        {isUpscaling ? "Upscaling..." : "Upscale"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="h-9 gap-1 text-xs"
+                        disabled
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Upscaled
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Mobile Edit History Navigation */}
@@ -1408,7 +1405,6 @@ const EditStudio = () => {
                     </Button>
                   </div>
                 )}
-                </div>
               </div>
             ) : (
               /* DESKTOP LAYOUT */
@@ -1570,46 +1566,44 @@ const EditStudio = () => {
                         </>
                       )}
                     </Button>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex gap-3">
-                        <div className="flex flex-col">
-                          <Button
-                            onClick={handleDownload}
-                            variant="outline"
-                            size="lg"
-                            className="gap-2"
-                            disabled={isEditing || isUpscaling}
-                          >
-                            <Download className="w-4 h-4" />
-                            {upscaledImageUrl ? "Download HD" : "Download"}
-                          </Button>
-                          <p className="text-[10px] text-muted-foreground text-center mt-1 max-w-[140px]">
-                            Edits must be applied first to appear in download
-                          </p>
-                        </div>
+                    <div className="flex gap-3">
+                      <div className="flex flex-col items-center">
                         <Button
-                          onClick={() => setIsFullscreen(true)}
+                          onClick={handleDownload}
                           variant="outline"
                           size="lg"
                           className="gap-2"
-                          disabled={isEditing || isUpscaling || !imageUrl}
+                          disabled={isEditing || isUpscaling}
                         >
-                          <Expand className="w-4 h-4" />
-                          Fullscreen
+                          <Download className="w-4 h-4" />
+                          {upscaledImageUrl ? "Download HD" : "Download"}
                         </Button>
-                        {!upscaledImageUrl && (
-                          <Button
-                            onClick={handleUpscale}
-                            variant="outline"
-                            size="lg"
-                            className="gap-2"
-                            disabled={isEditing || isUpscaling}
-                          >
-                            <ArrowUpFromLine className="w-4 h-4" />
-                            {isUpscaling ? "Upscaling..." : "Upscale HD"}
-                          </Button>
-                        )}
+                        <p className="text-[10px] text-muted-foreground text-center mt-1 max-w-[160px]">
+                          Edits must be applied first to appear in download
+                        </p>
                       </div>
+                      <Button
+                        onClick={() => setIsFullscreen(true)}
+                        variant="outline"
+                        size="lg"
+                        className="gap-2"
+                        disabled={isEditing || isUpscaling || !imageUrl}
+                      >
+                        <Expand className="w-4 h-4" />
+                        Fullscreen
+                      </Button>
+                      {!upscaledImageUrl && (
+                        <Button
+                          onClick={handleUpscale}
+                          variant="outline"
+                          size="lg"
+                          className="gap-2"
+                          disabled={isEditing || isUpscaling}
+                        >
+                          <ArrowUpFromLine className="w-4 h-4" />
+                          {isUpscaling ? "Upscaling..." : "Upscale HD"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                   

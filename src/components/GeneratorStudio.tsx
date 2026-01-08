@@ -657,26 +657,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe row */}
-                  <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                      Mood / Vibe
-                    </label>
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {moodOptions.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Main Color + Accent Color row - compact side by side */}
-                  <div className="flex items-end gap-3">
-                    <div className="space-y-2">
+                  {/* Mood / Vibe + Main Color + Accent Color row - all in one row */}
+                  <div className="grid grid-cols-[1.2fr_0.9fr_0.9fr] gap-2 items-end">
+                    <div className="space-y-1">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Mood / Vibe
+                      </label>
+                      <Select value={mood} onValueChange={setMood}>
+                        <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {moodOptions.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Main Color
                       </label>
@@ -688,7 +686,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         hideLabel
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Accent Color
                       </label>
@@ -901,12 +899,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   </button>
                 </div>
                 
-                {/* Mobile tabs - compact */}
-                <div className={`flex md:hidden items-center gap-2 border-b pb-2 overflow-hidden ${borderClass}`}>
+                {/* Mobile tabs - full width with dividers like desktop */}
+                <div className={`flex md:hidden items-center border-b pb-2 ${borderClass}`}>
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("text")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "text"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
@@ -915,10 +913,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <Type className="w-3.5 h-3.5" />
                     TEXT PROMPT
                   </button>
+                  <div className={`h-6 w-px ${themeMode === "light" ? "bg-gray-300" : "bg-border"}`} />
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("audio")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "audio"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
@@ -927,10 +926,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <Mic className="w-3.5 h-3.5" />
                     AUDIO
                   </button>
+                  <div className={`h-6 w-px ${themeMode === "light" ? "bg-gray-300" : "bg-border"}`} />
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("image")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
                       activeInputTab === "image"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
@@ -944,7 +944,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 {/* Text Prompt Input */}
                 {activeInputTab === "text" && (
                   <Textarea
-                    placeholder={`Describe the subject matter for your ${genre} cover...\n\nExample: A shattered greek statue wearing a balaclava, holding red roses.`}
+                    placeholder={`Describe the subject matter for your ${genre} cover...`}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={isGenerating}
