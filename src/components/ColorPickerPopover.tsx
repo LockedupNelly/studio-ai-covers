@@ -41,27 +41,21 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={`h-10 justify-start gap-2 min-w-[100px] max-w-[140px] ${
+          className={`h-10 justify-center gap-2 px-2 ${
             themeMode === "light" 
               ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50" 
               : "bg-secondary border-border text-foreground hover:bg-secondary/80"
           }`}
         >
-          {hasSelection ? (
-            <div
-              className={`w-6 h-4 rounded border border-border flex-shrink-0 ${selectedColor.id === "black" ? "ring-1 ring-white/40" : ""}`}
-              style={{ backgroundColor: selectedColor.color }}
-            />
-          ) : (
-            <div
-              className="w-6 h-4 rounded border border-border flex-shrink-0 bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500"
-            />
-          )}
-          {!hideLabel && (
-            <span className="text-sm truncate">
-              {hasSelection ? selectedColor.name : label}
-            </span>
-          )}
+          {/* Square gradient color preview */}
+          <div
+            className="w-7 h-7 rounded-md flex-shrink-0 border border-border/50"
+            style={{ 
+              background: hasSelection 
+                ? `linear-gradient(135deg, ${selectedColor.color} 0%, ${selectedColor.color}dd 50%, ${selectedColor.color}bb 100%)`
+                : "linear-gradient(135deg, #ff2d2d 0%, #ffcc00 33%, #00dd66 66%, #3388ff 100%)"
+            }}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
@@ -72,7 +66,7 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
               onClick={() => handleSelect(color.id)}
               className={`relative aspect-square rounded-md transition-transform hover:scale-110 ${
                 value === color.id ? "ring-2 ring-primary ring-offset-2" : ""
-              } ${color.id === "white" ? "border border-border" : ""} ${color.id === "black" ? "ring-1 ring-white/40" : ""}`}
+              } ${color.id === "white" ? "border border-border" : ""} ${color.id === "black" ? "ring-1 ring-white/50" : ""}`}
               style={{ backgroundColor: color.color }}
               title={color.name}
             >

@@ -618,38 +618,34 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Visual Style
                       </label>
-                      <div className="flex items-center gap-1.5">
-                        <Select value={style} onValueChange={setStyle}>
-                          <SelectTrigger className={`h-10 flex-1 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
-                            {visualStyles.map((vs) => (
-                              <SelectItem key={vs.id} value={vs.id}>
-                                {vs.name}
+                      <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {visualStyles.map((vs, idx) => (
+                            <div key={vs.id}>
+                              {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
+                              <SelectItem value={vs.id} className="py-2">
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{vs.name}</span>
+                                  <TooltipProvider delayDuration={0}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                        <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg">
+                                        <p className="text-sm font-medium mb-1">{vs.name}</p>
+                                        <p className="text-xs text-muted-foreground">{vs.description}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {style && style !== "None" && (
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button 
-                                  type="button"
-                                  className={`p-2 rounded-md transition-colors ${themeMode === "light" ? "hover:bg-gray-100" : "hover:bg-secondary"}`}
-                                >
-                                  <Info className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-[200px] bg-popover border border-border shadow-lg">
-                                <p className="text-sm font-medium mb-1">{visualStyles.find(vs => vs.id === style)?.name}</p>
-                                <p className="text-xs text-muted-foreground">{visualStyles.find(vs => vs.id === style)?.description}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
+                            </div>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {style === "Other" && (
                         <Input
                           placeholder="Describe your style..."
@@ -661,27 +657,28 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe + Main Color + Accent Color on same row - equal widths */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2 min-w-0">
+                  {/* Mood / Vibe row */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                      Mood / Vibe
+                    </label>
+                    <Select value={mood} onValueChange={setMood}>
+                      <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {moodOptions.map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Main Color + Accent Color row - compact side by side */}
+                  <div className="flex items-end gap-3">
+                    <div className="space-y-2">
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                        Mood / Vibe
-                      </label>
-                      <Select value={mood} onValueChange={setMood}>
-                        <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {moodOptions.map((m) => (
-                            <SelectItem key={m} value={m}>{m}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2 min-w-0">
-                      <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
-                        <span className="hidden sm:inline">Main Color</span>
-                        <span className="sm:hidden">Main</span>
+                        Main Color
                       </label>
                       <ColorPickerPopover
                         label="Color"
@@ -691,10 +688,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         hideLabel
                       />
                     </div>
-                    <div className="space-y-2 min-w-0">
-                      <label className={`text-xs font-semibold tracking-widest uppercase truncate ${mutedLabelClass}`}>
-                        <span className="hidden sm:inline">Accent Color</span>
-                        <span className="sm:hidden">Accent</span>
+                    <div className="space-y-2">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Accent Color
                       </label>
                       <ColorPickerPopover
                         label="Color"
@@ -863,44 +859,85 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Prompt Input Section */}
               <div className="space-y-3">
-                {/* Tabs */}
-                <div className={`flex items-center gap-2 md:gap-4 border-b pb-2 overflow-hidden ${borderClass}`}>
+                {/* Tabs - Desktop: spread with dividers */}
+                <div className={`hidden md:flex items-center border-b pb-2 ${borderClass}`}>
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("text")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
                       activeInputTab === "text"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
-                    <Type className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <Type className="w-4 h-4" />
                     TEXT PROMPT
                   </button>
+                  <div className={`h-6 w-px ${themeMode === "light" ? "bg-gray-300" : "bg-border"}`} />
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("audio")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
                       activeInputTab === "audio"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
-                    <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <Mic className="w-4 h-4" />
                     AUDIO ANALYZER
                   </button>
+                  <div className={`h-6 w-px ${themeMode === "light" ? "bg-gray-300" : "bg-border"}`} />
                   <button 
                     onClick={() => !isGenerating && setActiveInputTab("image")}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                    className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium border-b-2 pb-2 -mb-[10px] transition-colors ${
                       activeInputTab === "image"
                         ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
                         : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
                     }`}
                   >
-                    <ImagePlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">UPLOAD IMAGE</span>
-                    <span className="sm:hidden">UPLOAD</span>
+                    <ImagePlus className="w-4 h-4" />
+                    UPLOAD IMAGE
+                  </button>
+                </div>
+                
+                {/* Mobile tabs - compact */}
+                <div className={`flex md:hidden items-center gap-2 border-b pb-2 overflow-hidden ${borderClass}`}>
+                  <button 
+                    onClick={() => !isGenerating && setActiveInputTab("text")}
+                    disabled={isGenerating}
+                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                      activeInputTab === "text"
+                        ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                    }`}
+                  >
+                    <Type className="w-3.5 h-3.5" />
+                    TEXT PROMPT
+                  </button>
+                  <button 
+                    onClick={() => !isGenerating && setActiveInputTab("audio")}
+                    disabled={isGenerating}
+                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                      activeInputTab === "audio"
+                        ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                    }`}
+                  >
+                    <Mic className="w-3.5 h-3.5" />
+                    AUDIO
+                  </button>
+                  <button 
+                    onClick={() => !isGenerating && setActiveInputTab("image")}
+                    disabled={isGenerating}
+                    className={`flex items-center gap-1 text-xs font-medium border-b-2 pb-2 -mb-[10px] transition-colors whitespace-nowrap ${
+                      activeInputTab === "image"
+                        ? themeMode === "light" ? "text-gray-900 border-gray-900" : "text-foreground border-foreground"
+                        : themeMode === "light" ? "text-gray-500 border-transparent hover:text-gray-700" : "text-foreground/60 border-transparent hover:text-foreground/80"
+                    }`}
+                  >
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    UPLOAD
                   </button>
                 </div>
 
@@ -1112,12 +1149,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </p>
                       )}
                       <div className="flex flex-col gap-3 mt-3 w-full">
-                        {/* Mobile: Edit Cover (red) left, Download right */}
-                        <div className="flex sm:hidden gap-2">
+                        {/* Mobile: Edit Cover (red) stacked above Download (outline) */}
+                        <div className="flex flex-col sm:hidden gap-2">
                           <Button
                             variant="studio"
                             size="sm"
-                            className="flex-1"
+                            className="w-full"
                             onClick={() => navigate("/edit-studio", {
                               state: {
                                 imageUrl: upscaledImageUrl || generatedImage,
@@ -1134,18 +1171,27 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             Edit Cover
                           </Button>
                           <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             onClick={handleDownload}
-                            className="flex-1"
+                            className="w-full"
                           >
                             <Download className="w-4 h-4 mr-1" />
                             Download
                           </Button>
                         </div>
                         
-                        {/* Desktop: Edit Cover (red) left, Download right */}
+                        {/* Desktop: Download left, Edit Cover (red) right */}
                         <div className="hidden sm:flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="flex-1"
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            Download
+                          </Button>
                           <Button
                             variant="studio"
                             size="sm"
@@ -1164,15 +1210,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             disabled={isGenerating}
                           >
                             Edit Cover
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleDownload}
-                            className="flex-1"
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            Download
                           </Button>
                         </div>
                         
@@ -1205,14 +1242,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
                         </div>
                         {isGenerating ? (
-                          <>
-                            <h3 className={`font-display text-sm tracking-wide mb-1 transition-all duration-500 ease-in-out ${textClass}`} key={placeholderIndex}>
+                          <div className="transition-opacity duration-700 ease-in-out animate-fade-in" key={placeholderIndex}>
+                            <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
                               {generatingMessages[placeholderIndex]?.title}
                             </h3>
-                            <p className={`text-xs px-4 transition-all duration-500 ease-in-out ${mutedTextClass}`} key={`sub-${placeholderIndex}`}>
+                            <p className={`text-xs px-4 ${mutedTextClass}`}>
                               {generatingMessages[placeholderIndex]?.subtitle}
                             </p>
-                          </>
+                          </div>
                         ) : (
                           <>
                             <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
