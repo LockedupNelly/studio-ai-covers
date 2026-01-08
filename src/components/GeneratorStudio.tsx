@@ -618,34 +618,59 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
                         Visual Style
                       </label>
-                      <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border" side="bottom" align="start">
-                          {visualStyles.map((vs, idx) => (
-                            <div key={vs.id}>
-                              {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
-                              <SelectItem value={vs.id} className="py-2">
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <span>{vs.name}</span>
-                                  <TooltipProvider delayDuration={0}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                        <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                                      </TooltipTrigger>
-                                      <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
-                                        <p className="text-sm font-medium mb-1">{vs.name}</p>
-                                        <p className="text-xs text-muted-foreground">{vs.description}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              </SelectItem>
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select value={style} onValueChange={setStyle}>
+                          <SelectTrigger className={`h-10 flex-1 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-card border-border" side="bottom" align="start">
+                            {visualStyles.map((vs, idx) => (
+                              <div key={vs.id}>
+                                {idx > 0 && <div className="h-px bg-border/50 mx-2" />}
+                                <SelectItem value={vs.id} className="py-2">
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span>{vs.name}</span>
+                                    <TooltipProvider delayDuration={0}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                          <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
+                                          <p className="text-sm font-medium mb-1">{vs.name}</p>
+                                          <p className="text-xs text-muted-foreground">{vs.description}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </SelectItem>
+                              </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {/* Info icon for selected style - visible when a style is selected */}
+                        {style && style !== "None" && (() => {
+                          const selectedStyle = visualStyles.find(vs => vs.id === style);
+                          return selectedStyle ? (
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button 
+                                    type="button"
+                                    className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                                    onClick={(e) => e.preventDefault()}
+                                  >
+                                    <Info className="w-4 h-4 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
+                                  <p className="text-sm font-medium mb-1">{selectedStyle.name}</p>
+                                  <p className="text-xs text-muted-foreground">{selectedStyle.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : null;
+                        })()}
+                      </div>
                       {style === "Other" && (
                         <Input
                           placeholder="Describe your style..."

@@ -959,7 +959,7 @@ const EditStudio = () => {
                     { id: "textures", label: "Textures", icon: Layers, count: textures.length },
                     { id: "lighting", label: "Lighting", icon: Zap, count: lightings.length },
                     { id: "pa", label: "Advisory", icon: ShieldAlert, count: parentalAdvisory !== "none" ? 1 : 0 },
-                    { id: "colors", label: "Color Filters", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
+                    { id: "colors", label: "Colors", icon: Sun, count: (mainColor ? 1 : 0) + (accentColor ? 1 : 0) },
                     { id: "custom", label: "Custom", icon: Sparkles, count: customInstructions.trim() ? 1 : 0 },
                   ].map((tab) => (
                     <button
@@ -1022,10 +1022,12 @@ const EditStudio = () => {
                               disabled={isEditing}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
-                                  ? "border-primary ring-1 ring-primary/50"
+                                  ? textures[textures.length - 1] === t.id 
+                                    ? "border-white ring-1 ring-white/50" 
+                                    : "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
-                              style={{ 
+                              style={{
                                 width: 'calc((100% - 1rem) / 3.5)',
                                 background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
                               }}
@@ -1050,32 +1052,32 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-4 py-2">
+                          <div className="flex items-center justify-center gap-3 py-4 mt-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
-                              className="w-14 h-14 flex items-center justify-center rounded-xl bg-secondary"
+                              className="w-12 h-12 flex items-center justify-center rounded-xl bg-secondary border border-border"
                             >
-                              <RotateCw className="w-6 h-6" />
+                              <RotateCw className="w-5 h-5" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-2 bg-secondary rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-1.5 bg-secondary rounded-xl px-3 h-12 border border-border">
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-9 h-9 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
-                                <Minus className="w-6 h-6" />
+                                <Minus className="w-5 h-5" />
                               </button>
-                              <div className="w-14 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-8 h-6 mx-auto" />
+                              <div className="w-12 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-9 h-9 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
-                                <Plus className="w-6 h-6" />
+                                <Plus className="w-5 h-5" />
                               </button>
                             </div>
                           </div>
@@ -1120,10 +1122,12 @@ const EditStudio = () => {
                               disabled={isEditing}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
-                                  ? "border-primary ring-1 ring-primary/50"
+                                  ? lightings[lightings.length - 1] === l.id 
+                                    ? "border-white ring-1 ring-white/50" 
+                                    : "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
-                              style={{ 
+                              style={{
                                 width: 'calc((100% - 1rem) / 3.5)',
                                 background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
                               }}
@@ -1148,32 +1152,32 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-4 py-2">
+                          <div className="flex items-center justify-center gap-3 py-4 mt-2">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
-                              className="w-14 h-14 flex items-center justify-center rounded-xl bg-secondary"
+                              className="w-12 h-12 flex items-center justify-center rounded-xl bg-secondary border border-border"
                             >
-                              <RotateCw className="w-6 h-6" />
+                              <RotateCw className="w-5 h-5" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-2 bg-secondary rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-1.5 bg-secondary rounded-xl px-3 h-12 border border-border">
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
-                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
+                                className={`w-9 h-9 rounded-lg bg-background flex items-center justify-center transition-colors ${isMin ? 'text-destructive' : ''}`}
                               >
-                                <Minus className="w-6 h-6" />
+                                <Minus className="w-5 h-5" />
                               </button>
-                              <div className="w-14 text-center">
-                                <IntensityBar intensity={currentIntensity} className="w-8 h-6 mx-auto" />
+                              <div className="w-12 text-center">
+                                <IntensityBar intensity={currentIntensity} className="w-6 h-5 mx-auto" />
                               </div>
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.min(100, currentIntensity + 25) })}
                                 disabled={isMax}
-                                className={`w-12 h-12 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
+                                className={`w-9 h-9 rounded-lg bg-background flex items-center justify-center transition-colors ${isMax ? 'text-destructive' : ''}`}
                               >
-                                <Plus className="w-6 h-6" />
+                                <Plus className="w-5 h-5" />
                               </button>
                             </div>
                           </div>
@@ -1328,7 +1332,7 @@ const EditStudio = () => {
                   {/* Custom Instructions Section */}
                   {mobileEditTab === "custom" && (
                     <Textarea
-                      placeholder="Describe any edits... (e.g., 'Make darker', 'Add contrast')"
+                      placeholder="Describe changes to objects, camera angle, or composition... (e.g., 'Change background to a city skyline', 'Add more dramatic lighting from the left', 'Zoom in on the subject')"
                       value={customInstructions}
                       onChange={(e) => setCustomInstructions(e.target.value)}
                       disabled={isEditing}
@@ -1338,7 +1342,7 @@ const EditStudio = () => {
                 </div>
                 
                 {/* Divider + Action Buttons - Fixed height container to prevent jumping */}
-                <div className="border-t border-border/50 mt-2 pt-2 mt-auto">
+                <div className="border-t border-border/50 mt-4 pt-3 mt-auto">
                   <p className="text-[10px] text-muted-foreground text-center mb-2">
                     Edits must be applied first to appear in download
                   </p>
