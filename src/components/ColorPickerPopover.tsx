@@ -39,12 +39,11 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={`h-10 justify-center gap-2 px-2 ${
+        <button
+          className={`h-10 w-12 rounded-lg border flex items-center justify-center ${
             themeMode === "light" 
-              ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50" 
-              : "bg-secondary border-border text-foreground hover:bg-secondary/80"
+              ? "bg-white border-gray-300 hover:bg-gray-50" 
+              : "bg-secondary border-border hover:bg-secondary/80"
           }`}
         >
           {/* Square gradient color preview */}
@@ -56,7 +55,7 @@ export const ColorPickerPopover = ({ label, value, onChange, themeMode = "dark",
                 : "linear-gradient(135deg, #ff2d2d 0%, #ffcc00 33%, #00dd66 66%, #3388ff 100%)"
             }}
           />
-        </Button>
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
         <div className="grid grid-cols-5 gap-2">

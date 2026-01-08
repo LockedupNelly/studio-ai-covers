@@ -620,22 +620,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       </label>
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                          <div className="flex items-center gap-2 w-full">
-                            <SelectValue placeholder="Select" />
-                            {style && style !== "" && (
-                              <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 ml-auto mr-1" />
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[200px] bg-popover border border-border shadow-lg z-[100]">
-                                    <p className="text-sm font-medium mb-1">{visualStyles.find(vs => vs.id === style)?.name}</p>
-                                    <p className="text-xs text-muted-foreground">{visualStyles.find(vs => vs.id === style)?.description}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border" side="bottom" align="start">
                           {visualStyles.map((vs, idx) => (
@@ -672,49 +657,50 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Mood / Vibe + Main Color + Accent Color row - labels on same row, controls below */}
-                  <div className="grid grid-cols-[1.2fr_0.9fr_0.9fr] gap-2">
-                    {/* Labels row */}
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
-                      Mood / Vibe
-                    </label>
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} hidden md:block`}>
-                      Main Color
-                    </label>
-                    <label className={`text-[10px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} md:hidden`}>
-                      Main Color
-                    </label>
-                    <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} hidden md:block`}>
-                      Accent Color
-                    </label>
-                    <label className={`text-[10px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass} md:hidden`}>
-                      Accent
-                    </label>
-                    {/* Controls row */}
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {moodOptions.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <ColorPickerPopover
-                      label="Color"
-                      value={mainColor}
-                      onChange={setMainColor}
-                      themeMode={themeMode}
-                      hideLabel
-                    />
-                    <ColorPickerPopover
-                      label="Color"
-                      value={accentColor}
-                      onChange={setAccentColor}
-                      themeMode={themeMode}
-                      hideLabel
-                    />
+                  {/* Mood / Vibe + Main Color + Accent Color row */}
+                  <div className="flex items-end gap-3">
+                    {/* Mood / Vibe */}
+                    <div className="flex-1 space-y-1.5">
+                      <label className={`text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Mood / Vibe
+                      </label>
+                      <Select value={mood} onValueChange={setMood}>
+                        <SelectTrigger className={`h-10 w-full ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {moodOptions.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Main Color */}
+                    <div className="space-y-1.5">
+                      <label className={`text-[9px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Main Color
+                      </label>
+                      <ColorPickerPopover
+                        label="Color"
+                        value={mainColor}
+                        onChange={setMainColor}
+                        themeMode={themeMode}
+                        hideLabel
+                      />
+                    </div>
+                    {/* Accent Color */}
+                    <div className="space-y-1.5">
+                      <label className={`text-[9px] md:text-xs font-semibold tracking-widest uppercase ${mutedLabelClass}`}>
+                        Accent Color
+                      </label>
+                      <ColorPickerPopover
+                        label="Color"
+                        value={accentColor}
+                        onChange={setAccentColor}
+                        themeMode={themeMode}
+                        hideLabel
+                      />
+                    </div>
                   </div>
 
                   {/* Text Style Selector */}
