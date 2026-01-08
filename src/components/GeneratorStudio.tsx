@@ -138,18 +138,26 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   // Rotating placeholder messages
   const placeholderMessages = [
     { title: "Cover will appear here", subtitle: "Generate to see your cover" },
-    { title: "Quality takes time", subtitle: "Our advanced AI creates stunning, unique artwork" },
-    { title: "Crafting perfection", subtitle: "Every cover is carefully generated for maximum quality" },
   ];
   
-  // Rotate placeholder messages every 4 seconds
+  // Messages shown during generation
+  const generatingMessages = [
+    { title: "Quality takes time", subtitle: "Our advanced AI creates stunning, unique artwork" },
+    { title: "Crafting perfection", subtitle: "Every cover is carefully generated for maximum quality" },
+    { title: "Almost there", subtitle: "Adding finishing touches to your cover" },
+  ];
+  
+  // Rotate placeholder messages every 4 seconds during generation
   useEffect(() => {
-    if (generatedImage) return; // Don't rotate if we have an image
+    if (!isGenerating) {
+      setPlaceholderIndex(0);
+      return;
+    }
     const interval = setInterval(() => {
-      setPlaceholderIndex(prev => (prev + 1) % placeholderMessages.length);
+      setPlaceholderIndex(prev => (prev + 1) % generatingMessages.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [generatedImage, placeholderMessages.length]);
+  }, [isGenerating, generatingMessages.length]);
 
   // Progress animation during generation - tied to actual generation state
   const [smoothProgress, setSmoothProgress] = useState(0);
@@ -508,20 +516,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
               {/* Controls Row - Mobile: put mode toggle and theme on same row, expanded */}
               <div className="flex flex-wrap items-center gap-3 md:gap-4">
-                {/* Studio Mode Toggle - wider on mobile */}
-                <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")} className="flex-1 sm:flex-none">
+                {/* Studio Mode Toggle - wider on mobile with larger text */}
+                <Tabs value={studioMode} onValueChange={(v) => setStudioMode(v as "basic" | "advanced")} className="flex-1 sm:flex-none sm:min-w-[200px]">
                   <TabsList className={`w-full sm:w-auto ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
-                    <TabsTrigger value="basic" className={`flex-1 sm:flex-none flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-3 md:px-4 ${
+                    <TabsTrigger value="basic" className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 md:gap-2 text-sm md:text-sm px-4 md:px-4 py-2 ${
                       themeMode === "light" && studioMode === "basic" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
                     }`}>
-                      <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="text-xs md:text-sm">Basic</span>
+                      <Settings className="w-4 h-4 md:w-4 md:h-4" />
+                      <span className="text-sm font-medium">Basic</span>
                     </TabsTrigger>
-                    <TabsTrigger value="advanced" className={`flex-1 sm:flex-none flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-3 md:px-4 ${
+                    <TabsTrigger value="advanced" className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 md:gap-2 text-sm md:text-sm px-4 md:px-4 py-2 ${
                       themeMode === "light" && studioMode === "advanced" ? "data-[state=active]:bg-gray-800 data-[state=active]:text-white" : ""
                     }`}>
-                      <Sliders className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      <span className="text-xs md:text-sm">Advanced</span>
+                      <Sliders className="w-4 h-4 md:w-4 md:h-4" />
+                      <span className="text-sm font-medium">Advanced</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -530,23 +538,23 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                 <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
                   <button
                     onClick={() => setThemeMode("dark")}
-                    className={`p-1.5 md:p-2 rounded transition-colors ${
+                    className={`p-2 md:p-2 rounded transition-colors ${
                       themeMode === "dark" 
                         ? "bg-primary text-primary-foreground"
                         : themeMode === "light" ? "text-gray-600 hover:text-gray-900" : "text-foreground/60 hover:text-foreground"
                     }`}
                   >
-                    <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <Moon className="w-4 h-4 md:w-4 md:h-4" />
                   </button>
                   <button
                     onClick={() => setThemeMode("light")}
-                    className={`p-1.5 md:p-2 rounded transition-colors ${
+                    className={`p-2 md:p-2 rounded transition-colors ${
                       themeMode === "light" 
                         ? "bg-gray-800 text-white"
                         : "text-foreground/60 hover:text-foreground"
                     }`}
                   >
-                    <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <Sun className="w-4 h-4 md:w-4 md:h-4" />
                   </button>
                 </div>
               </div>
@@ -759,31 +767,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </div>
                   </div>
 
-                  {/* Parental Advisory - single row */}
-                  <div className="space-y-2">
-                    <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                      Parental Advisory
-                    </label>
-                    <RadioGroup
-                      value={parentalAdvisory}
-                      onValueChange={(v) => setParentalAdvisory(v as "yes" | "no")}
-                      className="flex gap-3 h-10 items-center"
-                      disabled={isGenerating}
-                    >
-                      <div className="flex items-center space-x-1.5">
-                        <RadioGroupItem value="yes" id="pa-yes" className="w-4 h-4" />
-                        <Label htmlFor="pa-yes" className={`cursor-pointer text-sm ${textClass}`}>
-                          Yes
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <RadioGroupItem value="no" id="pa-no" className="w-4 h-4" />
-                        <Label htmlFor="pa-no" className={`cursor-pointer text-sm ${textClass}`}>
-                          No
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                  {/* Parental Advisory removed from advanced mode - now only in Edit Studio */}
                 </>
               )}
 
@@ -1118,16 +1102,16 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       )}
                       {!isGenerating && !isUpscaling && (
                         <p className={`text-center text-xs ${mutedTextClass}`}>
-                          {upscaledImageUrl ? "4096 × 4096px · 4K HD · Ready for print & streaming" : "1024 × 1024px · Upscale for 4K HD"}
+                          1024 × 1024px · Ready for streaming
                         </p>
                       )}
                       <div className="flex flex-col gap-3 mt-3 w-full">
-                        {/* Mobile: Stack buttons vertically with Edit Cover prominent */}
-                        <div className="flex flex-col sm:hidden gap-2">
+                        {/* Mobile: Edit Cover (red) left, Download right */}
+                        <div className="flex sm:hidden gap-2">
                           <Button
                             variant="studio"
                             size="sm"
-                            className="w-full"
+                            className="flex-1"
                             onClick={() => navigate("/edit-studio", {
                               state: {
                                 imageUrl: upscaledImageUrl || generatedImage,
@@ -1143,19 +1127,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           >
                             Edit Cover
                           </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleDownload}
-                            className="w-full"
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            {upscaledImageUrl ? "Download 4K" : "Download"}
-                          </Button>
-                        </div>
-                        
-                        {/* Desktop: Horizontal row */}
-                        <div className="hidden sm:flex gap-2">
                           <Button
                             variant="default"
                             size="sm"
@@ -1163,24 +1134,16 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             className="flex-1"
                           >
                             <Download className="w-4 h-4 mr-1" />
-                            {upscaledImageUrl ? "Download 4K" : "Download"}
+                            Download
                           </Button>
-                          {!upscaledImageUrl && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleUpscale}
-                              disabled={isUpscaling || isGenerating}
-                              className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
-                            >
-                              <Maximize2 className="w-4 h-4 mr-1" />
-                              {isUpscaling ? "Upscaling..." : "Upscale to 4K"}
-                            </Button>
-                          )}
+                        </div>
+                        
+                        {/* Desktop: Edit Cover (red) left, Download right */}
+                        <div className="hidden sm:flex gap-2">
                           <Button
-                            variant="outline"
+                            variant="studio"
                             size="sm"
-                            className={`flex-1 ${themeMode === "light" ? "border-gray-300 text-gray-700 hover:bg-gray-100" : ""}`}
+                            className="flex-1"
                             onClick={() => navigate("/edit-studio", {
                               state: {
                                 imageUrl: upscaledImageUrl || generatedImage,
@@ -1195,6 +1158,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             disabled={isGenerating}
                           >
                             Edit Cover
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="flex-1"
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            Download
                           </Button>
                         </div>
                         
@@ -1226,12 +1198,25 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         }`}>
                           <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
                         </div>
-                        <h3 className={`font-display text-sm tracking-wide mb-1 transition-opacity duration-300 ${textClass}`}>
-                          {placeholderMessages[placeholderIndex].title}
-                        </h3>
-                        <p className={`text-xs px-4 transition-opacity duration-300 ${mutedTextClass}`}>
-                          {placeholderMessages[placeholderIndex].subtitle}
-                        </p>
+                        {isGenerating ? (
+                          <>
+                            <h3 className={`font-display text-sm tracking-wide mb-1 transition-all duration-500 ease-in-out ${textClass}`} key={placeholderIndex}>
+                              {generatingMessages[placeholderIndex]?.title}
+                            </h3>
+                            <p className={`text-xs px-4 transition-all duration-500 ease-in-out ${mutedTextClass}`} key={`sub-${placeholderIndex}`}>
+                              {generatingMessages[placeholderIndex]?.subtitle}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
+                              {placeholderMessages[0].title}
+                            </h3>
+                            <p className={`text-xs px-4 ${mutedTextClass}`}>
+                              {placeholderMessages[0].subtitle}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
 

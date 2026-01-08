@@ -99,18 +99,18 @@ const PurchaseCredits = () => {
                   </div>
                 </div>
 
-                <ul className="hidden md:block space-y-2 mb-6">
-                  <li className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Check className="w-4 h-4 text-primary" />
-                    {pkg.credits} cover generations
+                <ul className="space-y-2 mb-4 md:mb-6">
+                  <li className="flex items-center gap-2 text-xs md:text-sm text-foreground/80">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary flex-shrink-0" />
+                    <span>{pkg.credits} cover generations</span>
                   </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Check className="w-4 h-4 text-primary" />
-                    Never expires
+                  <li className="flex items-center gap-2 text-xs md:text-sm text-foreground/80">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary flex-shrink-0" />
+                    <span>Never expires</span>
                   </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Check className="w-4 h-4 text-primary" />
-                    3000×3000px quality
+                  <li className="flex items-center gap-2 text-xs md:text-sm text-foreground/80">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary flex-shrink-0" />
+                    <span>3000×3000px quality</span>
                   </li>
                 </ul>
 

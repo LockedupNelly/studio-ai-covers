@@ -20,7 +20,7 @@ export const HeroSection = () => {
       </p>
 
       {/* Sub-tagline */}
-      <p className="text-sm text-foreground/60 text-center max-w-md mb-4">
+      <p className="text-sm text-foreground/60 text-center max-w-md mb-4 px-4">
         Professional-grade AI built for album cover creation. 
         That's why artists choose us.
       </p>

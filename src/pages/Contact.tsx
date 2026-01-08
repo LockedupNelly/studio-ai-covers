@@ -43,7 +43,7 @@ const Contact = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-16 max-w-4xl">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-16 max-w-4xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
@@ -52,37 +52,7 @@ const Contact = () => {
           </p>
         </div>
 
-        {/* Contact Info Cards - Hidden on mobile */}
-        <div className="hidden md:grid md:grid-cols-3 gap-8 mb-12">
-          <div className="bg-card border border-border rounded-xl p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Email Us</h3>
-            <a
-              href="mailto:coverartmaker@gmail.com"
-              className="text-sm text-primary hover:underline"
-            >
-              coverartmaker@gmail.com
-            </a>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Response Time</h3>
-            <p className="text-sm text-muted-foreground">Within 24-48 hours</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2">Support</h3>
-            <p className="text-sm text-muted-foreground">Mon - Fri, 9am - 6pm EST</p>
-          </div>
-        </div>
+        {/* Contact Info Cards - Hidden completely, removed */}
 
         <div className="bg-card border border-border rounded-xl p-6 md:p-8">
           <h2 className="text-2xl font-semibold text-foreground mb-6">Send a Message</h2>

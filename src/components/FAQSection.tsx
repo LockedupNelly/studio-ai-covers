@@ -42,7 +42,7 @@ const faqItems = [
 
 export const FAQSection = () => {
   return (
-    <section className="py-12 md:py-20">
+    <section className="py-8 md:py-20 mt-4 md:mt-0">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           {/* Header */}

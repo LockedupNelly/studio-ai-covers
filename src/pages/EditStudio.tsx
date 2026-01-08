@@ -223,9 +223,7 @@ const EditStudio = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   
-  // Long-press preview state
-  const [showingOriginal, setShowingOriginal] = useState(false);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Long-press preview state removed
   
   useEffect(() => {
     if (!loading && !user) {
@@ -691,22 +689,7 @@ const EditStudio = () => {
     }
   };
   
-  // Long-press handlers for original preview
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (historyIndex === 0) return; // Already showing original
-    e.preventDefault();
-    longPressTimerRef.current = setTimeout(() => {
-      setShowingOriginal(true);
-    }, 400);
-  }, [historyIndex]);
-  
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    setShowingOriginal(false);
-  }, []);
+  // Long-press handlers removed
   
   const handleUpscale = async () => {
     if (!imageUrl || isUpscaling) return;
@@ -838,18 +821,14 @@ const EditStudio = () => {
             {/* MOBILE LAYOUT */}
             {isMobile ? (
               <div className="flex flex-col">
-                {/* Cover Preview - Larger with long-press support */}
+                {/* Cover Preview */}
                 <div className="bg-background pb-1">
                   <div 
                     className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchCancel={handleTouchEnd}
-                    onContextMenu={(e) => e.preventDefault()}
                   >
                     {imageUrl ? (
                       <img
-                        src={showingOriginal ? originalState.imageUrl : imageUrl}
+                        src={imageUrl}
                         alt="Cover preview"
                         className="w-full h-full object-cover"
                       />
@@ -859,8 +838,8 @@ const EditStudio = () => {
                       </div>
                     )}
                     
-                    {/* Lighting Preview Overlays - hide when showing original */}
-                    {!showingOriginal && lightings.map(lightingId => {
+                    {/* Lighting Preview Overlays */}
+                    {lightings.map(lightingId => {
                       const lightingOption = lightingOptions.find(l => l.id === lightingId);
                       if (!lightingOption?.image) return null;
                       const rotation = lightingRotations[lightingId] || 0;
@@ -883,8 +862,8 @@ const EditStudio = () => {
                       );
                     })}
                     
-                    {/* Texture Preview Overlays - hide when showing original */}
-                    {!showingOriginal && textures.map(textureId => {
+                    {/* Texture Preview Overlays */}
+                    {textures.map(textureId => {
                       const textureOption = textureOptions.find(t => t.id === textureId);
                       if (!textureOption?.image) return null;
                       const baseOpacity = textureOption.opacity || 0.5;
@@ -905,8 +884,8 @@ const EditStudio = () => {
                       );
                     })}
                     
-                    {/* Color Filter Overlays - Real-time preview, hide when showing original */}
-                    {!showingOriginal && mainColor && getColorHex(mainColor) && (
+                    {/* Color Filter Overlays - Real-time preview */}
+                    {mainColor && getColorHex(mainColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
@@ -916,7 +895,7 @@ const EditStudio = () => {
                         }}
                       />
                     )}
-                    {!showingOriginal && accentColor && getColorHex(accentColor) && (
+                    {accentColor && getColorHex(accentColor) && (
                       <div 
                         className="absolute inset-0 pointer-events-none"
                         style={{ 
@@ -931,8 +910,8 @@ const EditStudio = () => {
                       />
                     )}
                     
-                    {/* Parental Advisory Logo Overlay - hide when showing original */}
-                    {!showingOriginal && parentalAdvisory !== "none" && (
+                    {/* Parental Advisory Logo Overlay */}
+                    {parentalAdvisory !== "none" && (
                       <div 
                         className={`absolute w-[22%] ${
                           paPosition === "bottom-right" ? "bottom-2 right-2" :
@@ -949,22 +928,11 @@ const EditStudio = () => {
                       </div>
                     )}
                     
-                    {/* Version indicator / Long-press indicator */}
-                    {showingOriginal ? (
-                      <div className="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] flex items-center gap-1 text-primary-foreground font-medium">
-                        Viewing Original
-                      </div>
-                    ) : editHistory.length > 1 ? (
+                    {/* Version indicator */}
+                    {editHistory.length > 1 && (
                       <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
                         <History className="w-2.5 h-2.5" />
                         {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
-                      </div>
-                    ) : null}
-                    
-                    {/* Long-press hint */}
-                    {historyIndex > 0 && !showingOriginal && (
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded text-[9px] text-muted-foreground">
-                        hold to see original
                       </div>
                     )}
                     
@@ -1318,39 +1286,37 @@ const EditStudio = () => {
                 </div>
                 
                 {/* Divider + Action Buttons - Fixed height container to prevent jumping */}
-                <div className="border-t border-border/50 mt-2 pt-3 mt-auto">
-                <div className="grid grid-cols-2 gap-2 pb-4 min-h-[180px]">
-                  <Button
-                    onClick={handleApplyEdits}
-                    disabled={isEditing || isUpscaling || !hasChanges}
-                    className="gap-2 h-11"
-                  >
-                    {isEditing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Applying...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        Apply (1 Credit)
-                      </>
-                    )}
-                  </Button>
-                  <div className="col-span-2">
+                <div className="border-t border-border/50 mt-2 pt-2 mt-auto">
+                  <p className="text-[10px] text-muted-foreground text-center mb-2">
+                    Pending edits must be applied first to appear in download
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 pb-4 min-h-[140px]">
+                    <Button
+                      onClick={handleApplyEdits}
+                      disabled={isEditing || isUpscaling || !hasChanges}
+                      className="gap-2 h-11"
+                    >
+                      {isEditing ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Applying...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Apply (1 Credit)
+                        </>
+                      )}
+                    </Button>
                     <Button
                       onClick={handleDownload}
                       variant="outline"
-                      className="h-11 gap-2 w-full"
+                      className="h-11 gap-2"
                       disabled={isEditing || isUpscaling}
                     >
                       <Download className="w-4 h-4" />
                       Download
                     </Button>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1">
-                      Pending edits must be applied first to appear in download
-                    </p>
-                  </div>
                   <Button
                     onClick={() => setIsFullscreen(true)}
                     variant="outline"
@@ -1586,7 +1552,7 @@ const EditStudio = () => {
                             {upscaledImageUrl ? "Download HD" : "Download"}
                           </Button>
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            Apply edits first
+                            Edits must be applied first
                           </p>
                         </div>
                         <Button
