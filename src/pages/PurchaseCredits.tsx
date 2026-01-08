@@ -99,7 +99,7 @@ const PurchaseCredits = () => {
                   </div>
                 </div>
 
-                <ul className="space-y-2 mb-4 md:mb-6">
+                <ul className="space-y-2 mb-4 md:mb-6 mt-3">
                   <li className="flex items-center gap-2 text-xs md:text-sm text-foreground/80">
                     <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary flex-shrink-0" />
                     <span>{pkg.credits} cover generations</span>

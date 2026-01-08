@@ -1258,7 +1258,7 @@ const EditStudio = () => {
                                   isSelected
                                     ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
                                     : ""
-                                }`}
+                                } ${c.id === "black" ? "ring-1 ring-white/50" : ""}`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
@@ -1287,7 +1287,7 @@ const EditStudio = () => {
                                   isSelected
                                     ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
                                     : ""
-                                }`}
+                                } ${c.id === "black" ? "ring-1 ring-white/50" : ""}`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`
                                 }}
@@ -1320,7 +1320,7 @@ const EditStudio = () => {
                 {/* Divider + Action Buttons - Fixed height container to prevent jumping */}
                 <div className="border-t border-border/50 mt-2 pt-2 mt-auto">
                   <p className="text-[10px] text-muted-foreground text-center mb-2">
-                    Pending edits must be applied first to appear in download
+                    Edits must be applied first to appear in download
                   </p>
                   <div className="grid grid-cols-2 gap-2 pb-4 min-h-[140px]">
                     <Button
@@ -1583,8 +1583,8 @@ const EditStudio = () => {
                             <Download className="w-4 h-4" />
                             {upscaledImageUrl ? "Download HD" : "Download"}
                           </Button>
-                          <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            Edits must be applied first
+                          <p className="text-[10px] text-muted-foreground text-center mt-1 max-w-[140px]">
+                            Edits must be applied first to appear in download
                           </p>
                         </div>
                         <Button
@@ -1671,7 +1671,7 @@ const EditStudio = () => {
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Main Color</Label>
                         <div className="grid grid-cols-10 gap-1">
-                          {colorPalette.map(c => {
+                            {colorPalette.map(c => {
                             const isSelected = mainColor === c.id;
                             return (
                               <button
@@ -1682,7 +1682,7 @@ const EditStudio = () => {
                                   isSelected
                                     ? `ring-2 ring-offset-1 ring-offset-background`
                                     : "hover:scale-105"
-                                }`}
+                                } ${c.id === "black" ? "ring-1 ring-white/50" : ""}`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`,
                                   boxShadow: isSelected ? `0 0 0 2px ${c.color}` : undefined
@@ -1712,7 +1712,7 @@ const EditStudio = () => {
                                   isSelected
                                     ? `ring-2 ring-offset-1 ring-offset-background`
                                     : "hover:scale-105"
-                                }`}
+                                } ${c.id === "black" ? "ring-1 ring-white/50" : ""}`}
                                 style={{ 
                                   background: `linear-gradient(160deg, ${c.color} 0%, ${c.color}cc 50%, ${c.color}99 100%)`,
                                   boxShadow: isSelected ? `0 0 0 2px ${c.color}` : undefined
