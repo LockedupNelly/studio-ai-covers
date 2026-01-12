@@ -846,7 +846,7 @@ const EditStudio = () => {
                 {/* Cover Preview */}
                 <div className="bg-background pb-1">
                   <div 
-                    className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
+                    className="group/cover aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
                   >
                     {imageUrl ? (
                       <>
@@ -956,11 +956,11 @@ const EditStudio = () => {
                           </div>
                         )}
                         
-                        {/* Change Cover button overlay */}
+                        {/* Change Cover button overlay - shows on hover */}
                         <button
                           onClick={handleBackToSelector}
                           disabled={isEditing}
-                          className="absolute top-2 right-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-[10px] font-medium flex items-center gap-1 hover:bg-background transition-colors disabled:opacity-50"
+                          className="absolute top-2 right-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-[10px] font-medium flex items-center gap-1 transition-all duration-200 disabled:opacity-50 opacity-0 hover:opacity-100 focus:opacity-100 group-hover/cover:opacity-100"
                         >
                           <ChevronLeft className="w-2.5 h-2.5" />
                           Change
@@ -1461,7 +1461,7 @@ const EditStudio = () => {
               <div className="grid lg:grid-cols-2 gap-8">
                 {/* Left: Cover Preview */}
                 <div className="space-y-4">
-                  <div className="aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
+                  <div className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <>
                         <img
@@ -1570,11 +1570,11 @@ const EditStudio = () => {
                           </div>
                         )}
                         
-                        {/* Change Cover button overlay */}
+                        {/* Change Cover button overlay - shows on hover */}
                         <button
                           onClick={handleBackToSelector}
                           disabled={isEditing}
-                          className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-background/90 backdrop-blur-sm text-xs font-medium flex items-center gap-1.5 hover:bg-background transition-colors border border-border disabled:opacity-50"
+                          className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-background/90 backdrop-blur-sm text-xs font-medium flex items-center gap-1.5 transition-all duration-200 border border-border disabled:opacity-50 opacity-0 hover:opacity-100 focus:opacity-100 group-hover/cover:opacity-100"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
                           Change Cover
