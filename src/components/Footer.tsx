@@ -12,6 +12,7 @@ export const Footer = () => {
             <p className="text-xs text-foreground/60 mt-1">Toronto, Canada</p>
           </div>
           <nav className="flex items-center gap-6 text-sm text-foreground/70">
+            <Link to="/faq" className="hover:text-primary transition-colors">FAQ</Link>
             <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
             <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <Link to="/refund-policy" className="hover:text-primary transition-colors">Refunds</Link>
