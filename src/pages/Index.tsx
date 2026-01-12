@@ -6,7 +6,7 @@ import { WelcomeModal } from "@/components/WelcomeModal";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Wand2, Sparkles, ArrowRight, Music, Layers, Palette, Headphones, Type, Sliders } from "lucide-react";
+import { Wand2, ArrowRight, Zap, Layers, Palette, Sun, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const exampleCovers = [
@@ -45,7 +45,7 @@ const Index = () => {
           <HeroSection />
         </div>
         
-        {/* Example Covers Section - Tighter spacing */}
+        {/* Example Covers Section */}
         <section className="py-10 px-4">
           <div className="container mx-auto max-w-6xl">
             <h2 className="text-2xl md:text-3xl font-display text-center mb-3 tracking-wide">
@@ -83,79 +83,168 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Design Studio Focus Section - Premium White/Silver Theme */}
-        <section className="relative py-24 px-4 overflow-hidden">
-          {/* Gradient background - dark to silver/white */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-zinc-900/80 to-zinc-800/50" />
+        {/* THE STUDIOS - Bold Split Design */}
+        <section className="relative py-20 md:py-32 px-4 overflow-hidden">
+          {/* Dynamic background */}
+          <div className="absolute inset-0">
+            {/* Left side - Design Studio gradient */}
+            <div className="absolute left-0 top-0 w-1/2 h-full bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
+            {/* Right side - Edit Studio gradient */}
+            <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-bl from-white/10 via-zinc-500/5 to-transparent" />
+            {/* Center glow */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-white/5 via-transparent to-transparent rounded-full blur-3xl" />
+          </div>
           
-          {/* Subtle grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }} />
+          {/* Decorative line */}
+          <div className="absolute left-1/2 top-20 bottom-20 w-px bg-gradient-to-b from-transparent via-border to-transparent hidden lg:block" />
           
-          {/* Top glow accent */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-white/5 to-transparent blur-3xl" />
-          
-          <div className="container mx-auto max-w-6xl relative z-10">
-            {/* Section Header with silver accent */}
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
-                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                <span className="text-xs font-medium text-white/70 uppercase tracking-widest">The Creative Suite</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-display text-center mb-6 tracking-wide">
-                <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">DESIGN</span>
-                <span className="text-primary ml-3">STUDIO</span>
+          <div className="container mx-auto max-w-7xl relative z-10">
+            {/* Main headline */}
+            <div className="text-center mb-16 md:mb-24">
+              <h2 className="text-4xl md:text-6xl lg:text-7xl font-display tracking-tight mb-4">
+                <span className="text-foreground">TWO </span>
+                <span className="relative">
+                  <span className="text-primary">STUDIOS</span>
+                  <svg className="absolute -bottom-2 left-0 w-full h-3 text-primary/30" viewBox="0 0 200 12" fill="none">
+                    <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                  </svg>
+                </span>
               </h2>
-              <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto">
-                Create professional album covers in seconds with AI
+              <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
+                Professional-grade cover art creation & editing
               </p>
             </div>
             
-            {/* Feature Cards - Premium glassmorphism */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
-              {[
-                { icon: Sparkles, title: "AI-Powered Generation", desc: "Describe your vision and watch it come to life in seconds" },
-                { icon: Headphones, title: "Audio Analysis", desc: "Upload your track and let AI suggest the perfect vibe" },
-                { icon: Type, title: "30+ Text Styles", desc: "Professional typography for every genre" },
-                { icon: Palette, title: "Multiple Genres", desc: "From Hip-Hop to Classical, we've got you covered" },
-                { icon: Layers, title: "Edit Studio", desc: "Add textures, lighting, and parental advisory badges" },
-                { icon: Music, title: "Streaming Ready", desc: "3000×3000px resolution, perfect for all platforms" },
-              ].map((feature, idx) => (
-                <div 
-                  key={idx}
-                  className="group relative p-5 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.05] hover:border-white/20 transition-all duration-300"
-                >
-                  {/* Hover glow */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
-                      <feature.icon className="w-5 h-5 text-white/80 group-hover:text-primary transition-colors" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-sm tracking-wider text-white/90 mb-1 uppercase">{feature.title}</h3>
-                      <p className="text-sm text-zinc-500">{feature.desc}</p>
-                    </div>
+            {/* Two Studios Grid */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
+              {/* Design Studio */}
+              <div className="group relative">
+                {/* Floating badge */}
+                <div className="absolute -top-4 left-6 z-10">
+                  <div className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full shadow-lg shadow-primary/25">
+                    CREATE
                   </div>
                 </div>
-              ))}
+                
+                <div className="relative p-8 md:p-10 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background overflow-hidden">
+                  {/* Glow effect */}
+                  <div className="absolute -top-20 -left-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-colors duration-500" />
+                  
+                  <div className="relative">
+                    <h3 className="text-3xl md:text-4xl font-display mb-4 tracking-tight">
+                      <span className="text-primary">Design</span> Studio
+                    </h3>
+                    
+                    <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
+                      Describe your vision. Our AI creates stunning, unique cover art in seconds. No design skills needed.
+                    </p>
+                    
+                    {/* Feature highlights */}
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Zap className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-sm text-foreground/80">AI generates from text prompts</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Wand2 className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-sm text-foreground/80">30+ professional text styles</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-sm text-foreground/80">3000×3000px streaming-ready</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
+                      className="w-full md:w-auto gap-2 text-base py-6 px-8"
+                      size="lg"
+                    >
+                      Open Design Studio
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Edit Studio */}
+              <div className="group relative">
+                {/* Floating badge */}
+                <div className="absolute -top-4 left-6 z-10">
+                  <div className="px-3 py-1 bg-white text-zinc-900 text-xs font-bold rounded-full shadow-lg">
+                    PERFECT
+                  </div>
+                </div>
+                
+                <div className="relative p-8 md:p-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-background to-background overflow-hidden">
+                  {/* Glow effect */}
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/15 transition-colors duration-500" />
+                  
+                  <div className="relative">
+                    <h3 className="text-3xl md:text-4xl font-display mb-4 tracking-tight">
+                      <span className="bg-gradient-to-r from-zinc-200 to-zinc-400 bg-clip-text text-transparent">Edit</span> Studio
+                    </h3>
+                    
+                    <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
+                      Take your covers to the next level. Add textures, lighting effects, and finishing touches.
+                    </p>
+                    
+                    {/* Feature highlights */}
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                          <Layers className="w-4 h-4 text-white/80" />
+                        </div>
+                        <span className="text-sm text-foreground/80">Textures & overlay effects</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                          <Sun className="w-4 h-4 text-white/80" />
+                        </div>
+                        <span className="text-sm text-foreground/80">Lighting & color grading</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                          <Palette className="w-4 h-4 text-white/80" />
+                        </div>
+                        <span className="text-sm text-foreground/80">Parental advisory badges</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => user ? navigate("/edit-studio") : navigate("/auth")}
+                      variant="outline"
+                      className="w-full md:w-auto gap-2 text-base py-6 px-8 border-white/20 hover:bg-white/5"
+                      size="lg"
+                    >
+                      Open Edit Studio
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {/* CTA - Premium button */}
-            <div className="text-center">
-              <Button 
-                size="lg"
-                onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
-                className="gap-3 text-base md:text-lg px-8 md:px-12 py-6 md:py-7 rounded-full bg-gradient-to-r from-primary via-primary to-red-600 hover:from-red-600 hover:to-primary shadow-[0_0_30px_rgba(239,68,68,0.3)] hover:shadow-[0_0_50px_rgba(239,68,68,0.5)] transition-all duration-300"
-              >
-                Open Design Studio
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-              <p className="text-sm text-zinc-500 mt-5">
-                {user ? "Jump right into creating" : "Sign up free — get 3 credits to start"}
-              </p>
+            {/* Bottom quality badges */}
+            <div className="flex flex-wrap justify-center gap-6 mt-16 md:mt-24">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                Streaming Ready
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+                3000×3000px Quality
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                100% Unique
+              </div>
             </div>
           </div>
         </section>
