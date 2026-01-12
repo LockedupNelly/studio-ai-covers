@@ -79,8 +79,8 @@ export const HeroSection = () => {
                 <div className="w-2 h-2 rounded-full bg-blue-400" />
                 No Watermarks
               </div>
-              <div className="flex items-center gap-2 text-amber-400 underline underline-offset-2">
-                <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <div className="flex items-center gap-2 text-primary underline underline-offset-2">
+                <div className="w-2 h-2 rounded-full bg-primary" />
                 No Card Required
               </div>
             </div>
@@ -148,10 +148,6 @@ export const HeroSection = () => {
         </div>
       </div>
 
-      {/* Scroll indicator - subtle animation */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/60">
-        <div className="w-px h-8 bg-gradient-to-b from-muted-foreground/40 to-transparent animate-pulse" />
-      </div>
     </section>
   );
 };
