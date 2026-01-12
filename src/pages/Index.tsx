@@ -33,10 +33,22 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      {/* Subtle grid overlay for entire page */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px'
+        }}
+      />
+      
       <WelcomeModal />
       <Header />
       
-      <main className="pt-16">
+      <main className="pt-16 relative z-10">
         {/* Hero section */}
         <HeroSection />
         
@@ -321,131 +333,147 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Final CTA Section - Engaging with Spotify-style visual */}
-        <section className="relative py-12 md:py-20 px-4 overflow-hidden">
+        {/* Final CTA Section - Visual Journey: Idea → Creation → Spotify */}
+        <section className="relative py-16 md:py-24 px-4 overflow-hidden">
           {/* Bright silver/white gradient background for trust */}
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/40 via-zinc-700/20 to-zinc-600/10" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-white/8 rounded-full blur-[150px]" />
-          <div className="absolute top-1/3 right-1/4 w-[400px] h-[300px] bg-zinc-400/10 rounded-full blur-[120px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/40 via-zinc-700/30 to-zinc-500/20" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-white/10 rounded-full blur-[180px]" />
+          <div className="absolute top-1/3 right-1/4 w-[400px] h-[300px] bg-zinc-300/10 rounded-full blur-[120px]" />
           
-          <div className="container mx-auto max-w-5xl relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
-              {/* Visual side - Phone with Spotify-style interface showing the cover */}
-              <div className="flex-1 relative hidden lg:flex justify-center">
+          <div className="container mx-auto max-w-6xl relative z-10">
+            {/* Visual Journey - Desktop */}
+            <div className="hidden lg:flex items-center justify-center gap-4 mb-12">
+              {/* Step 1: The Idea - Thought bubble */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-32 h-32 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-xl">
+                  {/* Thought bubbles */}
+                  <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-zinc-700 border border-white/10" />
+                  <div className="absolute -top-5 right-1 w-3 h-3 rounded-full bg-zinc-700 border border-white/10" />
+                  <div className="absolute -top-7 right-4 w-2 h-2 rounded-full bg-zinc-700 border border-white/10" />
+                  {/* Light bulb / idea icon */}
+                  <div className="text-4xl">💭</div>
+                </div>
+                <span className="mt-3 text-sm text-muted-foreground font-medium">Your Vision</span>
+              </div>
+              
+              {/* Arrow 1 */}
+              <div className="flex items-center gap-2 px-4">
+                <div className="w-16 h-px bg-gradient-to-r from-white/20 to-primary/50" />
+                <ArrowRight className="w-5 h-5 text-primary" />
+              </div>
+              
+              {/* Step 2: AI Creates - Cover being generated */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-32 h-32 rounded-2xl bg-gradient-to-br from-primary/20 to-red-900/30 border border-primary/30 flex items-center justify-center shadow-xl overflow-hidden">
+                  {/* Sparkle effects */}
+                  <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="absolute bottom-3 right-3 w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse delay-300" />
+                  <div className="absolute top-1/2 right-2 w-1 h-1 rounded-full bg-white/50 animate-pulse delay-500" />
+                  {/* Mini cover preview with glow */}
+                  <div className="w-20 h-20 rounded-lg overflow-hidden border border-primary/50 shadow-lg shadow-primary/30">
+                    <img src={exampleCovers[0]} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <Wand2 className="absolute -bottom-1 -right-1 w-8 h-8 text-primary p-1.5 bg-zinc-900 rounded-full border border-primary/50" />
+                </div>
+                <span className="mt-3 text-sm text-primary font-medium">AI Creates</span>
+              </div>
+              
+              {/* Arrow 2 */}
+              <div className="flex items-center gap-2 px-4">
+                <div className="w-16 h-px bg-gradient-to-r from-primary/50 to-emerald-500/50" />
+                <ArrowRight className="w-5 h-5 text-emerald-500" />
+              </div>
+              
+              {/* Step 3: On Spotify - Phone mockup */}
+              <div className="flex flex-col items-center">
                 <div className="relative">
-                  {/* Phone frame */}
-                  <div className="w-72 h-[540px] rounded-[45px] border-[5px] border-zinc-500 bg-zinc-900 shadow-2xl shadow-black/60 overflow-hidden p-2">
-                    <div className="w-full h-full rounded-[36px] bg-zinc-950 overflow-hidden flex flex-col">
-                      {/* Status bar / notch */}
-                      <div className="h-8 flex items-center justify-center">
-                        <div className="w-24 h-6 bg-zinc-900 rounded-full" />
+                  {/* Phone frame - compact */}
+                  <div className="w-32 h-56 rounded-[24px] border-[3px] border-zinc-500 bg-zinc-900 shadow-2xl shadow-black/50 overflow-hidden p-1">
+                    <div className="w-full h-full rounded-[20px] bg-zinc-950 overflow-hidden flex flex-col">
+                      {/* Notch */}
+                      <div className="h-4 flex items-center justify-center">
+                        <div className="w-10 h-3 bg-zinc-900 rounded-full" />
                       </div>
-                      
-                      {/* Spotify-style now playing screen */}
-                      <div className="flex-1 p-4 flex flex-col bg-gradient-to-b from-emerald-900/60 via-zinc-950 to-zinc-950">
-                        {/* Spotify header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="w-6 h-6 flex items-center justify-center">
-                            <div className="w-4 h-0.5 bg-white/60" />
-                          </div>
-                          <span className="text-[10px] text-white/60 uppercase tracking-widest">Playing From Album</span>
-                          <div className="w-6 h-6" />
+                      {/* Spotify UI */}
+                      <div className="flex-1 p-2 bg-gradient-to-b from-emerald-900/50 via-zinc-950 to-zinc-950">
+                        {/* Album cover */}
+                        <div className="aspect-square rounded overflow-hidden shadow-lg mb-2">
+                          <img src={exampleCovers[0]} alt="" className="w-full h-full object-cover" />
                         </div>
-                        
-                        {/* Album cover - Large */}
-                        <div className="aspect-square rounded-lg overflow-hidden shadow-2xl shadow-black/50 mb-4">
-                          <img src={exampleCovers[0]} alt="Album cover" className="w-full h-full object-cover" />
-                        </div>
-                        
                         {/* Track info */}
-                        <div className="mb-3">
-                          <h4 className="text-white font-semibold text-sm truncate">Midnight Dreams</h4>
-                          <p className="text-white/50 text-xs">Artist Name</p>
+                        <div className="text-[8px] text-white truncate font-medium">Midnight Dreams</div>
+                        <div className="text-[7px] text-white/50 mb-1">Artist Name</div>
+                        {/* Progress */}
+                        <div className="h-0.5 bg-white/20 rounded-full mb-2">
+                          <div className="h-full w-1/3 bg-emerald-500 rounded-full" />
                         </div>
-                        
-                        {/* Progress bar */}
-                        <div className="mb-3">
-                          <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-                            <div className="h-full w-1/3 bg-white rounded-full" />
+                        {/* Controls */}
+                        <div className="flex justify-center">
+                          <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[5px] border-l-black border-y-[3px] border-y-transparent ml-0.5" />
                           </div>
-                          <div className="flex justify-between text-[9px] text-white/40 mt-1">
-                            <span>1:23</span>
-                            <span>3:45</span>
-                          </div>
-                        </div>
-                        
-                        {/* Playback controls */}
-                        <div className="flex items-center justify-center gap-6 mt-auto mb-2">
-                          <div className="w-5 h-5 text-white/60">⏮</div>
-                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                            <div className="w-0 h-0 border-l-[10px] border-l-black border-y-[6px] border-y-transparent ml-1" />
-                          </div>
-                          <div className="w-5 h-5 text-white/60">⏭</div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* "Your cover here" badge */}
-                  <div className="absolute -top-2 -right-4 px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg shadow-emerald-500/30 rotate-12">
-                    Your cover here!
-                  </div>
-                  
-                  {/* Floating covers showing variety */}
-                  <div className="absolute -top-6 -left-16 w-24 h-24 rounded-xl overflow-hidden border-2 border-white/20 shadow-2xl rotate-[-15deg] z-10">
-                    <img src={exampleCovers[4]} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="absolute -bottom-6 -right-16 w-28 h-28 rounded-xl overflow-hidden border-2 border-white/20 shadow-2xl rotate-[10deg] z-10">
-                    <img src={exampleCovers[5]} alt="" className="w-full h-full object-cover" />
+                  {/* Spotify logo badge */}
+                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xs">♪</span>
                   </div>
                 </div>
+                <span className="mt-3 text-sm text-emerald-400 font-medium">Live on Spotify</span>
+              </div>
+            </div>
+            
+            {/* Mobile: Simplified visual */}
+            <div className="lg:hidden flex justify-center items-center gap-3 mb-8">
+              <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center text-2xl">💭</div>
+              <ArrowRight className="w-4 h-4 text-primary" />
+              <div className="w-16 h-16 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
+                <img src={exampleCovers[0]} alt="" className="w-12 h-12 rounded object-cover" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-emerald-500" />
+              <div className="w-16 h-16 rounded-xl bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-center text-2xl">🎧</div>
+            </div>
+              
+            {/* Text & CTA - Centered */}
+            <div className="text-center max-w-xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary">Start for Free</span>
               </div>
               
-              {/* Text side */}
-              <div className="flex-1 text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-primary">Start for Free</span>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-display mb-3">
+                Ready to Create Your Cover?
+              </h2>
+              
+              <p className="text-muted-foreground mb-6 text-sm">
+                Get 3 free credits to start. No credit card required. Create professional album covers in minutes.
+              </p>
+              
+              <div className="flex justify-center mb-6">
+                <Button
+                  size="lg"
+                  onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
+                  className="gap-2 px-8 py-5 rounded-full bg-gradient-to-r from-primary to-red-600 shadow-[0_0_40px_rgba(239,68,68,0.3)] hover:shadow-[0_0_60px_rgba(239,68,68,0.5)] transition-all"
+                >
+                  Get Started Free
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </div>
+                
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  3 Free Credits
                 </div>
-                
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-display mb-3">
-                  Ready to Create Your Cover?
-                </h2>
-                
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto lg:mx-0 text-sm">
-                  Get 3 free credits to start. No credit card required. Create professional album covers in minutes.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-6">
-                  <Button
-                    size="lg"
-                    onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
-                    className="gap-2 px-8 py-5 rounded-full bg-gradient-to-r from-primary to-red-600 shadow-[0_0_40px_rgba(239,68,68,0.3)] hover:shadow-[0_0_60px_rgba(239,68,68,0.5)] transition-all"
-                  >
-                    Get Started Free
-                    <ArrowRight className="w-5 h-5" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  No Watermarks
                 </div>
-                
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    3 Free Credits
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    No Watermarks
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    High Resolution
-                  </div>
-                </div>
-                
-                {/* Mobile visual hint */}
-                <div className="lg:hidden mt-8 flex items-center justify-center gap-2 text-muted-foreground">
-                  <Smartphone className="w-4 h-4" />
-                  <span className="text-xs">Works on any device</span>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  High Resolution
                 </div>
               </div>
             </div>
