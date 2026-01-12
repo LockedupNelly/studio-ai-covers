@@ -18,11 +18,11 @@ const NavLink = ({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
       onClick={() => navigate(to)}
       className={`transition-colors flex items-center gap-1.5 ${
         isActive 
-          ? "text-white font-medium text-[15px]" 
+          ? "text-white font-semibold text-sm" 
           : "text-foreground/60 hover:text-foreground text-sm"
       }`}
     >
-      <Icon className={isActive ? "w-4.5 h-4.5" : "w-4 h-4"} />
+      <Icon className="w-4 h-4" />
       {label}
     </button>
   );
