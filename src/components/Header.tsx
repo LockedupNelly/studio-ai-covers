@@ -1,11 +1,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, Coins, Menu, ChevronDown, LogOut, User, Wand2, Palette, Sparkles } from "lucide-react";
+import { Home, Coins, Menu, ChevronDown, LogOut, User, Wand2, Palette, Sparkles, LucideIcon } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
+// NavLink component for active state styling
+const NavLink = ({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  
+  return (
+    <button 
+      onClick={() => navigate(to)}
+      className={`transition-colors flex items-center gap-1.5 ${
+        isActive 
+          ? "text-white font-medium text-[15px]" 
+          : "text-foreground/60 hover:text-foreground text-sm"
+      }`}
+    >
+      <Icon className={isActive ? "w-4.5 h-4.5" : "w-4 h-4"} />
+      {label}
+    </button>
+  );
+};
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,34 +68,10 @@ export const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
-            <button 
-              onClick={() => navigate("/")}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Home className="w-4 h-4" />
-              Home
-            </button>
-            <button 
-              onClick={() => navigate("/design-studio")}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Wand2 className="w-4 h-4" />
-              Design Studio
-            </button>
-            <button 
-              onClick={() => navigate("/edit-studio")}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Palette className="w-4 h-4" />
-              Edit Studio
-            </button>
-            <button 
-              onClick={() => navigate("/purchase-credits")}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Coins className="w-4 h-4" />
-              Purchase Credits
-            </button>
+            <NavLink to="/" icon={Home} label="Home" />
+            <NavLink to="/design-studio" icon={Wand2} label="Design Studio" />
+            <NavLink to="/edit-studio" icon={Palette} label="Edit Studio" />
+            <NavLink to="/purchase-credits" icon={Coins} label="Purchase Credits" />
           </nav>
 
           {/* Auth & Credits */}
