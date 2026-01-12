@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Sparkles, Check } from "lucide-react";
+import { Coins, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -127,18 +127,6 @@ const PurchaseCredits = () => {
             ))}
           </div>
 
-          {/* Subscription CTA */}
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-2xl p-6 md:p-8 text-center">
-            <Sparkles className="w-8 h-8 text-primary mx-auto mb-4" />
-            <h3 className="font-display text-xl mb-2">WANT UNLIMITED GENERATIONS?</h3>
-            <p className="text-foreground/70 mb-6 max-w-md mx-auto">
-              Subscribe to Pro Access and get unlimited generations, priority processing, and exclusive discounts.
-            </p>
-            <Button variant="studio" onClick={() => navigate("/pro-access")}>
-              <Sparkles className="w-4 h-4" />
-              View Pro Access Plans
-            </Button>
-          </div>
         </div>
       </main>
 
