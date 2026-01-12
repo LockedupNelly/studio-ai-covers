@@ -18,6 +18,7 @@ import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import EditStudio from "./pages/EditStudio";
 import ResetPassword from "./pages/ResetPassword";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
