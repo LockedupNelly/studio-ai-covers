@@ -33,13 +33,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Subtle grid overlay for entire page */}
+      {/* Subtle silver grid overlay for entire page */}
       <div 
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)
+            linear-gradient(to right, rgba(192,192,192,0.04) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(192,192,192,0.04) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px'
         }}
@@ -250,12 +250,11 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Social Proof & Reviews Section - White/Silver background for trust */}
-        <section className="relative py-12 md:py-16 px-4 overflow-hidden">
-          {/* Light gradient background for trust */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-zinc-900/60 to-zinc-700/30" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white/8 rounded-full blur-[150px]" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-zinc-300/10 rounded-full blur-[130px]" />
+        {/* Social Proof & Reviews Section - Flows naturally from above */}
+        <section className="relative py-8 md:py-12 px-4 overflow-hidden -mt-4">
+          {/* Subtle continuation of background */}
+          <div className="absolute inset-0 bg-background" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-white/5 rounded-full blur-[120px]" />
           
           <div className="container mx-auto max-w-4xl relative z-10">
             <div className="text-center mb-8">
@@ -333,79 +332,85 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Final CTA Section - Visual Journey: Idea → Creation → Spotify */}
+        {/* Final CTA Section - Visual Journey: Idea → Creation → Streaming */}
         <section className="relative py-16 md:py-24 px-4 overflow-hidden">
-          {/* Bright silver/white gradient background for trust */}
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/40 via-zinc-700/30 to-zinc-500/20" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-white/10 rounded-full blur-[180px]" />
-          <div className="absolute top-1/3 right-1/4 w-[400px] h-[300px] bg-zinc-300/10 rounded-full blur-[120px]" />
+          {/* Natural gradient transition to lighter tones */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-zinc-900/80 to-zinc-800/60" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-white/8 rounded-full blur-[150px]" />
           
           <div className="container mx-auto max-w-6xl relative z-10">
             {/* Visual Journey - Desktop */}
-            <div className="hidden lg:flex items-center justify-center gap-4 mb-12">
+            <div className="hidden lg:flex items-center justify-center gap-6 mb-12">
               {/* Step 1: The Idea - Thought bubble */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-xl">
+              <div className="flex flex-col items-center group">
+                <div className="relative w-36 h-36 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-xl group-hover:border-white/20 transition-all duration-300">
                   {/* Thought bubbles */}
                   <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-zinc-700 border border-white/10" />
                   <div className="absolute -top-5 right-1 w-3 h-3 rounded-full bg-zinc-700 border border-white/10" />
                   <div className="absolute -top-7 right-4 w-2 h-2 rounded-full bg-zinc-700 border border-white/10" />
-                  {/* Light bulb / idea icon */}
-                  <div className="text-4xl">💭</div>
+                  {/* Music note idea */}
+                  <div className="flex flex-col items-center">
+                    <span className="text-3xl mb-1">🎵</span>
+                    <span className="text-[10px] text-muted-foreground/60">Your idea...</span>
+                  </div>
                 </div>
                 <span className="mt-3 text-sm text-muted-foreground font-medium">Your Vision</span>
               </div>
               
               {/* Arrow 1 */}
-              <div className="flex items-center gap-2 px-4">
-                <div className="w-16 h-px bg-gradient-to-r from-white/20 to-primary/50" />
-                <ArrowRight className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-20 h-0.5 bg-gradient-to-r from-white/10 via-white/20 to-primary/60 rounded-full" />
+                <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 text-primary" />
+                </div>
               </div>
               
               {/* Step 2: AI Creates - Cover being generated */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 rounded-2xl bg-gradient-to-br from-primary/20 to-red-900/30 border border-primary/30 flex items-center justify-center shadow-xl overflow-hidden">
+              <div className="flex flex-col items-center group">
+                <div className="relative w-36 h-36 rounded-2xl bg-gradient-to-br from-primary/20 to-red-900/30 border border-primary/30 flex items-center justify-center shadow-xl overflow-hidden group-hover:border-primary/50 transition-all duration-300">
                   {/* Sparkle effects */}
-                  <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <div className="absolute bottom-3 right-3 w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse delay-300" />
-                  <div className="absolute top-1/2 right-2 w-1 h-1 rounded-full bg-white/50 animate-pulse delay-500" />
+                  <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="absolute bottom-4 right-4 w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse delay-300" />
+                  <div className="absolute top-1/2 right-3 w-1 h-1 rounded-full bg-white/50 animate-pulse delay-500" />
                   {/* Mini cover preview with glow */}
-                  <div className="w-20 h-20 rounded-lg overflow-hidden border border-primary/50 shadow-lg shadow-primary/30">
+                  <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg shadow-primary/30">
                     <img src={exampleCovers[0]} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <Wand2 className="absolute -bottom-1 -right-1 w-8 h-8 text-primary p-1.5 bg-zinc-900 rounded-full border border-primary/50" />
+                  <Wand2 className="absolute -bottom-1 -right-1 w-9 h-9 text-primary p-1.5 bg-zinc-900 rounded-full border border-primary/50" />
                 </div>
-                <span className="mt-3 text-sm text-primary font-medium">AI Creates</span>
+                <span className="mt-3 text-sm text-primary font-semibold">AI Creates</span>
               </div>
               
               {/* Arrow 2 */}
-              <div className="flex items-center gap-2 px-4">
-                <div className="w-16 h-px bg-gradient-to-r from-primary/50 to-emerald-500/50" />
-                <ArrowRight className="w-5 h-5 text-emerald-500" />
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-20 h-0.5 bg-gradient-to-r from-primary/60 via-purple-500/40 to-violet-500/60 rounded-full" />
+                <div className="w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 text-violet-400" />
+                </div>
               </div>
               
-              {/* Step 3: On Spotify - Phone mockup */}
-              <div className="flex flex-col items-center">
+              {/* Step 3: Streaming Services - Phone mockup with neutral colors */}
+              <div className="flex flex-col items-center group">
                 <div className="relative">
                   {/* Phone frame - compact */}
-                  <div className="w-32 h-56 rounded-[24px] border-[3px] border-zinc-500 bg-zinc-900 shadow-2xl shadow-black/50 overflow-hidden p-1">
+                  <div className="w-36 h-60 rounded-[24px] border-[3px] border-zinc-500 bg-zinc-900 shadow-2xl shadow-black/50 overflow-hidden p-1 group-hover:border-zinc-400 transition-all duration-300">
                     <div className="w-full h-full rounded-[20px] bg-zinc-950 overflow-hidden flex flex-col">
                       {/* Notch */}
                       <div className="h-4 flex items-center justify-center">
                         <div className="w-10 h-3 bg-zinc-900 rounded-full" />
                       </div>
-                      {/* Spotify UI */}
-                      <div className="flex-1 p-2 bg-gradient-to-b from-emerald-900/50 via-zinc-950 to-zinc-950">
+                      {/* Streaming UI - Neutral/purple tones */}
+                      <div className="flex-1 p-2 bg-gradient-to-b from-violet-900/40 via-zinc-950 to-zinc-950">
                         {/* Album cover */}
-                        <div className="aspect-square rounded overflow-hidden shadow-lg mb-2">
+                        <div className="aspect-square rounded-lg overflow-hidden shadow-lg mb-2 border border-violet-500/30">
                           <img src={exampleCovers[0]} alt="" className="w-full h-full object-cover" />
                         </div>
                         {/* Track info */}
-                        <div className="text-[8px] text-white truncate font-medium">Midnight Dreams</div>
-                        <div className="text-[7px] text-white/50 mb-1">Artist Name</div>
+                        <div className="text-[9px] text-white truncate font-semibold">Your Track</div>
+                        <div className="text-[7px] text-white/50 mb-1.5">Your Name</div>
                         {/* Progress */}
                         <div className="h-0.5 bg-white/20 rounded-full mb-2">
-                          <div className="h-full w-1/3 bg-emerald-500 rounded-full" />
+                          <div className="h-full w-1/3 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full" />
                         </div>
                         {/* Controls */}
                         <div className="flex justify-center">
@@ -416,24 +421,33 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Spotify logo badge */}
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white text-xs">♪</span>
+                  {/* Music note badge - neutral purple */}
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-sm">♪</span>
                   </div>
                 </div>
-                <span className="mt-3 text-sm text-emerald-400 font-medium">Live on Spotify</span>
+                <span className="mt-3 text-sm text-violet-400 font-semibold">Streaming Services</span>
               </div>
             </div>
             
             {/* Mobile: Simplified visual */}
-            <div className="lg:hidden flex justify-center items-center gap-3 mb-8">
-              <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center text-2xl">💭</div>
-              <ArrowRight className="w-4 h-4 text-primary" />
-              <div className="w-16 h-16 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
-                <img src={exampleCovers[0]} alt="" className="w-12 h-12 rounded object-cover" />
+            <div className="lg:hidden flex justify-center items-center gap-2 mb-8">
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center text-xl">🎵</div>
+                <span className="text-[10px] text-muted-foreground mt-1">Vision</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-emerald-500" />
-              <div className="w-16 h-16 rounded-xl bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-center text-2xl">🎧</div>
+              <ArrowRight className="w-3 h-3 text-primary" />
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
+                  <img src={exampleCovers[0]} alt="" className="w-11 h-11 rounded object-cover" />
+                </div>
+                <span className="text-[10px] text-primary mt-1">AI Creates</span>
+              </div>
+              <ArrowRight className="w-3 h-3 text-violet-400" />
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-xl bg-violet-900/30 border border-violet-500/30 flex items-center justify-center text-xl">📱</div>
+                <span className="text-[10px] text-violet-400 mt-1">Streaming</span>
+              </div>
             </div>
               
             {/* Text & CTA - Centered */}
