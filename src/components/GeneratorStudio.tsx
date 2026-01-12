@@ -410,20 +410,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   return (
     <section className="py-8 relative z-10 bg-background">
       <div className="container mx-auto px-4">
-        {/* Mode Tabs - Above Studio */}
-        <div className="max-w-6xl mx-auto mb-4">
-          <div className={`inline-flex rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary"}`}>
+        {/* Mode Tabs - Centered Above Studio */}
+        <div className="max-w-6xl mx-auto mb-6 flex justify-center">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setStudioMode("create")}
               disabled={isGenerating}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                 studioMode === "create"
                   ? themeMode === "light"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "bg-primary text-primary-foreground"
+                    ? "bg-gray-900 text-white"
+                    : "bg-foreground text-background"
                   : themeMode === "light"
-                    ? "text-gray-600 hover:text-gray-900"
-                    : "text-foreground/60 hover:text-foreground"
+                    ? "text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
+                    : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
               }`}
             >
               <Wand2 className="w-4 h-4" />
@@ -432,14 +432,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
             <button
               onClick={() => setStudioMode("audio")}
               disabled={isGenerating}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                 studioMode === "audio"
                   ? themeMode === "light"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "bg-primary text-primary-foreground"
+                    ? "bg-gray-900 text-white"
+                    : "bg-foreground text-background"
                   : themeMode === "light"
-                    ? "text-gray-600 hover:text-gray-900"
-                    : "text-foreground/60 hover:text-foreground"
+                    ? "text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
+                    : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
               }`}
             >
               <Music className="w-4 h-4" />
@@ -682,7 +682,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         setSelectedCategory(null);
                         toast.success("AI will choose the best text style");
                       }}
-                      className={`flex-shrink-0 w-24 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                      className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all ${
                         !selectedVariant
                           ? themeMode === "light" 
                             ? "border-gray-800 bg-gray-100" 
@@ -701,7 +701,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <button
                         key={`${category}-${variant.id}`}
                         onClick={() => handleSelectTextStyle(category, variant)}
-                        className={`flex-shrink-0 w-24 h-16 rounded-lg border-2 overflow-hidden transition-all ${
+                        className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all ${
                           selectedVariant?.id === variant.id && selectedCategory === category
                             ? themeMode === "light" 
                               ? "border-gray-800 ring-2 ring-gray-800/20" 

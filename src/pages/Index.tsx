@@ -1,242 +1,24 @@
-import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
-import { GeneratorStudio } from "@/components/GeneratorStudio";
 import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCredits } from "@/hooks/useCredits";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
-
-interface ReturnedState {
-  returnedImage?: string;
-  genre?: string;
-  style?: string;
-  mood?: string;
-  textStyle?: string;
-  songTitle?: string;
-  artistName?: string;
-}
+import { useNavigate } from "react-router-dom";
+import { Wand2, Palette, Sparkles, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const { credits, refetch: refetchCredits } = useCredits();
   const navigate = useNavigate();
-  const location = useLocation();
-  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // Check for returned state from EditStudio
-  const returnedState = location.state as ReturnedState | null;
-  const [generatedImage, setGeneratedImage] = useState<string | null>(
-    returnedState?.returnedImage || null
-  );
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Listen for cover edit events from EditCoverDialog
-  useEffect(() => {
-    const handleCoverEdited = (event: CustomEvent<{ imageUrl: string }>) => {
-      setGeneratedImage(event.detail.imageUrl);
-    };
-
-    window.addEventListener('coverEdited', handleCoverEdited as EventListener);
-    return () => {
-      window.removeEventListener('coverEdited', handleCoverEdited as EventListener);
-    };
-  }, []);
-
-  const handleGenerate = async (
-    prompt: string,
-    genre: string,
-    style: string,
-    mood: string,
-    referenceImage?: string,
-    textStyleReferenceImage?: string
-  ) => {
-    setIsGenerating(true);
-
-    const extractInvokeErrorMessage = async (err: unknown): Promise<string> => {
-      const anyErr: any = err as any;
-
-      // supabase-js FunctionsHttpError shape
-      const body = anyErr?.context?.body;
-      if (body != null) {
-        try {
-          // In some builds, body can be a ReadableStream.
-          const raw =
-            typeof body === "string"
-              ? body
-              : body?.getReader
-                ? await new Response(body).text()
-                : JSON.stringify(body);
-
-          try {
-            const parsed = JSON.parse(raw);
-            if (typeof parsed?.error === "string" && parsed.error.trim()) return parsed.error;
-          } catch {
-            // Not JSON (or already plain text) — return as-is if meaningful.
-            if (raw.trim()) return raw.trim();
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      if (anyErr?.message) return String(anyErr.message);
-      return "Please try again";
-    };
-
-    const shouldRetry = (message: string) => {
-      const m = message.toLowerCase();
-      return (
-        m.includes("failed to fetch") ||
-        m.includes("network") ||
-        m.includes("cors") ||
-        m.includes("timeout") ||
-        m.includes("timed out") ||
-        m.includes("502") ||
-        m.includes("503") ||
-        m.includes("504")
-      );
-    };
-
-    // Clear any existing timeout
-    if (generationTimeoutRef.current) {
-      clearTimeout(generationTimeoutRef.current);
-    }
-    
-    // Create abort controller for this generation
-    abortControllerRef.current = new AbortController();
-    
-    // Set 3-minute client-side timeout (covers often take 90s+)
-    const GENERATION_TIMEOUT = 180000; // 180 seconds
-    let timedOut = false;
-    
-    // Track generation start time to check for recent covers on timeout
-    const generationStartedAt = Date.now();
-    
-    generationTimeoutRef.current = setTimeout(async () => {
-      timedOut = true;
-      abortControllerRef.current?.abort();
-      
-      // Try to recover by checking if a cover was generated recently
-      try {
-        const { data } = await supabase.functions.invoke("list-generations", {
-          body: { limit: 1, offset: 0 },
-        });
-        
-        const latestCover = data?.generations?.[0];
-        if (latestCover?.image_url && latestCover?.created_at) {
-          const coverTime = new Date(latestCover.created_at).getTime();
-          // If cover was created after we started generating (within last 4 mins)
-          if (coverTime > generationStartedAt - 10000) {
-            setGeneratedImage(latestCover.image_url);
-            setIsGenerating(false);
-            refetchCredits();
-            toast.success("Cover generated!", {
-              description: "The request took longer than expected, but your cover is ready.",
-            });
-            return;
-          }
-        }
-      } catch {
-        // Recovery failed, show timeout message
-      }
-      
-      setIsGenerating(false);
-      toast.error("Generation timed out", {
-        description: "Your cover may still be processing. Check Recent Covers in a moment.",
-      });
-    }, GENERATION_TIMEOUT);
-
-    try {
-      const maxAttempts = 3;
-      let lastError: unknown = null;
-
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        if (timedOut) break;
-        
-        try {
-          const { data, error } = await supabase.functions.invoke("generate-cover", {
-            body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
-          });
-
-          if (timedOut) break;
-
-          if (error) {
-            throw new Error(await extractInvokeErrorMessage(error));
-          }
-
-          if (data?.error) {
-            if (data.error.includes("No credits")) {
-              toast.error("No credits remaining", {
-                description: "Purchase more credits to continue generating.",
-              });
-              navigate("/purchase-credits");
-              return;
-            }
-            throw new Error(data.error);
-          }
-
-          // Single-pass generation - image comes back complete
-          if (data?.imageUrl) {
-            setGeneratedImage(data.imageUrl);
-            refetchCredits();
-
-            toast.success("Cover art generated!", {
-              description: `${genre} cover with ${style} style is ready.`,
-            });
-          }
-
-          // Success: stop retry loop
-          return;
-        } catch (e) {
-          if (timedOut) break;
-          
-          lastError = e;
-          const msg = e instanceof Error ? e.message : String(e);
-
-          const canRetry = attempt < maxAttempts && shouldRetry(msg);
-          if (!canRetry) throw e;
-
-          // brief backoff
-          await new Promise((r) => setTimeout(r, 600 * attempt));
-        }
-      }
-
-      // If all retries failed and not timed out, throw the last error
-      if (!timedOut && lastError) {
-        throw lastError;
-      }
-    } catch (error) {
-      if (!timedOut) {
-        console.error("Generation error:", error);
-        toast.error("Generation failed", {
-          description: error instanceof Error ? error.message : "Please try again",
-        });
-      }
-    } finally {
-      // Clear timeout on completion
-      if (generationTimeoutRef.current) {
-        clearTimeout(generationTimeoutRef.current);
-        generationTimeoutRef.current = null;
-      }
-      if (!timedOut) {
-        setIsGenerating(false);
-      }
-    }
-  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
-          <span className="text-white/80 text-sm">Loading...</span>
+          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-muted-foreground text-sm">Loading...</span>
         </div>
       </div>
     );
@@ -254,26 +36,90 @@ const Index = () => {
           <HeroSection />
         </div>
         
-        {/* Generator section without animated dots */}
-        {user ? (
-          <GeneratorStudio 
-            onGenerate={handleGenerate}
-            generatedImage={generatedImage}
-            isGenerating={isGenerating}
-          />
-        ) : (
-          <div className="py-16 text-center">
-            <p className="text-muted-foreground mb-4">
-              Sign in to start creating your cover art
+        {/* Features Section */}
+        <section className="py-16 px-4">
+          <div className="container mx-auto max-w-5xl">
+            <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
+              TWO POWERFUL <span className="text-primary">STUDIOS</span>
+            </h2>
+            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+              Create stunning cover art with our AI-powered Design Studio, then perfect every detail in our Edit Studio
             </p>
-            <button 
-              onClick={() => navigate("/auth")}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Sign in to get started
-            </button>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Design Studio Card */}
+              <div className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Wand2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-display text-xl mb-2 tracking-wide">DESIGN STUDIO</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Generate unique cover art using AI. Describe your vision, select styles, and let our advanced AI create professional artwork in seconds.
+                  </p>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      AI-powered generation
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Audio analysis for inspiration
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      30+ text styles to choose from
+                    </li>
+                  </ul>
+                  <Button 
+                    onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
+                    className="w-full group/btn"
+                  >
+                    {user ? "Open Design Studio" : "Sign in to Start"}
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Edit Studio Card */}
+              <div className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Palette className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-display text-xl mb-2 tracking-wide">EDIT STUDIO</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Perfect your covers with powerful editing tools. Add textures, lighting effects, parental advisory labels, and more.
+                  </p>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Textures & lighting overlays
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Parental advisory badges
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Color grading & effects
+                    </li>
+                  </ul>
+                  <Button 
+                    variant="outline"
+                    onClick={() => user ? navigate("/profile") : navigate("/auth")}
+                    className="w-full group/btn"
+                  >
+                    {user ? "View My Creations" : "Sign in to Start"}
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </section>
 
         <FAQSection />
       </main>

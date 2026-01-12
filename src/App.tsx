@@ -7,9 +7,8 @@ import { CartProvider } from "@/contexts/CartContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
-import AddOns from "./pages/AddOns";
+import DesignStudio from "./pages/DesignStudio";
 import PurchaseCredits from "./pages/PurchaseCredits";
-import ProAccess from "./pages/ProAccess";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TermsOfService from "./pages/TermsOfService";
@@ -35,10 +34,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/design-studio" element={<DesignStudio />} />
               <Route path="/edit-studio" element={<EditStudio />} />
-              <Route path="/addons" element={<AddOns />} />
               <Route path="/purchase-credits" element={<PurchaseCredits />} />
-              <Route path="/pro-access" element={<ProAccess />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="/terms" element={<TermsOfService />} />
