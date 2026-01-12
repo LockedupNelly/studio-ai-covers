@@ -18,27 +18,21 @@ export const HeroSection = () => {
 
   return (
     <section className="relative min-h-[85vh] md:min-h-[90vh] flex flex-col items-center justify-center pt-8 pb-24 overflow-hidden">
-      {/* Layered background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-zinc-900" />
+      {/* Dark background with red hues */}
+      <div className="absolute inset-0 bg-background" />
       
-      {/* Subtle silver/white glow effects */}
-      <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-zinc-400/[0.04] rounded-full blur-[100px]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.02] rounded-full blur-[150px]" />
+      {/* Red glow from top */}
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/20 rounded-full blur-[150px]" />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[120px]" />
+      <div className="absolute top-20 left-0 w-[300px] h-[300px] bg-red-700/10 rounded-full blur-[100px]" />
       
-      {/* Accent glow */}
-      <div className="absolute top-20 right-1/4 w-[300px] h-[300px] bg-primary/10 rounded-full blur-[80px]" />
-      
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-        backgroundSize: '50px 50px'
-      }} />
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
 
-      <div className="relative z-10 container mx-auto px-4">
-        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+      <div className="relative z-10 container mx-auto px-4 max-w-5xl">
+        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
           {/* Left side - Text content */}
-          <div className="flex-1 text-center lg:text-left max-w-2xl">
+          <div className="flex-1 text-center lg:text-left max-w-xl">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -46,10 +40,10 @@ export const HeroSection = () => {
             </div>
 
             {/* Main headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display tracking-tight mb-6 leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-display tracking-tight mb-6 leading-[1.1]">
               <span className="text-foreground">Create </span>
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-primary via-primary to-rose-400 bg-clip-text text-transparent">Stunning</span>
+                <span className="bg-gradient-to-r from-primary via-red-500 to-red-600 bg-clip-text text-transparent">Stunning</span>
                 <svg className="absolute -bottom-2 left-0 w-full h-4 text-primary/40" viewBox="0 0 200 16" fill="none">
                   <path d="M2 14C50 2 150 2 198 14" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
                 </svg>
@@ -59,7 +53,7 @@ export const HeroSection = () => {
             </h1>
 
             {/* Subheadline */}
-            <p className="text-base md:text-lg lg:text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0 px-2 lg:px-0">
+            <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-md mx-auto lg:mx-0">
               Professional AI-generated cover art in seconds. Describe your vision, choose a style, and watch the magic happen.
             </p>
 
@@ -68,7 +62,7 @@ export const HeroSection = () => {
               <Button 
                 size="lg"
                 onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
-                className="gap-2 text-base px-8 py-6 rounded-full bg-gradient-to-r from-primary to-rose-500 hover:from-primary/90 hover:to-rose-500/90 shadow-[0_0_40px_rgba(239,68,68,0.25)] hover:shadow-[0_0_60px_rgba(239,68,68,0.4)] transition-all"
+                className="gap-2 text-base px-8 py-6 rounded-full bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 shadow-[0_0_40px_rgba(239,68,68,0.25)] hover:shadow-[0_0_60px_rgba(239,68,68,0.4)] transition-all"
               >
                 Start Creating Free
                 <ArrowRight className="w-5 h-5" />
@@ -89,7 +83,7 @@ export const HeroSection = () => {
           </div>
 
           {/* Right side - Floating covers showcase */}
-          <div className="flex-1 relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
+          <div className="flex-1 relative w-full max-w-sm lg:max-w-md">
             <div className="relative aspect-square">
               {/* Main featured cover */}
               <div className="absolute inset-[12%] z-30 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 transform hover:scale-[1.02] transition-transform duration-500">
