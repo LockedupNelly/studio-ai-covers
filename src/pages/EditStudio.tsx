@@ -21,6 +21,7 @@ import { hasVariants, TextStyleVariant } from "@/lib/text-style-variants";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
+import { CoverSelector } from "@/components/CoverSelector";
 
 interface CoverAnalysis {
   dominantColors: string[];
@@ -232,12 +233,34 @@ const EditStudio = () => {
     }
   }, [user, loading, navigate]);
   
-  useEffect(() => {
-    if (!passedState?.imageUrl) {
-      toast.error("No cover to edit", { description: "Please select a cover first" });
-      navigate("/profile");
-    }
-  }, [passedState, navigate]);
+  // Handle selecting a cover from the selector
+  const handleSelectCover = (cover: any) => {
+    setImageUrl(cover.image_url);
+    setCurrentState(prev => ({
+      ...prev,
+      imageUrl: cover.image_url,
+      songTitle: cover.song_title || null,
+      artistName: cover.artist_name || null,
+      genre: cover.genre || "",
+      style: cover.style || "None",
+      mood: cover.mood || "None",
+      prompt: cover.prompt || "",
+      coverAnalysis: cover.cover_analysis || null,
+    }));
+    setEditHistory([cover.image_url]);
+    setHistoryIndex(0);
+  };
+
+  // Handle uploading a new image
+  const handleUploadImage = (uploadedImageUrl: string) => {
+    setImageUrl(uploadedImageUrl);
+    setCurrentState(prev => ({
+      ...prev,
+      imageUrl: uploadedImageUrl,
+    }));
+    setEditHistory([uploadedImageUrl]);
+    setHistoryIndex(0);
+  };
   
   // Fetch cover analysis from database if not provided but we have an image URL
   useEffect(() => {
@@ -828,123 +851,123 @@ const EditStudio = () => {
                     className="aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
                   >
                     {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt="Cover preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={imageUrl}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                        />
+                    
+                        {/* Lighting Preview Overlays */}
+                        {lightings.map(lightingId => {
+                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                          if (!lightingOption?.image) return null;
+                          const rotation = lightingRotations[lightingId] || 0;
+                          const baseOpacity = lightingOption.opacity || 1;
+                          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+                          const finalOpacity = baseOpacity * intensityMultiplier;
+                          return (
+                            <div 
+                              key={lightingId}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ 
+                                backgroundImage: `url(${lightingOption.image})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
+                                opacity: finalOpacity,
+                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                              }}
+                            />
+                          );
+                        })}
+                        
+                        {/* Texture Preview Overlays */}
+                        {textures.map(textureId => {
+                          const textureOption = textureOptions.find(t => t.id === textureId);
+                          if (!textureOption?.image) return null;
+                          const baseOpacity = textureOption.opacity || 0.5;
+                          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+                          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                          const rotation = textureRotations[textureId] || 0;
+                          return (
+                            <div 
+                              key={textureId}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ 
+                                backgroundImage: `url(${textureOption.image})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
+                                opacity: finalOpacity,
+                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                              }}
+                            />
+                          );
+                        })}
+                        
+                        {/* Color Filter Overlays - Real-time preview */}
+                        {mainColor && getColorHex(mainColor) && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{ 
+                              backgroundColor: getColorHex(mainColor),
+                              mixBlendMode: 'overlay',
+                              opacity: 0.45,
+                            }}
+                          />
+                        )}
+                        {accentColor && getColorHex(accentColor) && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{ 
+                              background: `
+                                radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                                radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                                radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
+                              `,
+                              mixBlendMode: 'color-dodge',
+                              opacity: 0.35,
+                            }}
+                          />
+                        )}
+                        
+                        {/* Parental Advisory Logo Overlay */}
+                        {parentalAdvisory !== "none" && (
+                          <div 
+                            className={`absolute w-[22%] ${
+                              paPosition === "bottom-right" ? "bottom-2 right-2" :
+                              paPosition === "bottom-left" ? "bottom-2 left-2" :
+                              "bottom-2 left-1/2 -translate-x-1/2"
+                            }`}
+                          >
+                            <img 
+                              src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
+                              alt="Parental Advisory"
+                              className="w-full h-auto"
+                              style={{ filter: paInverted ? "invert(1)" : "none" }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Version indicator */}
+                        {editHistory.length > 1 && (
+                          <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                            <History className="w-2.5 h-2.5" />
+                            {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                          </div>
+                        )}
+                        
+                        {/* Progress overlay */}
+                        {(isEditing || isUpscaling) && (
+                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            <p className="text-xs font-medium">{isEditing ? "Applying..." : "Upscaling..."}</p>
+                          </div>
+                        )}
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-                      </div>
-                    )}
-                    
-                    {/* Lighting Preview Overlays */}
-                    {lightings.map(lightingId => {
-                      const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                      if (!lightingOption?.image) return null;
-                      const rotation = lightingRotations[lightingId] || 0;
-                      const baseOpacity = lightingOption.opacity || 1;
-                      const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-                      const finalOpacity = baseOpacity * intensityMultiplier;
-                      return (
-                        <div 
-                          key={lightingId}
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ 
-                            backgroundImage: `url(${lightingOption.image})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                            opacity: finalOpacity,
-                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                          }}
-                        />
-                      );
-                    })}
-                    
-                    {/* Texture Preview Overlays */}
-                    {textures.map(textureId => {
-                      const textureOption = textureOptions.find(t => t.id === textureId);
-                      if (!textureOption?.image) return null;
-                      const baseOpacity = textureOption.opacity || 0.5;
-                      const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-                      const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-                      const rotation = textureRotations[textureId] || 0;
-                      return (
-                        <div 
-                          key={textureId}
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ 
-                            backgroundImage: `url(${textureOption.image})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                            opacity: finalOpacity,
-                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                          }}
-                        />
-                      );
-                    })}
-                    
-                    {/* Color Filter Overlays - Real-time preview */}
-                    {mainColor && getColorHex(mainColor) && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          backgroundColor: getColorHex(mainColor),
-                          mixBlendMode: 'overlay',
-                          opacity: 0.45,
-                        }}
-                      />
-                    )}
-                    {accentColor && getColorHex(accentColor) && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          background: `
-                            radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                            radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                            radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
-                          `,
-                          mixBlendMode: 'color-dodge',
-                          opacity: 0.35,
-                        }}
-                      />
-                    )}
-                    
-                    {/* Parental Advisory Logo Overlay */}
-                    {parentalAdvisory !== "none" && (
-                      <div 
-                        className={`absolute w-[22%] ${
-                          paPosition === "bottom-right" ? "bottom-2 right-2" :
-                          paPosition === "bottom-left" ? "bottom-2 left-2" :
-                          "bottom-2 left-1/2 -translate-x-1/2"
-                        }`}
-                      >
-                        <img 
-                          src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
-                          alt="Parental Advisory"
-                          className="w-full h-auto"
-                          style={{ filter: paInverted ? "invert(1)" : "none" }}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Version indicator */}
-                    {editHistory.length > 1 && (
-                      <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
-                        <History className="w-2.5 h-2.5" />
-                        {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
-                      </div>
-                    )}
-                    
-                    {/* Progress overlay */}
-                    {(isEditing || isUpscaling) && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
-                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <p className="text-xs font-medium">{isEditing ? "Applying..." : "Upscaling..."}</p>
-                      </div>
+                      <CoverSelector onSelect={handleSelectCover} onUpload={handleUploadImage} />
                     )}
                   </div>
                 </div>
@@ -1443,138 +1466,138 @@ const EditStudio = () => {
                 <div className="space-y-4">
                   <div className="aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt="Cover preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={imageUrl}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                        />
+                        
+                        {/* Lighting Preview Overlays */}
+                        {lightings.map(lightingId => {
+                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
+                          if (!lightingOption?.image) return null;
+                          const rotation = lightingRotations[lightingId] || 0;
+                          const baseOpacity = lightingOption.opacity || 1;
+                          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+                          const finalOpacity = baseOpacity * intensityMultiplier;
+                          return (
+                            <div 
+                              key={lightingId}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ 
+                                backgroundImage: `url(${lightingOption.image})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
+                                opacity: finalOpacity,
+                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                              }}
+                            />
+                          );
+                        })}
+                        
+                        {/* Texture Preview Overlays */}
+                        {textures.map(textureId => {
+                          const textureOption = textureOptions.find(t => t.id === textureId);
+                          if (!textureOption?.image) return null;
+                          const baseOpacity = textureOption.opacity || 0.5;
+                          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+                          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+                          const rotation = textureRotations[textureId] || 0;
+                          return (
+                            <div 
+                              key={textureId}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ 
+                                backgroundImage: `url(${textureOption.image})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
+                                opacity: finalOpacity,
+                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                              }}
+                            />
+                          );
+                        })}
+                        
+                        {/* Color Filter Overlays - Real-time preview */}
+                        {mainColor && getColorHex(mainColor) && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{ 
+                              backgroundColor: getColorHex(mainColor),
+                              mixBlendMode: 'overlay',
+                              opacity: 0.45,
+                            }}
+                          />
+                        )}
+                        {accentColor && getColorHex(accentColor) && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{ 
+                              background: `
+                                radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                                radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
+                                radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
+                              `,
+                              mixBlendMode: 'color-dodge',
+                              opacity: 0.35,
+                            }}
+                          />
+                        )}
+                        
+                        {/* Parental Advisory Logo Overlay */}
+                        {parentalAdvisory !== "none" && (
+                          <div 
+                            className={`absolute w-[20%] ${
+                              paPosition === "bottom-right" ? "bottom-3 right-3" :
+                              paPosition === "bottom-left" ? "bottom-3 left-3" :
+                              "bottom-3 left-1/2 -translate-x-1/2"
+                            }`}
+                          >
+                            <img 
+                              src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
+                              alt="Parental Advisory"
+                              className="w-full h-auto"
+                              style={{ filter: paInverted ? "invert(1)" : "none" }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Version indicator */}
+                        {editHistory.length > 1 && (
+                          <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
+                            <History className="w-3 h-3" />
+                            {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
+                          </div>
+                        )}
+                        
+                        {/* Progress overlay during editing */}
+                        {isEditing && (
+                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                            <div className="text-center">
+                              <p className="text-lg font-semibold mb-2">Applying edits...</p>
+                              <Progress value={progress} className="w-48" />
+                              <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Progress overlay during upscaling */}
+                        {isUpscaling && (
+                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                            <div className="text-center">
+                              <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
+                              <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
-                      </div>
-                    )}
-                    
-                    {/* Lighting Preview Overlays */}
-                    {lightings.map(lightingId => {
-                      const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                      if (!lightingOption?.image) return null;
-                      const rotation = lightingRotations[lightingId] || 0;
-                      const baseOpacity = lightingOption.opacity || 1;
-                      const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-                      const finalOpacity = baseOpacity * intensityMultiplier;
-                      return (
-                        <div 
-                          key={lightingId}
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ 
-                            backgroundImage: `url(${lightingOption.image})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                            opacity: finalOpacity,
-                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                          }}
-                        />
-                      );
-                    })}
-                    
-                    {/* Texture Preview Overlays */}
-                    {textures.map(textureId => {
-                      const textureOption = textureOptions.find(t => t.id === textureId);
-                      if (!textureOption?.image) return null;
-                      const baseOpacity = textureOption.opacity || 0.5;
-                      const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-                      const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-                      const rotation = textureRotations[textureId] || 0;
-                      return (
-                        <div 
-                          key={textureId}
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ 
-                            backgroundImage: `url(${textureOption.image})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                            opacity: finalOpacity,
-                            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                          }}
-                        />
-                      );
-                    })}
-                    
-                    {/* Color Filter Overlays - Real-time preview */}
-                    {mainColor && getColorHex(mainColor) && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          backgroundColor: getColorHex(mainColor),
-                          mixBlendMode: 'overlay',
-                          opacity: 0.45,
-                        }}
-                      />
-                    )}
-                    {accentColor && getColorHex(accentColor) && (
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ 
-                          background: `
-                            radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                            radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                            radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
-                          `,
-                          mixBlendMode: 'color-dodge',
-                          opacity: 0.35,
-                        }}
-                      />
-                    )}
-                    
-                    {/* Parental Advisory Logo Overlay */}
-                    {parentalAdvisory !== "none" && (
-                      <div 
-                        className={`absolute w-[20%] ${
-                          paPosition === "bottom-right" ? "bottom-3 right-3" :
-                          paPosition === "bottom-left" ? "bottom-3 left-3" :
-                          "bottom-3 left-1/2 -translate-x-1/2"
-                        }`}
-                      >
-                        <img 
-                          src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
-                          alt="Parental Advisory"
-                          className="w-full h-auto"
-                          style={{ filter: paInverted ? "invert(1)" : "none" }}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Version indicator */}
-                    {editHistory.length > 1 && (
-                      <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
-                        <History className="w-3 h-3" />
-                        {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
-                      </div>
-                    )}
-                    
-                    {/* Progress overlay during editing */}
-                    {isEditing && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
-                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                        <div className="text-center">
-                          <p className="text-lg font-semibold mb-2">Applying edits...</p>
-                          <Progress value={progress} className="w-48" />
-                          <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Progress overlay during upscaling */}
-                    {isUpscaling && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
-                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                        <div className="text-center">
-                          <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
-                          <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
-                        </div>
-                      </div>
+                      <CoverSelector onSelect={handleSelectCover} onUpload={handleUploadImage} />
                     )}
                   </div>
                   

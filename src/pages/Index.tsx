@@ -9,6 +9,15 @@ import { useNavigate } from "react-router-dom";
 import { Wand2, Palette, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const exampleCovers = [
+  "/examples/cover-1.jpg",
+  "/examples/cover-2.jpg",
+  "/examples/cover-3.jpg",
+  "/examples/cover-4.jpg",
+  "/examples/cover-5.jpg",
+  "/examples/cover-6.jpg",
+];
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -36,7 +45,7 @@ const Index = () => {
           <HeroSection />
         </div>
         
-        {/* Features Section */}
+        {/* Studios Section */}
         <section className="py-16 px-4">
           <div className="container mx-auto max-w-5xl">
             <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
@@ -109,14 +118,52 @@ const Index = () => {
                   </ul>
                   <Button 
                     variant="outline"
-                    onClick={() => user ? navigate("/profile") : navigate("/auth")}
+                    onClick={() => user ? navigate("/edit-studio") : navigate("/auth")}
                     className="w-full group/btn"
                   >
-                    {user ? "View My Creations" : "Sign in to Start"}
+                    {user ? "Open Edit Studio" : "Sign in to Start"}
                     <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Example Covers Section */}
+        <section className="py-16 px-4 bg-secondary/30">
+          <div className="container mx-auto max-w-6xl">
+            <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
+              CREATED WITH <span className="text-primary">COVER ART MAKER</span>
+            </h2>
+            <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
+              See what's possible with our AI-powered cover art generation
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {exampleCovers.map((cover, idx) => (
+                <div 
+                  key={idx}
+                  className="aspect-square rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all hover:scale-105 cursor-pointer"
+                >
+                  <img 
+                    src={cover} 
+                    alt={`Example cover ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+            
+            <div className="text-center mt-10">
+              <Button 
+                size="lg"
+                onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
+                className="gap-2"
+              >
+                <Wand2 className="w-5 h-5" />
+                Create Your Own
+              </Button>
             </div>
           </div>
         </section>
