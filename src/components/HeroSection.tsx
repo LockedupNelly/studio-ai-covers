@@ -70,10 +70,14 @@ export const HeroSection = () => {
             </div>
 
             {/* Trust badges */}
-            <div className="flex items-center gap-4 sm:gap-6 mt-8 justify-center lg:justify-start text-xs sm:text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-5 mt-8 justify-center lg:justify-start text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 3 Free Credits
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-zinc-400" />
+                No Watermarks
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-zinc-400" />
@@ -91,6 +95,8 @@ export const HeroSection = () => {
                   src={exampleCovers[0]} 
                   alt="Featured cover" 
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  fetchPriority="high"
                 />
                 {/* Shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
@@ -102,6 +108,8 @@ export const HeroSection = () => {
                   src={exampleCovers[1]} 
                   alt="Cover example" 
                   className="w-full aspect-square object-cover"
+                  loading="eager"
+                  fetchPriority="high"
                 />
               </div>
 
@@ -111,6 +119,8 @@ export const HeroSection = () => {
                   src={exampleCovers[2]} 
                   alt="Cover example" 
                   className="w-full aspect-square object-cover"
+                  loading="eager"
+                  fetchPriority="high"
                 />
               </div>
 
@@ -120,6 +130,7 @@ export const HeroSection = () => {
                   src={exampleCovers[3]} 
                   alt="Cover example" 
                   className="w-full aspect-square object-cover"
+                  loading="eager"
                 />
               </div>
 
@@ -129,12 +140,9 @@ export const HeroSection = () => {
                   src={exampleCovers[4]} 
                   alt="Cover example" 
                   className="w-full aspect-square object-cover"
+                  loading="eager"
                 />
               </div>
-
-              {/* Decorative circles */}
-              <div className="absolute -top-4 -right-4 w-20 h-20 border border-white/10 rounded-full hidden sm:block" />
-              <div className="absolute -bottom-6 -left-6 w-28 h-28 border border-white/5 rounded-full hidden sm:block" />
             </div>
           </div>
         </div>
