@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Sun, Moon, Coins, Sparkles, Image, Maximize2, X, Zap, Paperclip, Music } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GenreBanner } from "@/components/GenreBanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -106,7 +106,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [style, setStyle] = useState("");
   const [mood, setMood] = useState("");
   const [customStyle, setCustomStyle] = useState("");
-  const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [parentalAdvisory] = useState<"yes" | "no">("no");
   
   const [studioMode, setStudioMode] = useState<"create" | "audio">("create");
@@ -121,8 +120,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
-  const [isUpscaling, setIsUpscaling] = useState(false);
-  const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   
   const allTextStyleVariants = useMemo(() => getAllTextStyleVariants(), []);
@@ -235,8 +232,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleGenerate = () => {
-    setUpscaledImageUrl(null);
-    
     if (!songTitle.trim() || !artistName.trim()) {
       toast.error("Please enter a song title and artist name.");
       return;
@@ -276,7 +271,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
     
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
-    if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
     fullPrompt += " | CRITICAL: The text (song title and artist name) must be deeply integrated into the cover design, not just overlaid. The text should feel like part of the artwork with effects, textures, or styling that matches the overall aesthetic.";
 
@@ -319,7 +313,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
     }
     
     if (parentalAdvisory === "yes") fullPrompt += " | Include Parental Advisory label";
-    if (themeMode === "light") fullPrompt += " | Light/bright color scheme";
     
     fullPrompt += " | CRITICAL: The text must be deeply integrated into the cover design.";
 
@@ -327,53 +320,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   };
 
   const handleDownload = async () => {
-    const imageToDownload = upscaledImageUrl || generatedImage;
-    if (!imageToDownload) return;
+    if (!generatedImage) return;
 
     try {
-      const res = await fetch(imageToDownload);
+      const res = await fetch(generatedImage);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art.png";
+      link.download = "cover-art.png";
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
     } catch {
       const link = document.createElement("a");
-      link.href = imageToDownload;
-      link.download = upscaledImageUrl ? "cover-art-4k.png" : "cover-art.png";
+      link.href = generatedImage;
+      link.download = "cover-art.png";
       link.click();
-    }
-  };
-
-  const handleUpscale = async () => {
-    if (!generatedImage || isUpscaling) return;
-    
-    setIsUpscaling(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("upscale-cover", {
-        body: { imageUrl: generatedImage },
-      });
-
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-
-      if (data?.imageUrl) {
-        setUpscaledImageUrl(data.imageUrl);
-        toast.success("Cover upscaled to 4K HD!", {
-          description: "Your cover is now 4096x4096 resolution.",
-        });
-      }
-    } catch (err) {
-      console.error("Upscale error:", err);
-      toast.error("Upscale failed", {
-        description: err instanceof Error ? err.message : "Please try again",
-      });
-    } finally {
-      setIsUpscaling(false);
     }
   };
 
@@ -399,13 +363,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
   const estimatedTime = "~ 45 Seconds";
 
-  const labelClass = themeMode === "light" ? "text-gray-700" : "text-primary";
-  const mutedLabelClass = themeMode === "light" ? "text-gray-600" : "text-foreground/60";
-  const textClass = themeMode === "light" ? "text-gray-900" : "text-foreground";
-  const mutedTextClass = themeMode === "light" ? "text-gray-600" : "text-foreground/60";
-  const borderClass = themeMode === "light" ? "border-gray-300" : "border-border";
-  const inputBgClass = themeMode === "light" ? "bg-white border-gray-300" : "bg-secondary border-border";
-  const cardBgClass = themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/50 border-border";
+  const labelClass = "text-primary";
+  const mutedLabelClass = "text-foreground/60";
+  const textClass = "text-foreground";
+  const mutedTextClass = "text-foreground/60";
+  const borderClass = "border-border";
+  const inputBgClass = "bg-secondary border-border";
+  const cardBgClass = "bg-secondary/50 border-border";
 
   return (
     <section className="py-8 relative z-10 bg-background">
@@ -418,12 +382,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               disabled={isGenerating}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                 studioMode === "create"
-                  ? themeMode === "light"
-                    ? "bg-gray-900 text-white"
-                    : "bg-foreground text-background"
-                  : themeMode === "light"
-                    ? "text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
-                    : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  ? "bg-foreground text-background"
+                  : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
               }`}
             >
               <Wand2 className="w-4 h-4" />
@@ -434,12 +394,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               disabled={isGenerating}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                 studioMode === "audio"
-                  ? themeMode === "light"
-                    ? "bg-gray-900 text-white"
-                    : "bg-foreground text-background"
-                  : themeMode === "light"
-                    ? "text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
-                    : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
+                  ? "bg-foreground text-background"
+                  : "text-foreground/60 hover:text-foreground bg-secondary/50 hover:bg-secondary"
               }`}
             >
               <Music className="w-4 h-4" />
@@ -448,36 +404,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           </div>
         </div>
 
-        <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 transition-opacity ${
-          themeMode === "light" 
-            ? "bg-white border-gray-200" 
-            : "bg-card border-border"
-        } ${isGenerating ? "opacity-60 pointer-events-none" : ""}`}>
+        <div className={`max-w-6xl mx-auto rounded-2xl border p-4 md:p-8 transition-opacity bg-card border-border ${isGenerating ? "opacity-60 pointer-events-none" : ""}`}>
           {/* Header */}
           <div className="flex flex-col gap-4 mb-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`w-1 h-8 rounded-full ${themeMode === "light" ? "bg-gray-800" : "bg-primary"}`} />
+                <div className="w-1 h-8 rounded-full bg-primary" />
                 <div className="flex items-center gap-4">
                   <div>
                     <div className="flex items-center gap-3">
                       <h2 className={`font-display text-xl md:text-2xl tracking-wide ${textClass}`}>
                         DESIGN STUDIO
                       </h2>
-                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                        themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"
-                      }`}>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary">
                         {hasUnlimitedGenerations ? (
                           <>
-                            <Sparkles className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-green-600" : "text-green-500"}`} />
-                            <span className={`text-xs font-medium ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
+                            <Sparkles className="w-3.5 h-3.5 text-green-500" />
+                            <span className="text-xs font-medium text-green-400">
                               Unlimited
                             </span>
                           </>
                         ) : (
                           <>
-                            <Coins className={`w-3.5 h-3.5 ${themeMode === "light" ? "text-gray-700" : "text-primary"}`} />
-                            <span className={`text-xs font-medium ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
+                            <Coins className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-medium text-foreground">
                               1 Token = 1 Cover
                             </span>
                           </>
@@ -489,30 +439,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Theme Toggle */}
-              <div className={`flex items-center gap-1 rounded-lg p-1 ${themeMode === "light" ? "bg-gray-100 border border-gray-200" : "bg-secondary"}`}>
-                <button
-                  onClick={() => setThemeMode("dark")}
-                  className={`p-2 rounded transition-colors ${
-                    themeMode === "dark" 
-                      ? "bg-primary text-primary-foreground"
-                      : themeMode === "light" ? "text-gray-600 hover:text-gray-900" : "text-foreground/60 hover:text-foreground"
-                  }`}
-                >
-                  <Moon className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setThemeMode("light")}
-                  className={`p-2 rounded transition-colors ${
-                    themeMode === "light" 
-                      ? "bg-gray-800 text-white"
-                      : "text-foreground/60 hover:text-foreground"
-                  }`}
-                >
-                  <Sun className="w-4 h-4" />
-                </button>
               </div>
             </div>
           </div>
@@ -531,7 +457,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     value={songTitle}
                     onChange={(e) => setSongTitle(e.target.value)}
                     disabled={isGenerating}
-                    className={`h-10 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                    className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -543,7 +469,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
                     disabled={isGenerating}
-                    className={`h-10 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                    className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                   />
                 </div>
               </div>
@@ -551,7 +477,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
               {/* Audio Analyzer Component */}
               <div className={`rounded-xl border p-6 ${cardBgClass}`}>
                 <AudioAnalyzer 
-                  themeMode={themeMode} 
+                  themeMode="dark" 
                   onAnalysisComplete={handleAudioAnalysisComplete}
                   onGenerateSuggestion={handleGenerateFromSuggestion}
                 />
@@ -575,7 +501,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       value={songTitle}
                       onChange={(e) => setSongTitle(e.target.value)}
                       disabled={isGenerating}
-                      className={`h-10 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                      className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                     />
                   </div>
                   <div className="space-y-1">
@@ -587,7 +513,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       value={artistName}
                       onChange={(e) => setArtistName(e.target.value)}
                       disabled={isGenerating}
-                      className={`h-10 text-base ${inputBgClass} ${themeMode === "light" ? "placeholder:text-gray-500 text-gray-900" : "placeholder:text-foreground/40"}`}
+                      className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                     />
                   </div>
                 </div>
@@ -599,7 +525,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       Genre
                     </label>
                     <Select value={genre} onValueChange={handleGenreChange}>
-                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
                         <SelectValue placeholder="Genre" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -615,7 +541,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       Style
                     </label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
                         <SelectValue placeholder="Style" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -631,7 +557,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       Mood
                     </label>
                     <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className={`h-10 ${inputBgClass} ${themeMode === "light" ? "[&>span]:text-gray-900" : ""}`}>
+                      <SelectTrigger className={`h-10 ${inputBgClass}`}>
                         <SelectValue placeholder="Mood" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -664,7 +590,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           setSelectedVariant(null);
                           setSelectedCategory(null);
                         }}
-                        className={`text-xs ${themeMode === "light" ? "text-gray-500 hover:text-gray-700" : "text-foreground/60 hover:text-foreground"}`}
+                        className="text-xs text-foreground/60 hover:text-foreground"
                       >
                         Clear selection
                       </button>
@@ -684,15 +610,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       }}
                       className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all ${
                         !selectedVariant
-                          ? themeMode === "light" 
-                            ? "border-gray-800 bg-gray-100" 
-                            : "border-primary bg-primary/10"
-                          : themeMode === "light"
-                            ? "border-gray-300 bg-white hover:border-gray-400"
-                            : "border-border bg-secondary/50 hover:border-primary/50"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-secondary/50 hover:border-primary/50"
                       }`}
                     >
-                      <Sparkles className={`w-4 h-4 ${!selectedVariant ? (themeMode === "light" ? "text-gray-800" : "text-primary") : mutedTextClass}`} />
+                      <Sparkles className={`w-4 h-4 ${!selectedVariant ? "text-primary" : mutedTextClass}`} />
                       <span className={`text-[10px] font-medium ${!selectedVariant ? textClass : mutedTextClass}`}>AI Select</span>
                     </button>
                     
@@ -703,12 +625,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         onClick={() => handleSelectTextStyle(category, variant)}
                         className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all ${
                           selectedVariant?.id === variant.id && selectedCategory === category
-                            ? themeMode === "light" 
-                              ? "border-gray-800 ring-2 ring-gray-800/20" 
-                              : "border-primary ring-2 ring-primary/20"
-                            : themeMode === "light"
-                              ? "border-gray-200 hover:border-gray-400"
-                              : "border-border hover:border-primary/50"
+                            ? "border-primary ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/50"
                         }`}
                       >
                         <img 
@@ -734,19 +652,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       disabled={isGenerating}
-                      className={`min-h-[120px] resize-none text-base pr-32 ${inputBgClass} ${
-                        themeMode === "light" ? "placeholder:text-gray-500" : "placeholder:text-foreground/40"
-                      }`}
+                      className={`min-h-[120px] resize-none text-base pr-32 ${inputBgClass} placeholder:text-foreground/40`}
                     />
                     {/* Upload Reference link inside textarea */}
                     <button
                       onClick={() => inspirationInputRef.current?.click()}
                       disabled={isGenerating || inspirationImages.length >= 5}
-                      className={`absolute bottom-3 right-3 flex items-center gap-1.5 text-sm transition-colors ${
-                        themeMode === "light" 
-                          ? "text-gray-500 hover:text-gray-700" 
-                          : "text-foreground/50 hover:text-foreground/80"
-                      } ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`absolute bottom-3 right-3 flex items-center gap-1.5 text-sm transition-colors text-foreground/50 hover:text-foreground/80 ${inspirationImages.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       <Paperclip className="w-4 h-4" />
                       Upload Reference
@@ -787,7 +699,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                     <span>{estimatedTime}</span>
                   </div>
                   <Button 
-                    variant={themeMode === "light" ? "default" : "studio"}
+                    variant="studio"
                     size="lg" 
                     onClick={handleGenerate}
                     disabled={
@@ -824,7 +736,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => setShowFullscreen(true)} className={`h-8 px-2 ${themeMode === "light" ? "border-gray-300" : ""}`}>
+                                <Button variant="outline" size="sm" onClick={() => setShowFullscreen(true)} className="h-8 px-2">
                                   <Maximize2 className="w-3.5 h-3.5" />
                                 </Button>
                               </TooltipTrigger>
@@ -839,41 +751,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                       <div className="relative flex-1 min-h-0">
                         <div className="aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500">
                           <img
-                            src={upscaledImageUrl || generatedImage}
+                            src={generatedImage}
                             alt="Generated cover art"
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        {upscaledImageUrl && (
-                          <div className="absolute top-2 right-2 bg-green-500/90 text-white text-xs font-medium px-2 py-1 rounded">
-                            4K HD
-                          </div>
-                        )}
                       </div>
 
                       <div className="mt-3 space-y-2">
-                        {!upscaledImageUrl && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleUpscale}
-                            disabled={isUpscaling}
-                            className={`w-full ${themeMode === "light" ? "border-gray-300" : ""}`}
-                          >
-                            {isUpscaling ? (
-                              <>
-                                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-                                Upscaling...
-                              </>
-                            ) : (
-                              <>
-                                <Zap className="w-4 h-4 mr-1" />
-                                Upscale to 4K HD
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -890,7 +775,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                             className="flex-1"
                             onClick={() => navigate("/edit-studio", {
                               state: {
-                                imageUrl: upscaledImageUrl || generatedImage,
+                                imageUrl: generatedImage,
                                 genre,
                                 style,
                                 mood,
@@ -907,11 +792,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         <div className="flex items-center justify-center pt-1">
                           <button
                             onClick={() => navigate("/profile")}
-                            className={`text-xs font-medium transition-colors underline ${
-                              themeMode === "light" 
-                                ? "text-gray-600 hover:text-gray-900" 
-                                : "text-foreground/60 hover:text-foreground"
-                            }`}
+                            className="text-xs font-medium transition-colors underline text-foreground/60 hover:text-foreground"
                           >
                             View Past Creations
                           </button>
@@ -921,13 +802,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                   ) : (
                     <div className="flex flex-col h-full">
                       <div className="flex-1 flex items-center justify-center">
-                        <div className={`aspect-square w-full max-w-[360px] rounded-lg border-2 flex flex-col items-center justify-center text-center mx-auto ${
-                          themeMode === "light" ? "border-gray-300 bg-gray-50" : "border-gray-500 bg-secondary/30"
-                        }`}>
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${
-                            themeMode === "light" ? "bg-gray-200" : "bg-secondary"
-                          }`}>
-                            <Image className={`w-7 h-7 ${themeMode === "light" ? "text-gray-400" : "text-foreground/30"}`} />
+                        <div className="aspect-square w-full max-w-[360px] rounded-lg border-2 flex flex-col items-center justify-center text-center mx-auto border-gray-500 bg-secondary/30">
+                          <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-3 bg-secondary">
+                            <Image className="w-7 h-7 text-foreground/30" />
                           </div>
                           {isGenerating ? (
                             <div className="transition-opacity duration-700 ease-in-out animate-fade-in" key={placeholderIndex}>
@@ -965,11 +842,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         <div className="pt-4 text-center">
                           <button
                             onClick={() => navigate("/profile")}
-                            className={`text-xs font-medium transition-colors underline ${
-                              themeMode === "light" 
-                                ? "text-gray-600 hover:text-gray-900" 
-                                : "text-foreground/60 hover:text-foreground"
-                            }`}
+                            className="text-xs font-medium transition-colors underline text-foreground/60 hover:text-foreground"
                           >
                             View Past Creations
                           </button>
