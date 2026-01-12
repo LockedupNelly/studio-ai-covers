@@ -13,7 +13,7 @@ import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Maximize2, Minus, Plus, ShieldAlert, Expand, ArrowUpFromLine } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Minus, Plus, ShieldAlert, Expand } from "lucide-react";
 import { IntensityBar } from "@/components/IntensityIcon";
 import { colorPalette, getColorValue, getColorHex } from "@/components/ColorPickerPopover";
 import { TextStyleVariantDialog } from "@/components/TextStyleVariantDialog";
@@ -251,15 +251,13 @@ const EditStudio = () => {
     setHistoryIndex(0);
   };
 
-  // Handle uploading a new image
-  const handleUploadImage = (uploadedImageUrl: string) => {
-    setImageUrl(uploadedImageUrl);
-    setCurrentState(prev => ({
-      ...prev,
-      imageUrl: uploadedImageUrl,
-    }));
-    setEditHistory([uploadedImageUrl]);
+  // Handle clearing the selected cover to go back to selector
+  const handleBackToSelector = () => {
+    setImageUrl("");
+    setCurrentState(prev => ({ ...prev, imageUrl: "" }));
+    setEditHistory([]);
     setHistoryIndex(0);
+    setUpscaledImageUrl(null);
   };
   
   // Fetch cover analysis from database if not provided but we have an image URL
@@ -967,7 +965,7 @@ const EditStudio = () => {
                         )}
                       </>
                     ) : (
-                      <CoverSelector onSelect={handleSelectCover} onUpload={handleUploadImage} />
+                      <CoverSelector onSelect={handleSelectCover} />
                     )}
                   </div>
                 </div>
@@ -1387,13 +1385,22 @@ const EditStudio = () => {
                       </>
                     )}
                   </Button>
-                  {/* Three buttons row - smaller */}
+                  {/* Two buttons row - smaller */}
                   <div className="grid grid-cols-3 gap-2 pb-4">
+                    <Button
+                      onClick={handleBackToSelector}
+                      variant="ghost"
+                      className="h-9 gap-1 text-xs"
+                      disabled={isEditing}
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Change
+                    </Button>
                     <Button
                       onClick={handleDownload}
                       variant="outline"
                       className="h-9 gap-1 text-xs"
-                      disabled={isEditing || isUpscaling}
+                      disabled={isEditing}
                     >
                       <Download className="w-3.5 h-3.5" />
                       Download
@@ -1402,31 +1409,11 @@ const EditStudio = () => {
                       onClick={() => setIsFullscreen(true)}
                       variant="outline"
                       className="h-9 gap-1 text-xs"
-                      disabled={isEditing || isUpscaling || !imageUrl}
+                      disabled={isEditing || !imageUrl}
                     >
                       <Expand className="w-3.5 h-3.5" />
                       Fullscreen
                     </Button>
-                    {!upscaledImageUrl ? (
-                      <Button
-                        onClick={handleUpscale}
-                        variant="outline"
-                        className="h-9 gap-1 text-xs"
-                        disabled={isEditing || isUpscaling}
-                      >
-                        <ArrowUpFromLine className="w-3.5 h-3.5" />
-                        {isUpscaling ? "Upscaling..." : "Upscale"}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="h-9 gap-1 text-xs"
-                        disabled
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Upscaled
-                      </Button>
-                    )}
                   </div>
                 </div>
                 
@@ -1597,7 +1584,7 @@ const EditStudio = () => {
                         )}
                       </>
                     ) : (
-                      <CoverSelector onSelect={handleSelectCover} onUpload={handleUploadImage} />
+                      <CoverSelector onSelect={handleSelectCover} />
                     )}
                   </div>
                   
@@ -1605,7 +1592,7 @@ const EditStudio = () => {
                   <div className="flex flex-wrap gap-3">
                     <Button
                       onClick={handleApplyEdits}
-                      disabled={isEditing || isUpscaling || !hasChanges}
+                      disabled={isEditing || !hasChanges}
                       className="flex-1 min-w-[200px] gap-2"
                       size="lg"
                     >
@@ -1622,16 +1609,26 @@ const EditStudio = () => {
                       )}
                     </Button>
                     <div className="flex gap-3">
+                      <Button
+                        onClick={handleBackToSelector}
+                        variant="ghost"
+                        size="lg"
+                        className="gap-2"
+                        disabled={isEditing}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Change Cover
+                      </Button>
                       <div className="flex flex-col items-center">
                         <Button
                           onClick={handleDownload}
                           variant="outline"
                           size="lg"
                           className="gap-2"
-                          disabled={isEditing || isUpscaling}
+                          disabled={isEditing}
                         >
                           <Download className="w-4 h-4" />
-                          {upscaledImageUrl ? "Download HD" : "Download"}
+                          Download
                         </Button>
                         <p className="text-[10px] text-muted-foreground text-center mt-1 max-w-[160px]">
                           Edits must be applied first to appear in download
@@ -1642,23 +1639,11 @@ const EditStudio = () => {
                         variant="outline"
                         size="lg"
                         className="gap-2"
-                        disabled={isEditing || isUpscaling || !imageUrl}
+                        disabled={isEditing || !imageUrl}
                       >
                         <Expand className="w-4 h-4" />
                         Fullscreen
                       </Button>
-                      {!upscaledImageUrl && (
-                        <Button
-                          onClick={handleUpscale}
-                          variant="outline"
-                          size="lg"
-                          className="gap-2"
-                          disabled={isEditing || isUpscaling}
-                        >
-                          <ArrowUpFromLine className="w-4 h-4" />
-                          {isUpscaling ? "Upscaling..." : "Upscale HD"}
-                        </Button>
-                      )}
                     </div>
                   </div>
                   

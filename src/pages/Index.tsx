@@ -6,7 +6,7 @@ import { WelcomeModal } from "@/components/WelcomeModal";
 import { AnimatedDotsBackground } from "@/components/AnimatedDotsBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Wand2, Palette, Sparkles, ArrowRight } from "lucide-react";
+import { Wand2, Sparkles, ArrowRight, Music, Layers, Palette, Headphones, Type, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const exampleCovers = [
@@ -45,93 +45,8 @@ const Index = () => {
           <HeroSection />
         </div>
         
-        {/* Studios Section */}
+        {/* Example Covers Section - Moved up */}
         <section className="py-16 px-4">
-          <div className="container mx-auto max-w-5xl">
-            <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
-              TWO POWERFUL <span className="text-primary">STUDIOS</span>
-            </h2>
-            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Create stunning cover art with our AI-powered Design Studio, then perfect every detail in our Edit Studio
-            </p>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Design Studio Card */}
-              <div className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Wand2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-display text-xl mb-2 tracking-wide">DESIGN STUDIO</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    Generate unique cover art using AI. Describe your vision, select styles, and let our advanced AI create professional artwork in seconds.
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      AI-powered generation
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Audio analysis for inspiration
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      30+ text styles to choose from
-                    </li>
-                  </ul>
-                  <Button 
-                    onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
-                    className="w-full group/btn"
-                  >
-                    {user ? "Open Design Studio" : "Sign in to Start"}
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Edit Studio Card */}
-              <div className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Palette className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-display text-xl mb-2 tracking-wide">EDIT STUDIO</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    Perfect your covers with powerful editing tools. Add textures, lighting effects, parental advisory labels, and more.
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Textures & lighting overlays
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Parental advisory badges
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground/80">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Color grading & effects
-                    </li>
-                  </ul>
-                  <Button 
-                    variant="outline"
-                    onClick={() => user ? navigate("/edit-studio") : navigate("/auth")}
-                    className="w-full group/btn"
-                  >
-                    {user ? "Open Edit Studio" : "Sign in to Start"}
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Example Covers Section */}
-        <section className="py-16 px-4 bg-secondary/30">
           <div className="container mx-auto max-w-6xl">
             <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
               CREATED WITH <span className="text-primary">COVER ART MAKER</span>
@@ -164,6 +79,96 @@ const Index = () => {
                 <Wand2 className="w-5 h-5" />
                 Create Your Own
               </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Design Studio Focus Section */}
+        <section className="py-20 px-4 bg-secondary/30">
+          <div className="container mx-auto max-w-5xl">
+            <h2 className="text-2xl md:text-4xl font-display text-center mb-4 tracking-wide">
+              DESIGN <span className="text-primary">STUDIO</span>
+            </h2>
+            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto text-lg">
+              Create professional album covers in seconds with AI
+            </p>
+            
+            {/* Feature Points Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">AI-Powered Generation</h3>
+                  <p className="text-sm text-muted-foreground">Describe your vision and watch it come to life in seconds</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Headphones className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Audio Analysis</h3>
+                  <p className="text-sm text-muted-foreground">Upload your track and let AI suggest the perfect vibe</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Type className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">30+ Text Styles</h3>
+                  <p className="text-sm text-muted-foreground">Professional typography for every genre</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Palette className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Multiple Genres</h3>
+                  <p className="text-sm text-muted-foreground">From Hip-Hop to Classical, we've got you covered</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Layers className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Edit Studio</h3>
+                  <p className="text-sm text-muted-foreground">Add textures, lighting, and parental advisory badges</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Music className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Streaming Ready</h3>
+                  <p className="text-sm text-muted-foreground">3000x3000px resolution, perfect for all platforms</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* CTA */}
+            <div className="text-center">
+              <Button 
+                size="lg"
+                onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
+                className="gap-2 text-lg px-8 py-6"
+              >
+                Open Design Studio
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+              <p className="text-sm text-muted-foreground mt-4">
+                {user ? "Jump right into creating" : "Sign up free — get 3 credits to start"}
+              </p>
             </div>
           </div>
         </section>

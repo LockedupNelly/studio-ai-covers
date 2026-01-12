@@ -1,4 +1,4 @@
-import { Music, ImageIcon, Layers, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 
 export const HeroSection = () => {
@@ -33,41 +33,6 @@ export const HeroSection = () => {
         </span>
       </div>
 
-      {/* Feature Badges */}
-      <div className="flex flex-wrap items-center justify-center gap-4">
-        <FeatureBadge icon={Music} text="Streaming Ready" color="green" />
-        <FeatureBadge icon={ImageIcon} text="3000px Resolution" color="default" />
-        <FeatureBadge icon={Layers} text="100% Unique" color="yellow" />
-      </div>
     </section>
-  );
-};
-
-interface FeatureBadgeProps {
-  icon: React.ElementType;
-  text: string;
-  color: "green" | "yellow" | "default";
-}
-
-const FeatureBadge = ({ icon: Icon, text, color }: FeatureBadgeProps) => {
-  if (color === "default") {
-    return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border">
-        <Icon className="w-4 h-4 text-foreground" />
-        <span className="text-xs font-semibold tracking-widest uppercase">{text}</span>
-      </div>
-    );
-  }
-
-  const colorClasses = {
-    green: "border-green-500/50 bg-green-500/10 text-green-500",
-    yellow: "border-yellow-500/50 bg-yellow-500/10 text-yellow-500",
-  };
-
-  return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${colorClasses[color]}`}>
-      <Icon className="w-4 h-4" />
-      <span className="text-xs font-semibold tracking-widest uppercase">{text}</span>
-    </div>
   );
 };
