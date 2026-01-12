@@ -29,19 +29,15 @@ interface AudioAnalyzerProps {
   onGenerateSuggestion?: (suggestion: AudioSuggestion, genre: string) => void;
 }
 
-// Truncate text to max words
 const truncateWords = (text: string, maxWords: number): string => {
   const words = text.split(' ');
   if (words.length <= maxWords) return text;
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
-// Generate truly different concepts based on analysis
 const generateDifferentConcepts = (data: AudioAnalysisResult): AudioSuggestion[] => {
   const basePrompt = data.suggestedPrompt;
-  const genre = data.suggestedGenre;
   
-  // Create genuinely different visual concepts
   const conceptVariations: { title: string; modifier: string; moodTwist: string; styleTwist: string }[] = [
     {
       title: "Concept A",
@@ -77,14 +73,12 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/x-m4a', 'audio/mp4', 'audio/webm'];
       if (!validTypes.some(type => file.type.includes(type.split('/')[1]))) {
         toast.error("Please upload an MP3, WAV, or M4A file");
         return;
       }
       
-      // Validate file size (max 20MB)
       if (file.size > 20 * 1024 * 1024) {
         toast.error("File size must be under 20MB");
         return;
@@ -105,11 +99,9 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
     setIsAnalyzing(true);
 
     try {
-      // Convert file to base64
       const arrayBuffer = await selectedFile.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
       
-      // Convert to base64 in chunks to avoid stack overflow
       let binary = '';
       const chunkSize = 8192;
       for (let i = 0; i < uint8Array.length; i += chunkSize) {
@@ -125,17 +117,10 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
         }
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
+      if (data.error) throw new Error(data.error);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Generate 2 genuinely different suggestions based on the analysis
       const differentConcepts = generateDifferentConcepts(data);
-      
       const resultWithSuggestions = { ...data, suggestions: differentConcepts };
       setAnalysisResult(resultWithSuggestions);
       setSuggestions(differentConcepts);
@@ -154,7 +139,7 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
         return {
           ...s,
           isEditing: !s.isEditing,
-          editedPrompt: s.isEditing ? "" : s.prompt // Reset or initialize
+          editedPrompt: s.isEditing ? "" : s.prompt
         };
       }
       return s;
@@ -199,6 +184,10 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
     }
   };
 
+  const cardBg = themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/30 border-border";
+  const textColor = themeMode === "light" ? "text-gray-900" : "text-foreground";
+  const mutedText = themeMode === "light" ? "text-gray-500" : "text-foreground/60";
+
   return (
     <div className="space-y-4">
       <input
@@ -210,146 +199,151 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
       />
 
       {!selectedFile ? (
-        <div
+        <button
           onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+          className={`w-full border-2 border-dashed rounded-xl p-6 text-center transition-all hover:border-primary/50 ${
             themeMode === "light"
-              ? "border-gray-300 hover:border-gray-400 bg-gray-50"
-              : "border-border hover:border-primary/50 bg-secondary/30"
+              ? "border-gray-300 bg-gray-50/50 hover:bg-gray-100"
+              : "border-border bg-secondary/20 hover:bg-secondary/40"
           }`}
         >
-          <Upload className={`w-10 h-10 mx-auto mb-3 ${themeMode === "light" ? "text-gray-400" : "text-foreground/40"}`} />
-          <p className={`font-medium ${themeMode === "light" ? "text-gray-700" : "text-foreground"}`}>
-            Upload Audio File
+          <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center ${
+            themeMode === "light" ? "bg-gray-200" : "bg-secondary"
+          }`}>
+            <Upload className={`w-5 h-5 ${mutedText}`} />
+          </div>
+          <p className={`font-medium text-sm ${textColor}`}>
+            Upload your track
           </p>
-          <p className={`text-sm mt-1 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-            MP3, WAV, or M4A (max 20MB)
+          <p className={`text-xs mt-1 ${mutedText}`}>
+            MP3, WAV, M4A • Max 20MB
           </p>
-        </div>
+        </button>
       ) : !analysisResult ? (
-        <div className={`rounded-lg p-4 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                themeMode === "light" ? "bg-gray-200" : "bg-secondary"
-              }`}>
-                <Music className={`w-5 h-5 ${themeMode === "light" ? "text-gray-600" : "text-primary"}`} />
-              </div>
-              <div>
-                <p className={`font-medium truncate max-w-[200px] ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
-                  {selectedFile.name}
-                </p>
-                <p className={`text-xs ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              </div>
+        <div className={`rounded-xl border p-4 ${cardBg}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              themeMode === "light" ? "bg-primary/10" : "bg-primary/20"
+            }`}>
+              <Music className="w-5 h-5 text-primary" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
+            <div className="flex-1 min-w-0">
+              <p className={`font-medium text-sm truncate ${textColor}`}>
+                {selectedFile.name}
+              </p>
+              <p className={`text-xs ${mutedText}`}>
+                {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
+              </p>
+            </div>
+            <button
               onClick={clearSelection}
-              className={themeMode === "light" ? "text-gray-500 hover:text-gray-700" : ""}
+              className={`p-1.5 rounded-full transition-colors ${
+                themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
+              }`}
             >
-              <X className="w-4 h-4" />
-            </Button>
+              <X className={`w-4 h-4 ${mutedText}`} />
+            </button>
           </div>
 
           <Button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
             className="w-full mt-4"
-            variant={themeMode === "light" ? "default" : "studio"}
+            size="default"
           >
             {isAnalyzing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Analyzing Audio...
+                Analyzing...
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Analyze & Generate Ideas
+                Analyze Track
               </>
             )}
           </Button>
         </div>
       ) : (
-        /* Analysis Results - 2 different concept cards */
-        <div className="space-y-3">
-          {/* File info + metadata row */}
-          <div className="flex items-start gap-4">
-            {/* File info */}
-            <div className={`flex-shrink-0 rounded-lg p-3 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
+        <div className="space-y-4">
+          {/* Analysis Summary */}
+          <div className={`rounded-xl border p-4 ${cardBg}`}>
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  themeMode === "light" ? "bg-gray-200" : "bg-secondary"
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  themeMode === "light" ? "bg-primary/10" : "bg-primary/20"
                 }`}>
-                  <Music className={`w-5 h-5 ${themeMode === "light" ? "text-gray-600" : "text-primary"}`} />
+                  <Music className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <p className={`font-medium truncate max-w-[140px] text-sm ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                <div className="min-w-0">
+                  <p className={`font-medium text-sm truncate ${textColor}`}>
                     {selectedFile.name}
                   </p>
-                  <p className={`text-xs ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
-                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                  <p className={`text-xs ${mutedText}`}>
+                    {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearSelection}
-                  className={`ml-2 h-8 w-8 ${themeMode === "light" ? "text-gray-500 hover:text-gray-700" : ""}`}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
+              <button
+                onClick={clearSelection}
+                className={`p-1.5 rounded-full transition-colors ${
+                  themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
+                }`}
+              >
+                <X className={`w-4 h-4 ${mutedText}`} />
+              </button>
             </div>
-
-            {/* Metadata */}
-            <div className={`flex-1 rounded-lg p-3 ${themeMode === "light" ? "bg-gray-100" : "bg-secondary/50"}`}>
-              <div className={`flex items-center gap-2 mb-2 ${themeMode === "light" ? "text-green-700" : "text-green-400"}`}>
-                <Sparkles className="w-4 h-4" />
-                <span className="font-medium text-sm">2 Different Cover Concepts</span>
-              </div>
-              <div className={`flex gap-4 text-xs ${themeMode === "light" ? "text-gray-600" : "text-foreground/60"}`}>
-                <span><span className="font-medium">Genre:</span> {analysisResult.suggestedGenre}</span>
-                <span><span className="font-medium">Base Mood:</span> {analysisResult.detectedMood}</span>
-              </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                themeMode === "light" ? "bg-gray-200 text-gray-700" : "bg-secondary text-foreground/80"
+              }`}>
+                {analysisResult.suggestedGenre}
+              </span>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                themeMode === "light" ? "bg-gray-200 text-gray-700" : "bg-secondary text-foreground/80"
+              }`}>
+                {analysisResult.detectedMood}
+              </span>
             </div>
           </div>
 
-          {/* 2 Suggestion Cards - side by side */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Concept Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestions.map((suggestion, index) => (
               <div 
                 key={index}
-                className={`rounded-lg p-3 border ${
-                  themeMode === "light" 
-                    ? "bg-white border-gray-200" 
-                    : "bg-secondary/30 border-border"
-                }`}
+                className={`rounded-xl border p-4 ${cardBg}`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <p className={`font-medium text-sm ${themeMode === "light" ? "text-gray-800" : "text-foreground"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className={`font-medium text-sm ${textColor}`}>
                     {suggestion.title}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  </h4>
+                  <button
                     onClick={() => suggestion.isEditing ? handleConfirmEdit(index) : handleToggleEdit(index)}
-                    className="h-6 px-2"
+                    className={`p-1 rounded transition-colors ${
+                      themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
+                    }`}
                   >
                     {suggestion.isEditing ? (
-                      <Check className="w-3 h-3" />
+                      <Check className="w-3.5 h-3.5 text-green-500" />
                     ) : (
-                      <Edit3 className="w-3 h-3" />
+                      <Edit3 className={`w-3.5 h-3.5 ${mutedText}`} />
                     )}
-                  </Button>
+                  </button>
                 </div>
                 
-                <div className={`flex gap-2 text-[10px] mb-2 ${themeMode === "light" ? "text-gray-500" : "text-foreground/50"}`}>
-                  <span className="px-1.5 py-0.5 rounded bg-secondary/50">{suggestion.mood}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-secondary/50">{suggestion.style}</span>
+                <div className="flex gap-1.5 mb-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    themeMode === "light" ? "bg-gray-200 text-gray-600" : "bg-secondary text-foreground/60"
+                  }`}>
+                    {suggestion.mood}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    themeMode === "light" ? "bg-gray-200 text-gray-600" : "bg-secondary text-foreground/60"
+                  }`}>
+                    {suggestion.style}
+                  </span>
                 </div>
 
                 {suggestion.isEditing ? (
@@ -357,22 +351,23 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
                     value={suggestion.editedPrompt}
                     onChange={(e) => handleUpdatePrompt(index, e.target.value)}
                     placeholder="Edit the concept..."
-                    className={`text-xs mb-3 min-h-[60px] ${themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/50 border-border"}`}
+                    className={`text-xs mb-3 min-h-[60px] resize-none ${
+                      themeMode === "light" ? "bg-white border-gray-200" : "bg-secondary/50 border-border"
+                    }`}
                   />
                 ) : (
-                  <p className={`text-xs mb-3 ${themeMode === "light" ? "text-gray-500" : "text-foreground/60"}`}>
+                  <p className={`text-xs mb-3 line-clamp-3 ${mutedText}`}>
                     {suggestion.prompt}
                   </p>
                 )}
                 
                 <Button
                   size="sm"
-                  variant={themeMode === "light" ? "default" : "studio"}
                   onClick={() => handleGenerateSuggestion(suggestion)}
                   className="w-full"
                   disabled={suggestion.isEditing}
                 >
-                  <Wand2 className="w-3 h-3 mr-1" />
+                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
                   Generate
                 </Button>
               </div>

@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShoppingCart, Home, Coins, Menu, X, ChevronDown, LogOut, CreditCard, User } from "lucide-react";
+import { Home, Coins, Menu, ChevronDown, LogOut, User, Wand2, Palette, Sparkles } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCart } from "@/contexts/CartContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useNavigate } from "react-router-dom";
-import { CartSheet } from "@/components/CartSheet";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +21,8 @@ import {
 } from "@/components/ui/sheet";
 
 export const Header = () => {
-  const { user, signInWithGoogle, signOut } = useAuth();
-  const { items, setIsOpen } = useCart();
-  const { credits, hasUnlimitedGenerations, subscriptionTier, subscriptionUsage, subscriptionLimit } = useCredits();
+  const { user, signOut } = useAuth();
+  const { credits, hasUnlimitedGenerations, subscriptionUsage, subscriptionLimit } = useCredits();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -58,19 +54,19 @@ export const Header = () => {
               <Home className="w-4 h-4" />
               Home
             </button>
-            <a 
-              href="https://coverartmarket.com/cde"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors"
-            >
-              Pre-Made Covers
-            </a>
             <button 
-              onClick={() => navigate("/addons")}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+              onClick={() => navigate("/design-studio")}
+              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
             >
-              Add-Ons
+              <Wand2 className="w-4 h-4" />
+              Design Studio
+            </button>
+            <button 
+              onClick={() => navigate("/edit-studio")}
+              className="text-sm text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Palette className="w-4 h-4" />
+              Edit Studio
             </button>
             <button 
               onClick={() => navigate("/purchase-credits")}
@@ -79,23 +75,14 @@ export const Header = () => {
               <Coins className="w-4 h-4" />
               Purchase Credits
             </button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              onClick={() => navigate("/pro-access")}
-            >
-              <Sparkles className="w-3 h-3" />
-              PRO ACCESS
-            </Button>
           </nav>
 
-          {/* Auth & Cart */}
+          {/* Auth & Credits */}
           <div className="flex items-center gap-2 md:gap-4">
             {/* Credit Balance Badge */}
             {user && (
               <button
-                onClick={() => navigate(hasUnlimitedGenerations ? "/pro-access" : "/purchase-credits")}
+                onClick={() => navigate("/purchase-credits")}
                 className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${
                   hasUnlimitedGenerations 
                     ? "bg-green-500/10 border-green-500/30 hover:bg-green-500/20" 
@@ -140,7 +127,7 @@ export const Header = () => {
                       <>
                         <Sparkles className="w-3 h-3 text-green-500" />
                         <span className="text-green-500 font-medium">
-                          {subscriptionTier?.toUpperCase()} - {subscriptionUsage ?? 0}/{subscriptionLimit ?? "∞"} this month
+                          {subscriptionUsage ?? 0}/{subscriptionLimit ?? "∞"} this month
                         </span>
                       </>
                     ) : (
@@ -154,10 +141,6 @@ export const Header = () => {
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                     <User className="w-4 h-4 mr-2" />
                     My Creations
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/pro-access")} className="cursor-pointer">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Manage Subscription
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/purchase-credits")} className="cursor-pointer">
                     <Coins className="w-4 h-4 mr-2" />
@@ -178,21 +161,6 @@ export const Header = () => {
                 Sign in
               </Button>
             )}
-            
-            {/* Cart Icon */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative text-foreground/70 hover:text-foreground"
-              onClick={() => setIsOpen(true)}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {items.length > 0 && (
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                  {items.length}
-                </Badge>
-              )}
-            </Button>
 
             {/* Mobile Menu Button */}
             <Button
@@ -224,6 +192,20 @@ export const Header = () => {
               <Home className="w-5 h-5" />
               Home
             </button>
+            <button 
+              onClick={() => { navigate("/design-studio"); setMobileMenuOpen(false); }}
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
+            >
+              <Wand2 className="w-5 h-5" />
+              Design Studio
+            </button>
+            <button 
+              onClick={() => { navigate("/edit-studio"); setMobileMenuOpen(false); }}
+              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
+            >
+              <Palette className="w-5 h-5" />
+              Edit Studio
+            </button>
             {user && (
               <button 
                 onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}
@@ -233,36 +215,12 @@ export const Header = () => {
                 My Creations
               </button>
             )}
-            <a 
-              href="https://coverartmarket.com/cde"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Sparkles className="w-5 h-5" />
-              Pre-Made Covers
-            </a>
-            <button 
-              onClick={() => { navigate("/addons"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
-            >
-              <Sparkles className="w-5 h-5" />
-              Add-Ons
-            </button>
             <button 
               onClick={() => { navigate("/purchase-credits"); setMobileMenuOpen(false); }}
               className="flex items-center gap-3 px-4 py-3 text-left text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors border-b border-border/50"
             >
               <Coins className="w-5 h-5" />
               Purchase Credits
-            </button>
-            <button 
-              onClick={() => { navigate("/pro-access"); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 text-left bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-b border-border/50"
-            >
-              <Sparkles className="w-5 h-5" />
-              PRO ACCESS
             </button>
             
             {!user && (
@@ -277,8 +235,6 @@ export const Header = () => {
           </nav>
         </SheetContent>
       </Sheet>
-
-      <CartSheet />
     </>
   );
 };
