@@ -45,13 +45,13 @@ const Index = () => {
           <HeroSection />
         </div>
         
-        {/* Example Covers Section - Moved up */}
-        <section className="py-16 px-4">
+        {/* Example Covers Section - Tighter spacing */}
+        <section className="py-10 px-4">
           <div className="container mx-auto max-w-6xl">
-            <h2 className="text-2xl md:text-3xl font-display text-center mb-4 tracking-wide">
+            <h2 className="text-2xl md:text-3xl font-display text-center mb-3 tracking-wide">
               CREATED WITH <span className="text-primary">COVER ART MAKER</span>
             </h2>
-            <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
               See what's possible with our AI-powered cover art generation
             </p>
             
@@ -70,7 +70,7 @@ const Index = () => {
               ))}
             </div>
             
-            <div className="text-center mt-10">
+            <div className="text-center mt-8">
               <Button 
                 size="lg"
                 onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
@@ -83,90 +83,77 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Design Studio Focus Section */}
-        <section className="py-20 px-4 bg-secondary/30">
-          <div className="container mx-auto max-w-5xl">
-            <h2 className="text-2xl md:text-4xl font-display text-center mb-4 tracking-wide">
-              DESIGN <span className="text-primary">STUDIO</span>
-            </h2>
-            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto text-lg">
-              Create professional album covers in seconds with AI
-            </p>
-            
-            {/* Feature Points Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">AI-Powered Generation</h3>
-                  <p className="text-sm text-muted-foreground">Describe your vision and watch it come to life in seconds</p>
-                </div>
+        {/* Design Studio Focus Section - Premium White/Silver Theme */}
+        <section className="relative py-24 px-4 overflow-hidden">
+          {/* Gradient background - dark to silver/white */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-zinc-900/80 to-zinc-800/50" />
+          
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px'
+          }} />
+          
+          {/* Top glow accent */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-white/5 to-transparent blur-3xl" />
+          
+          <div className="container mx-auto max-w-6xl relative z-10">
+            {/* Section Header with silver accent */}
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                <span className="text-xs font-medium text-white/70 uppercase tracking-widest">The Creative Suite</span>
               </div>
-              
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Headphones className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Audio Analysis</h3>
-                  <p className="text-sm text-muted-foreground">Upload your track and let AI suggest the perfect vibe</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Type className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">30+ Text Styles</h3>
-                  <p className="text-sm text-muted-foreground">Professional typography for every genre</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Palette className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Multiple Genres</h3>
-                  <p className="text-sm text-muted-foreground">From Hip-Hop to Classical, we've got you covered</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Layers className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Edit Studio</h3>
-                  <p className="text-sm text-muted-foreground">Add textures, lighting, and parental advisory badges</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Music className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Streaming Ready</h3>
-                  <p className="text-sm text-muted-foreground">3000x3000px resolution, perfect for all platforms</p>
-                </div>
-              </div>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-display text-center mb-6 tracking-wide">
+                <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">DESIGN</span>
+                <span className="text-primary ml-3">STUDIO</span>
+              </h2>
+              <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto">
+                Create professional album covers in seconds with AI
+              </p>
             </div>
             
-            {/* CTA */}
+            {/* Feature Cards - Premium glassmorphism */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
+              {[
+                { icon: Sparkles, title: "AI-Powered Generation", desc: "Describe your vision and watch it come to life in seconds" },
+                { icon: Headphones, title: "Audio Analysis", desc: "Upload your track and let AI suggest the perfect vibe" },
+                { icon: Type, title: "30+ Text Styles", desc: "Professional typography for every genre" },
+                { icon: Palette, title: "Multiple Genres", desc: "From Hip-Hop to Classical, we've got you covered" },
+                { icon: Layers, title: "Edit Studio", desc: "Add textures, lighting, and parental advisory badges" },
+                { icon: Music, title: "Streaming Ready", desc: "3000×3000px resolution, perfect for all platforms" },
+              ].map((feature, idx) => (
+                <div 
+                  key={idx}
+                  className="group relative p-5 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.05] hover:border-white/20 transition-all duration-300"
+                >
+                  {/* Hover glow */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
+                      <feature.icon className="w-5 h-5 text-white/80 group-hover:text-primary transition-colors" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-sm tracking-wider text-white/90 mb-1 uppercase">{feature.title}</h3>
+                      <p className="text-sm text-zinc-500">{feature.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* CTA - Premium button */}
             <div className="text-center">
               <Button 
                 size="lg"
                 onClick={() => user ? navigate("/design-studio") : navigate("/auth")}
-                className="gap-2 text-lg px-8 py-6"
+                className="gap-3 text-base md:text-lg px-8 md:px-12 py-6 md:py-7 rounded-full bg-gradient-to-r from-primary via-primary to-red-600 hover:from-red-600 hover:to-primary shadow-[0_0_30px_rgba(239,68,68,0.3)] hover:shadow-[0_0_50px_rgba(239,68,68,0.5)] transition-all duration-300"
               >
                 Open Design Studio
                 <ArrowRight className="w-5 h-5" />
               </Button>
-              <p className="text-sm text-muted-foreground mt-4">
+              <p className="text-sm text-zinc-500 mt-5">
                 {user ? "Jump right into creating" : "Sign up free — get 3 credits to start"}
               </p>
             </div>
