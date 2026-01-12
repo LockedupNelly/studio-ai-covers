@@ -956,11 +956,21 @@ const EditStudio = () => {
                           </div>
                         )}
                         
+                        {/* Change Cover button overlay */}
+                        <button
+                          onClick={handleBackToSelector}
+                          disabled={isEditing}
+                          className="absolute top-2 right-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-[10px] font-medium flex items-center gap-1 hover:bg-background transition-colors disabled:opacity-50"
+                        >
+                          <ChevronLeft className="w-2.5 h-2.5" />
+                          Change
+                        </button>
+                        
                         {/* Progress overlay */}
-                        {(isEditing || isUpscaling) && (
+                        {isEditing && (
                           <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
                             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                            <p className="text-xs font-medium">{isEditing ? "Applying..." : "Upscaling..."}</p>
+                            <p className="text-xs font-medium">Applying...</p>
                           </div>
                         )}
                       </>
@@ -1560,6 +1570,16 @@ const EditStudio = () => {
                           </div>
                         )}
                         
+                        {/* Change Cover button overlay */}
+                        <button
+                          onClick={handleBackToSelector}
+                          disabled={isEditing}
+                          className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-background/90 backdrop-blur-sm text-xs font-medium flex items-center gap-1.5 hover:bg-background transition-colors border border-border disabled:opacity-50"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Change Cover
+                        </button>
+                        
                         {/* Progress overlay during editing */}
                         {isEditing && (
                           <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
@@ -1568,17 +1588,6 @@ const EditStudio = () => {
                               <p className="text-lg font-semibold mb-2">Applying edits...</p>
                               <Progress value={progress} className="w-48" />
                               <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Progress overlay during upscaling */}
-                        {isUpscaling && (
-                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
-                            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            <div className="text-center">
-                              <p className="text-lg font-semibold mb-2">Upscaling to HD...</p>
-                              <p className="text-sm text-muted-foreground">This may take 30-60 seconds</p>
                             </div>
                           </div>
                         )}
