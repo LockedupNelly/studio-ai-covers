@@ -60,7 +60,7 @@ const DesignStudio = () => {
     setIsGenerating(true);
 
     const extractInvokeErrorMessage = async (err: unknown): Promise<string> => {
-      const anyErr: any = err as any;
+      const anyErr = err as { context?: { body?: ReadableStream | string }; message?: string };
       const body = anyErr?.context?.body;
       if (body != null) {
         try {
