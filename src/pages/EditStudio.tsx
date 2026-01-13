@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
+import { downloadImage } from "@/lib/download-utils";
 
 interface CoverAnalysis {
   dominantColors: string[];
@@ -660,86 +661,66 @@ const EditStudio = () => {
     const imageToDownload = imageUrl;
     if (!imageToDownload) return;
     
-    try {
-      // Load image and scale to 3000x3000 JPEG using canvas
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = imageToDownload;
-      });
+    // Check if running on native platform (iOS/Android via Capacitor)
+    if (Capacitor.isNativePlatform()) {
+      try {
+        // Load image and scale to 3000x3000 JPEG using canvas
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageToDownload;
+        });
 
-      // Create 3000x3000 canvas
-      const canvas = document.createElement("canvas");
-      canvas.width = 3000;
-      canvas.height = 3000;
-      const ctx = canvas.getContext("2d");
-      
-      if (!ctx) throw new Error("Canvas context failed");
-      
-      // High-quality bicubic scaling (2048 -> 3000 = only 1.46x upscale)
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(img, 0, 0, 3000, 3000);
+        const canvas = document.createElement("canvas");
+        canvas.width = 3000;
+        canvas.height = 3000;
+        const ctx = canvas.getContext("2d");
+        
+        if (!ctx) throw new Error("Canvas context failed");
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, 3000, 3000);
 
-      // Convert to 95% quality JPEG
-      canvas.toBlob(
-        async (blob) => {
-          if (!blob) {
-            toast.error("Download failed");
-            return;
-          }
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, "image/jpeg", 0.95);
+        });
+
+        if (!blob) {
+          toast.error("Download failed");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Data = (reader.result as string).split(',')[1];
+          const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
           
-          // Check if running on native platform (iOS/Android)
-          if (Capacitor.isNativePlatform()) {
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const base64Data = (reader.result as string).split(',')[1];
-              const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
-              
-              try {
-                await Filesystem.writeFile({
-                  path: fileName,
-                  data: base64Data,
-                  directory: Directory.Documents,
-                });
-                toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
-              } catch (fsError) {
-                console.error("Filesystem write error:", fsError);
-                // Fallback to browser download
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "cover-art-3000x3000.jpg";
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                URL.revokeObjectURL(url);
-                toast.success("Downloaded!", { description: "3000x3000 JPEG saved" });
-              }
-            };
-            reader.readAsDataURL(blob);
-          } else {
-            // Browser download
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "cover-art-3000x3000.jpg";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(url);
-            toast.success("Downloaded!", { description: "3000x3000 JPEG saved" });
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Documents,
+            });
+            toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
+          } catch (fsError) {
+            console.error("Filesystem write error:", fsError);
+            // Fallback to web download utility
+            await downloadImage(imageToDownload, "cover-art");
           }
-        },
-        "image/jpeg",
-        0.95
-      );
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Download failed");
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Native download error:", error);
+        // Fallback to web download
+        await downloadImage(imageToDownload, "cover-art");
+      }
+    } else {
+      // Web browser - use the mobile-optimized download utility
+      await downloadImage(imageToDownload, "cover-art");
     }
   };
   
