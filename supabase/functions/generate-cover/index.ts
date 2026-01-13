@@ -267,7 +267,7 @@ TECHNICAL REQUIREMENTS (MANDATORY):
 
   // ========== VISUAL STYLE MODIFIERS ==========
   const styleModifiers: Record<string, string> = {
-    "Realism": `PHOTOREALISTIC PHOTOGRAPHY - Shot on RED V-RAPTOR or ARRI ALEXA 65. Real human skin with visible pores, fine hairs, imperfections. Real-world physics: accurate shadows, reflections, light falloff. Shallow depth of field with bokeh (f/1.4 - f/2.8). Natural light or professional studio lighting. Photographic grain. Must be indistinguishable from a photograph.`,
+    "Realism": `Style: High-End Cinematic Photography. > Optics: Shot on 35mm prime lens, f/2.8. Sharp focal plane with natural depth-of-field falloff. Subtle lens characteristics including natural bloom and organic micro-contrast. Material Fidelity: Hyper-detailed surface shaders. Render authentic material response to light (specular highlights on hard surfaces, subsurface scattering on organic textures). No digital smoothing or artificial sharpening. Lighting: Global illumination with physically accurate shadows. High dynamic range (HDR) with deep, detailed blacks and preserved highlight detail. Finish: Professional color grade, subtle filmic grain, and authentic atmospheric density.`,
 
     "3D Render": `HYPER-STYLIZED CGI / CINEMA 4D AESTHETIC - Impossibly smooth surfaces, toy-like materials. Subjects look like high-end 3D models. Glowing neon rim lights (cyan, magenta, orange). Reflective floor with gradient studio background. Perfect edge bevels, impossibly smooth curves. Volumetric god rays, atmospheric fog with glow. Octane/Redshift/Arnold render look.`,
 
