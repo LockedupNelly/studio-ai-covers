@@ -511,27 +511,37 @@ ${technicalSection}
         }
       }
 
-      // Build multimodal content parts
-      const contentParts: any[] = [{ text: unifiedPrompt }];
+      // Build multimodal content parts - IMAGE FIRST for better style matching
+      const contentParts: any[] = [];
       
-      // Add text style reference image if available
       if (textStyleImageBase64) {
+        // 1. Brief intro priming the AI to study the reference
+        contentParts.push({
+          text: `===== TEXT STYLE VISUAL REFERENCE =====
+CRITICAL: Study this reference image carefully FIRST. This shows the EXACT typography style you must replicate.
+The song title must match: the letterforms, effects, textures, glow, distortion, and overall styling shown here.
+Use this as your PRIMARY visual target for typography.`
+        });
+        
+        // 2. The reference image FIRST (visual anchor before instructions)
         contentParts.push({
           inlineData: {
             mimeType: "image/png",
             data: textStyleImageBase64
           }
         });
-        // Add instruction to use the reference image
-        contentParts[0].text += `
+        
+        // 3. Reinforcement after seeing the image, then full instructions
+        contentParts.push({
+          text: `Now that you've seen the exact text style to replicate, here are your full generation instructions:
 
-===== TEXT STYLE VISUAL REFERENCE =====
-CRITICAL: A reference image showing the EXACT text style to replicate is provided below.
-- MATCH the letterforms, effects, textures, and styling shown in this reference image EXACTLY
-- Use this image as your PRIMARY visual target for how the song title text should look
-- Replicate the glow, distortion, brush strokes, or other effects visible in the reference
-- The artist name should complement this style while maintaining visual hierarchy`;
-        logStep("Added text style reference image to multimodal request");
+${unifiedPrompt}`
+        });
+        
+        logStep("Added text style reference image FIRST in multimodal request for better style matching");
+      } else {
+        // No reference image - just the prompt
+        contentParts.push({ text: unifiedPrompt });
       }
 
       const controller = new AbortController();
