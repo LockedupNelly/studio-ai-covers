@@ -19,6 +19,23 @@ const logStep = (step: string, details?: any) => {
   console.log(`[ENHANCE-COVER] ${step}${detailsStr}`);
 };
 
+// Convert image URL to base64 for Google AI API
+async function urlToBase64(url: string): Promise<string> {
+  if (url.startsWith("data:")) {
+    const base64Part = url.split(",")[1];
+    return base64Part;
+  }
+  
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -115,51 +132,70 @@ serve(async (req) => {
       }
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
-    logStep("Enhancing image using OpenAI gpt-image-1");
+    logStep("Enhancing image using Google AI gemini-3-pro-image-preview");
 
-    // Use OpenAI to recreate the image at higher quality
-    const enhancePrompt = `Create a high-quality, enhanced version of an album cover. The image should be:
-- Crystal clear with maximum sharpness and detail
-- Professional quality suitable for music streaming platforms
-- Perfect 1:1 square format (1024x1024)
-- No compression artifacts
-- Vibrant colors with proper contrast
+    // Convert image to base64
+    const imageBase64 = await urlToBase64(imageUrl);
+
+    // Use Google AI to enhance the image at 2K resolution
+    const enhancePrompt = `Enhance this album cover to maximum quality:
+
+- Increase sharpness, clarity, and detail
+- Improve color vibrancy and contrast
+- Remove any compression artifacts
+- Make it professional quality suitable for music streaming platforms
+- Perfect 1:1 square format
 - Gallery-quality finish
 
-This is for professional music distribution - quality must be pristine.`;
+This is for professional music distribution - quality must be pristine.
+Keep the exact same composition, text, and design - only improve the quality.`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 180_000);
 
     let response: Response;
     try {
-      response = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-image-1",
-          prompt: enhancePrompt,
-          n: 1,
-          size: "1024x1024",
-          quality: "high",
-        }),
-        signal: controller.signal,
-      });
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${GOOGLE_AI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              role: "USER",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: imageBase64
+                  }
+                },
+                { text: enhancePrompt }
+              ]
+            }],
+            generationConfig: {
+              responseModalities: ["TEXT", "IMAGE"],
+              imageConfig: {
+                aspectRatio: "1:1",
+                imageSize: "2K"  // Guaranteed 2048x2048 output
+              }
+            }
+          }),
+          signal: controller.signal,
+        }
+      );
     } finally {
       clearTimeout(timeout);
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      logStep("OpenAI API error", { status: response.status, error: errorText });
+      logStep("Google AI API error", { status: response.status, error: errorText });
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
@@ -170,16 +206,15 @@ This is for professional music distribution - quality must be pristine.`;
     }
 
     const data = await response.json();
-    const imageData = data.data?.[0];
+    const imagePart = data.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    const enhancedBase64 = imagePart?.inlineData?.data;
     
-    let enhancedImageUrl = imageData?.b64_json 
-      ? `data:image/png;base64,${imageData.b64_json}`
-      : imageData?.url;
-
-    if (!enhancedImageUrl) {
+    if (!enhancedBase64) {
       logStep("No enhanced image returned");
       throw new Error("Enhancement failed - no image returned");
     }
+
+    let enhancedImageUrl = `data:image/png;base64,${enhancedBase64}`;
 
     // Upload to storage
     let finalImageUrl = enhancedImageUrl;
