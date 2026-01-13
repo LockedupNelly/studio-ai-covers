@@ -37,6 +37,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  // Declare outside try block so catch can access for rollback
+  let userId: string | null = null;
+  let creditDeducted = false;
+  let previousCredits = 0;
+
   try {
     const { prompt, genre, style, mood, referenceImage, textStyleReferenceImage } = await req.json();
     logStep("Request received", { 
@@ -50,7 +55,6 @@ serve(async (req) => {
 
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
-    let userId: string | null = null;
     let userEmail: string | null = null;
     let hasUnlimitedAccess = false;
     let subscriptionTier: string | null = null;
@@ -131,8 +135,64 @@ serve(async (req) => {
       }
     }
 
+    // ========== CREDIT DEDUCTION (BEFORE GENERATION) ==========
+    // Deduct credits upfront to prevent race conditions
+    
+    if (userId && !hasUnlimitedAccess) {
+      // Fetch current credits
+      const { data: creditsData, error: creditsError } = await supabaseClient
+        .from("user_credits")
+        .select("credits")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (creditsError) {
+        logStep("Error fetching credits", { error: creditsError.message });
+        return new Response(
+          JSON.stringify({ error: "Failed to check credits. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      previousCredits = creditsData?.credits ?? 0;
+
+      if (previousCredits < 1) {
+        logStep("No credits remaining", { userId, credits: previousCredits });
+        return new Response(
+          JSON.stringify({ error: "No credits remaining. Please purchase more credits." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Deduct credit BEFORE generation starts
+      const { error: updateError } = await supabaseClient
+        .from("user_credits")
+        .update({ credits: previousCredits - 1 })
+        .eq("user_id", userId)
+        .eq("credits", previousCredits); // Optimistic lock - only update if credits haven't changed
+
+      if (updateError) {
+        logStep("Error deducting credit (race condition?)", { error: updateError.message });
+        return new Response(
+          JSON.stringify({ error: "Failed to reserve credit. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      creditDeducted = true;
+      logStep("Credit reserved upfront", { previousCredits, newBalance: previousCredits - 1 });
+    }
+
     const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
     if (!GOOGLE_AI_API_KEY) {
+      // Rollback credit if we already deducted
+      if (creditDeducted && userId) {
+        await supabaseClient
+          .from("user_credits")
+          .update({ credits: previousCredits })
+          .eq("user_id", userId);
+        logStep("Credit rolled back due to missing API key");
+      }
       throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
@@ -720,44 +780,15 @@ ${unifiedPrompt}`
         
         logStep("Subscription usage started", { month: currentMonth, count: 1, limit: subscriptionLimit });
       }
-    } else if (userId && !hasUnlimitedAccess) {
-      // Deduct credit for non-subscribers
-      const { data: creditsData, error: creditsError } = await supabaseClient
-        .from("user_credits")
-        .select("credits")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (creditsError) {
-        logStep("Error fetching credits", { error: creditsError.message });
-        throw new Error("Failed to check credits");
-      }
-
-      const currentCredits = creditsData?.credits ?? 0;
-
-      if (currentCredits < 1) {
-        return new Response(
-          JSON.stringify({ error: "No credits remaining. Please purchase more credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { error: updateError } = await supabaseClient
-        .from("user_credits")
-        .update({ credits: currentCredits - 1 })
-        .eq("user_id", userId);
-
-      if (updateError) {
-        logStep("Error deducting credit", { error: updateError.message });
-      } else {
-        await supabaseClient.from("credit_transactions").insert({
-          user_id: userId,
-          amount: -1,
-          type: "generation",
-          description: `Generated cover: ${prompt.slice(0, 50)}...`,
-        });
-        logStep("Credit deducted", { newBalance: currentCredits - 1 });
-      }
+    } else if (userId && !hasUnlimitedAccess && creditDeducted) {
+      // Credit was already deducted upfront - just log the transaction
+      await supabaseClient.from("credit_transactions").insert({
+        user_id: userId,
+        amount: -1,
+        type: "generation",
+        description: `Generated cover: ${prompt.slice(0, 50)}...`,
+      });
+      logStep("Credit transaction logged", { newBalance: previousCredits - 1 });
     }
 
     // Save generation to database
@@ -789,9 +820,24 @@ ${unifiedPrompt}`
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    logStep("ERROR", { message: error instanceof Error ? error.message : String(error) });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+    
+    // Rollback credit if we deducted upfront but generation failed
+    if (creditDeducted && userId) {
+      try {
+        await supabaseClient
+          .from("user_credits")
+          .update({ credits: previousCredits })
+          .eq("user_id", userId);
+        logStep("Credit rolled back due to generation failure", { restoredCredits: previousCredits });
+      } catch (rollbackErr) {
+        logStep("Failed to rollback credit", { error: rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr) });
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate cover" }),
+      JSON.stringify({ error: errorMessage || "Failed to generate cover" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
