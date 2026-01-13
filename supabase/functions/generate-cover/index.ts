@@ -450,29 +450,26 @@ Design professional, album-ready typography that fits the ${genre} aesthetic.
 The text should have depth, dimension, effects, and feel integrated with the scene.
 `}
 
-===== TYPOGRAPHY PLACEMENT REQUIREMENTS =====
+===== TYPOGRAPHY PLACEMENT =====
 
-**CRITICAL: Reserve clean space for readable typography**
-
-1. COMPOSITION HIERARCHY
-   - Lower third reserved for typography
-   - Main artwork in upper two-thirds
-   - Clear separation between art and text zones
+1. CREATIVE PLACEMENT
+   - Position text where it best complements the composition
+   - Text can be placed anywhere: top, center, bottom, or integrated into the artwork
+   - Let the visual flow of the design guide text placement
 
 2. TEXT RENDERING
-   - High-contrast text against background
+   - High-contrast text that remains readable
    - Clean, sharp letterforms with defined edges
-   - NO fog, haze, or atmospheric effects on text
-   - Text sits ON the composition, not buried in it
+   - Text should feel like a natural part of the design
 
-3. READABILITY FIRST
-   - Solid or subtle gradient background behind text if needed
-   - Professional album typography standards
-   - Text must be instantly readable at thumbnail size
+3. INTEGRATION
+   - Typography should feel cohesive with the artwork atmosphere
+   - Text can interact with, blend into, or emerge from the scene
+   - Effects and textures on text are encouraged when they enhance the design
 
-4. PLACEMENT
-   - Lower third placement preferred
-   - 25-35% of composition width
+4. SIZING
+   - Appropriately sized for visual impact
+   - Must remain readable at thumbnail size
    - Adequate padding from edges
 
 ${technicalSection}
