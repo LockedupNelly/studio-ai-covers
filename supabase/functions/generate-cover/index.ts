@@ -447,7 +447,9 @@ TYPOGRAPHY IDENTITY RULES:
 - Overall typography style must match the reference with high fidelity
 ` : `===== TYPOGRAPHY STYLING =====
 Design professional, album-ready typography that fits the ${genre} aesthetic.
-The text should have depth, dimension, effects, and feel integrated with the scene.
+Create visual interest through letterform design, textures, glows, or 3D bevels - NOT basic drop shadows.
+AVOID: Generic drop shadows, cheap offset shadows, basic shadow effects.
+INSTEAD USE: Chrome reflections, neon glows, textured surfaces, beveled edges, gradient fills, integrated lighting.
 `}
 
 ===== TYPOGRAPHY PLACEMENT =====
@@ -461,11 +463,13 @@ The text should have depth, dimension, effects, and feel integrated with the sce
    - High-contrast text that remains readable
    - Clean, sharp letterforms with defined edges
    - Text should feel like a natural part of the design
+   - NO basic drop shadows - they look cheap and dated
 
 3. INTEGRATION
    - Typography should feel cohesive with the artwork atmosphere
    - Text can interact with, blend into, or emerge from the scene
-   - Effects and textures on text are encouraged when they enhance the design
+   - Premium effects encouraged: glows, chrome, bevels, textures, gradients
+   - AVOID: Basic drop shadows, offset shadows, or cheap shadow effects
 
 4. SIZING
    - Appropriately sized for visual impact
