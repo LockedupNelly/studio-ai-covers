@@ -120,18 +120,35 @@ export const downloadImage = async (
   } catch (error) {
     console.error("Download error:", error);
     
-    // Final fallback: direct link open
-    try {
-      window.open(imageUrl, "_blank");
-      toast.info("Image opened", { 
-        description: "Long-press the image to save to Photos" 
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Provide specific error feedback
+    if (errorMessage.includes("crossOrigin") || errorMessage.includes("CORS")) {
+      toast.error("Download failed", {
+        description: "Image couldn't be loaded. Please try again.",
       });
-      return true;
-    } catch {
-      toast.error("Download failed", { 
-        description: "Please try again" 
+    } else if (errorMessage.includes("Canvas") || errorMessage.includes("context")) {
+      toast.error("Processing failed", {
+        description: "Your browser couldn't process the image. Try a different browser.",
       });
-      return false;
+    } else {
+      // Final fallback: direct link open
+      try {
+        window.open(imageUrl, "_blank");
+        toast.info("Image opened in new tab", { 
+          description: isMobileDevice() 
+            ? "Long-press the image to save to Photos" 
+            : "Right-click to save the image",
+        });
+        return true;
+      } catch {
+        toast.error("Download failed", { 
+          description: "Please check your internet connection and try again",
+        });
+        return false;
+      }
     }
+    
+    return false;
   }
 };

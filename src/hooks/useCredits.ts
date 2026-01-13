@@ -24,7 +24,7 @@ export function useCredits() {
   const mountedRef = useRef(true);
   const fetchingRef = useRef(false); // Prevent concurrent fetches
 
-  const fetchCredits = useCallback(async () => {
+  const fetchCredits = useCallback(async (retryCount = 0) => {
     // Prevent concurrent/duplicate fetches
     if (fetchingRef.current) return;
     
@@ -40,6 +40,8 @@ export function useCredits() {
     }
 
     fetchingRef.current = true;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second
 
     try {
       // Fetch credits
@@ -61,33 +63,85 @@ export function useCredits() {
         console.error("Error fetching credits:", error);
       }
 
-      // Check subscription for tier, usage, and limits
-      const { data: subData } = await supabase.functions.invoke("check-subscription");
+      // Check subscription for tier, usage, and limits with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-      if (!mountedRef.current) {
-        fetchingRef.current = false;
-        return;
-      }
+      try {
+        const { data: subData, error: subError } = await supabase.functions.invoke("check-subscription", {
+          body: {},
+        });
 
-      if (subData?.tier) {
-        setState({
-          credits: newCredits,
-          loading: false,
-          subscriptionTier: subData.tier,
-          subscriptionUsage: subData.usage ?? 0,
-          subscriptionLimit: subData.limit ?? null,
-        });
-      } else {
-        setState({
-          credits: newCredits,
-          loading: false,
-          subscriptionTier: null,
-          subscriptionUsage: null,
-          subscriptionLimit: null,
-        });
+        clearTimeout(timeoutId);
+
+        if (!mountedRef.current) {
+          fetchingRef.current = false;
+          return;
+        }
+
+        if (subError) {
+          throw subError;
+        }
+
+        if (subData?.tier) {
+          setState({
+            credits: newCredits,
+            loading: false,
+            subscriptionTier: subData.tier,
+            subscriptionUsage: subData.usage ?? 0,
+            subscriptionLimit: subData.limit ?? null,
+          });
+        } else {
+          setState({
+            credits: newCredits,
+            loading: false,
+            subscriptionTier: null,
+            subscriptionUsage: null,
+            subscriptionLimit: null,
+          });
+        }
+      } catch (subError) {
+        clearTimeout(timeoutId);
+        console.error("Error checking subscription:", subError);
+        
+        // Retry on failure
+        if (retryCount < MAX_RETRIES && mountedRef.current) {
+          console.log(`Retrying subscription check (${retryCount + 1}/${MAX_RETRIES})...`);
+          fetchingRef.current = false;
+          setTimeout(() => {
+            if (mountedRef.current) {
+              fetchCredits(retryCount + 1);
+            }
+          }, RETRY_DELAY * (retryCount + 1)); // Exponential backoff
+          return;
+        }
+        
+        // After max retries, set credits without subscription info
+        if (mountedRef.current) {
+          setState({
+            credits: newCredits,
+            loading: false,
+            subscriptionTier: null,
+            subscriptionUsage: null,
+            subscriptionLimit: null,
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching credits:", error);
+      
+      // Retry on failure
+      if (retryCount < MAX_RETRIES && mountedRef.current) {
+        console.log(`Retrying credits fetch (${retryCount + 1}/${MAX_RETRIES})...`);
+        fetchingRef.current = false;
+        setTimeout(() => {
+          if (mountedRef.current) {
+            fetchCredits(retryCount + 1);
+          }
+        }, RETRY_DELAY * (retryCount + 1));
+        return;
+      }
+      
       if (mountedRef.current) {
         setState((prev) => ({ ...prev, loading: false }));
       }
