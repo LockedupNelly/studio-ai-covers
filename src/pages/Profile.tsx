@@ -176,11 +176,53 @@ const Profile = () => {
     }
   };
 
-  const handleDownload = (imageUrl: string, prompt: string) => {
-    const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = `cover-art-${prompt.slice(0, 20).replace(/\s+/g, "-")}.png`;
-    link.click();
+  const handleDownload = async (imageUrl: string, prompt: string) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 3000;
+      canvas.height = 3000;
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) throw new Error("Canvas context failed");
+      
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, 3000, 3000);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `cover-art-${prompt.slice(0, 20).replace(/\s+/g, "-")}-3000x3000.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            toast.success("Downloaded!", { description: "3000x3000 JPEG saved" });
+          }
+        },
+        "image/jpeg",
+        0.95
+      );
+    } catch (error) {
+      console.error("Download error:", error);
+      // Fallback to direct download
+      const link = document.createElement("a");
+      link.href = imageUrl;
+      link.download = `cover-art-${prompt.slice(0, 20).replace(/\s+/g, "-")}.png`;
+      link.click();
+    }
   };
 
   // Filter generations based on search and genre
