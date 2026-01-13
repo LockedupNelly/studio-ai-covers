@@ -267,7 +267,7 @@ TECHNICAL REQUIREMENTS (MANDATORY):
 
   // ========== VISUAL STYLE MODIFIERS ==========
   const styleModifiers: Record<string, string> = {
-    "Realism": `High-end cinematic photography. 35mm lens, f/2.8. Hyper-detailed surface shaders and physically accurate light falloff. Professional color grade with deep, preserved blacks.`,
+    "Realism": `Professional cinematic cover art. Shot on 85mm prime lens, f/1.8 for extreme shallow depth-of-field. Sharp focal plane on subject with creamy, receding background bokeh. Utilize volumetric lighting and atmospheric perspective to create physical space between layers. High-dynamic-range (HDR) with rim lighting to pull the subject away from the background. Hyper-detailed surface response to light; no digital smoothing.`,
 
     "3D Render": `Octane render aesthetic. Metallic and glass textures, soft global illumination, and ray-traced reflections. Clean, futuristic, and polished.`,
 
