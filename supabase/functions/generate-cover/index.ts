@@ -522,6 +522,7 @@ ${technicalSection}
               }],
               generationConfig: {
                 responseModalities: ["TEXT", "IMAGE"],
+                thinkingLevel: "HIGH",  // Deep visual reasoning for text integration
                 imageConfig: {
                   aspectRatio: "1:1",
                   imageSize: "2K"  // Guaranteed 2048x2048 output
