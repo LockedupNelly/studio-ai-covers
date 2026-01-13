@@ -335,40 +335,30 @@ TECHNICAL REQUIREMENTS (MANDATORY):
               messages: [
                 {
                   role: "system",
-                  content: `You are a world-class concept artist creating album cover artwork. Your task: transform simple descriptions into VIVID, IMMERSIVE scene descriptions.
+                  content: `You are an album cover art director. Transform descriptions into HIGH-DENSITY visual keywords.
 
 ${isHighPriorityStyle ? `
-===== CRITICAL STYLE CONSTRAINT: ${style} =====
-This is a HIGH-PRIORITY STYLE that OVERRIDES normal cinematic/photorealistic language.
-
-${style === "Minimalist" ? `For MINIMALIST: Describe vast emptiness, single geometric shapes, flat colors, negative space. Do NOT add fog, particles, textures, or atmospheric effects. Think Saul Bass, Japanese minimalism.` : ""}
-${style === "Abstract" ? `For ABSTRACT: Describe color fields, shapes, textures, emotional color relationships - NOT literal objects. If the user mentions "a rose", describe "organic red forms bleeding into warm gradients". NO recognizable objects or faces.` : ""}
-${style === "3D Render" ? `For 3D RENDER: Describe impossibly smooth CGI surfaces, neon rim lights, reflective floors, gradient backgrounds, toy-like perfection. This is Cinema 4D/Octane aesthetic, NOT photography.` : ""}
-${style === "Anime" ? `For ANIME: Describe intense expressions, speed lines, dramatic backlighting, wind-blown elements, impact frames. This is Attack on Titan intensity, NOT soft/cute anime.` : ""}
-${style === "Retro" ? `For RETRO: Describe faded film colors, heavy grain, light leaks, vintage warmth. The scene should feel like it's FROM the 70s/80s/90s.` : ""}
-
-Your expanded description MUST be written specifically for ${style} rendering. Do NOT add cinematic/realistic language that contradicts this style.
+===== STYLE CONSTRAINT: ${style} =====
+${style === "Minimalist" ? `MINIMALIST: Negative space, single focal point, flat colors, geometric simplicity. NO atmospheric effects.` : ""}
+${style === "Abstract" ? `ABSTRACT: Color fields, organic shapes, emotional gradients. NO literal objects or faces.` : ""}
+${style === "3D Render" ? `3D RENDER: Smooth CGI surfaces, neon rim lights, reflective floors, Cinema 4D/Octane aesthetic.` : ""}
+${style === "Anime" ? `ANIME: Dynamic poses, speed lines, dramatic backlighting, impact frames.` : ""}
+${style === "Retro" ? `RETRO: Faded film colors, heavy grain, light leaks, vintage warmth.` : ""}
 ` : `
-THINK LIKE A DIRECTOR:
-- What is the STORY of this scene? What just happened? What's about to happen?
-- What EMOTION should viewers feel instantly?
-- Where is the CAMERA positioned? What's in foreground, midground, background?
-- What TIME OF DAY/NIGHT? What's the WEATHER? What's in the AIR (fog, smoke, particles, rain)?
-
-SCENE-BUILDING REQUIREMENTS:
-1. ENVIRONMENT - Build a complete world: ground textures, sky conditions, distant elements
-2. LIGHTING - Be SPECIFIC: "warm golden hour light streaming from camera-left, casting long purple shadows"
-3. ATMOSPHERE - Layer the air: volumetric fog, dust motes, smoke wisps, falling particles
-4. SUBJECT DETAIL - Describe materials, textures, wear patterns, reflections
-5. DEPTH - Include foreground elements (blurred), midground (subject), background (atmosphere)
-6. MOTION/ENERGY - Flowing elements, rising smoke, swirling particles, wind-swept items
+TECHNICAL DIRECTIVES:
+- COMPOSITION: Rule of thirds, clear focal point, negative space in lower third for text
+- LIGHTING: Single key light direction, color temperature, shadow placement
+- COLOR: Dominant palette (max 3 colors), color grading direction
+- SUBJECT: Core visual element, material/texture keywords
 `}
 
 OUTPUT RULES:
-- 200-350 words of pure visual poetry
-- NO text/typography references (text will be added separately)
-- Paint a scene so vivid the reader can FEEL the atmosphere
-- Match ${style} aesthetic, ${mood} emotion, ${genre} genre context`
+- 60-75 words MAXIMUM
+- High-density keywords, NOT prose
+- Format: "[Subject], [lighting], [color palette], [composition], [atmosphere]"
+- NO flowery language or "visual poetry"
+- Reserve lower third for typography placement
+- Match ${style} aesthetic, ${mood} mood, ${genre} genre`
                 },
                 {
                   role: "user",
@@ -460,31 +450,30 @@ Design professional, album-ready typography that fits the ${genre} aesthetic.
 The text should have depth, dimension, effects, and feel integrated with the scene.
 `}
 
-===== INTEGRATED COMPOSITION REQUIREMENTS =====
+===== TYPOGRAPHY PLACEMENT REQUIREMENTS =====
 
-**CRITICAL: Generate artwork AND text as ONE UNIFIED PIECE**
-The typography must be PAINTED INTO the scene, not added on top.
+**CRITICAL: Reserve clean space for readable typography**
 
-1. TEXT-LIGHTING INTEGRATION
-   - Text receives the SAME lighting as the artwork
-   - If scene has rim lighting, text has rim lighting
-   - Text color reflects ambient light temperature
-   - Shadows on text match the scene's shadow direction
+1. COMPOSITION HIERARCHY
+   - Lower third reserved for typography
+   - Main artwork in upper two-thirds
+   - Clear separation between art and text zones
 
-2. TEXT-ATMOSPHERE INTEGRATION  
-   - If fog/haze exists, it affects the text
-   - Text exists INSIDE the atmosphere, not above it
-   - Environmental elements may partially occlude text
+2. TEXT RENDERING
+   - High-contrast text against background
+   - Clean, sharp letterforms with defined edges
+   - NO fog, haze, or atmospheric effects on text
+   - Text sits ON the composition, not buried in it
 
-3. PHYSICS CONSISTENCY
-   - Text catches reflections, fog, and light from the artwork
-   - Text surface matches artwork's material quality
-   - Same grain, noise, or film texture throughout
+3. READABILITY FIRST
+   - Solid or subtle gradient background behind text if needed
+   - Professional album typography standards
+   - Text must be instantly readable at thumbnail size
 
 4. PLACEMENT
-   - Text in lower third unless composition demands otherwise
-   - 25-35% of composition width for visibility
-   - Professional album cover composition
+   - Lower third placement preferred
+   - 25-35% of composition width
+   - Adequate padding from edges
 
 ${technicalSection}
 
