@@ -17,69 +17,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariant, getTextStyleVariants, hasVariants } from "@/lib/text-style-variants";
 import { Progress } from "@/components/ui/progress";
 import { downloadImage } from "@/lib/download-utils";
+import { 
+  genres, 
+  visualStylesWithDescriptions as visualStyles, 
+  moodOptions, 
+  textStyleCategoryIds as textStyleCategories,
+  progressStages 
+} from "@/lib/studio-config";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
   generatedImage: string | null;
   isGenerating: boolean;
 }
-
-const genres = [
-  "Hip-Hop / Rap",
-  "Pop",
-  "EDM",
-  "R&B",
-  "Rock",
-  "Alternative",
-  "Indie",
-  "Metal",
-  "Country",
-  "Jazz",
-  "Classical"
-];
-
-// Progress stages for generation
-const progressStages = [
-  { label: "Preparing your cover...", progress: 5 },
-  { label: "Generating artwork...", progress: 20 },
-  { label: "Creating your vision...", progress: 40 },
-  { label: "Rendering details...", progress: 60 },
-  { label: "Adding finishing touches...", progress: 80 },
-  { label: "Almost ready...", progress: 95 },
-];
-
-// Fixed Visual Style options with descriptions
-const visualStyles = [
-  { id: "None", name: "None", description: "AI chooses the best style for your prompt" },
-  { id: "Realism", name: "Realism", description: "Photorealistic imagery with lifelike detail" },
-  { id: "3D Render", name: "3D Render", description: "Computer-generated 3D graphics and models" },
-  { id: "Illustration", name: "Illustration", description: "Hand-drawn artistic style with creative flair" },
-  { id: "Anime", name: "Anime", description: "Japanese animation style with bold lines and colors" },
-  { id: "Fine Art", name: "Fine Art", description: "Classical painting techniques and aesthetics" },
-  { id: "Abstract", name: "Abstract", description: "Non-representational shapes, colors and forms" },
-  { id: "Minimalist", name: "Minimalist", description: "Clean, simple design with negative space" },
-  { id: "Cinematic", name: "Cinematic", description: "Movie-like dramatic lighting and composition" },
-  { id: "Retro", name: "Retro", description: "Vintage aesthetics from past decades" },
-  { id: "Other", name: "Other", description: "Describe your own custom visual style" },
-];
-
-// Mood options
-const moodOptions = [
-  "None",
-  "Aggressive",
-  "Dark",
-  "Mysterious",
-  "Euphoric",
-  "Uplifting",
-  "Melancholic",
-  "Romantic",
-  "Peaceful",
-  "Intense",
-  "Nostalgic"
-];
-
-// Text style categories for horizontal scroll
-const textStyleCategories = ["creative", "dark", "futuristic"];
 
 // Get all variants for all categories
 const getAllTextStyleVariants = () => {

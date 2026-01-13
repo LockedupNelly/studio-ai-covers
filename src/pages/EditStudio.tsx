@@ -23,6 +23,19 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage } from "@/lib/download-utils";
+import {
+  visualStyles,
+  moodOptions,
+  textStyleCategories as textStyles,
+  textureOptions,
+  lightingOptions,
+  parentalAdvisoryOptions,
+  getCssMixBlendMode,
+  type BlendMode,
+  type TextureOption,
+  type LightingOption,
+  type ParentalAdvisoryOption,
+} from "@/lib/studio-config";
 
 interface CoverAnalysis {
   dominantColors?: string[];
@@ -43,114 +56,6 @@ interface EditState {
   artistName?: string | null;
   coverAnalysis?: CoverAnalysis | null;
 }
-
-// Visual Style options
-const visualStyles = [
-  "None",
-  "Realism",
-  "3D Render",
-  "Illustration",
-  "Anime",
-  "Fine Art",
-  "Abstract",
-  "Minimalist",
-  "Cinematic",
-  "Retro",
-];
-
-// Mood options
-const moodOptions = [
-  "None",
-  "Aggressive",
-  "Dark",
-  "Mysterious",
-  "Euphoric",
-  "Uplifting",
-  "Melancholic",
-  "Romantic",
-  "Peaceful",
-  "Intense",
-  "Nostalgic"
-];
-
-// Text style presets
-const textStyles = [
-  { id: "creative", name: "Creative" },
-  { id: "dark", name: "Dark" },
-  { id: "futuristic", name: "Futuristic" },
-  { id: "modern", name: "Modern" },
-  { id: "retro", name: "Retro" },
-];
-
-// Texture overlay options - stored in public/textures/
-type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter";
-
-// Map canvas blend modes to CSS mix-blend-mode equivalents for preview
-const getCssMixBlendMode = (blendMode?: BlendMode): React.CSSProperties['mixBlendMode'] => {
-  if (blendMode === "lighter") return "screen"; // "lighter" is canvas-only, "screen" is closest CSS equivalent for preview
-  return blendMode;
-};
-
-interface TextureOption {
-  id: string;
-  name: string;
-  image: string | null;
-  blendMode?: BlendMode;
-  opacity?: number;
-  gradient?: string; // Fallback for preview only
-}
-
-const textureOptions: TextureOption[] = [
-  { id: "none", name: "None", image: null },
-  { id: "rock-grunge", name: "Rock Grunge", image: "/textures/rock-grunge.jpg", blendMode: "overlay", opacity: 0.125 },
-  { id: "light-grunge", name: "Light Grunge", image: "/textures/light-grunge.jpg", blendMode: "lighter", opacity: 0.3 },
-  { id: "white-grunge", name: "White Grunge", image: "/textures/white-grunge.jpg", blendMode: "overlay", opacity: 0.5 },
-  { id: "paper-grit", name: "Paper Grit", image: "/textures/paper-grit.jpg", blendMode: "lighter", opacity: 0.4 },
-  { id: "smoke", name: "Smoke", image: "/textures/smoke.jpg", blendMode: "screen", opacity: 0.5 },
-  { id: "vhs", name: "VHS", image: "/textures/vhs.jpg", blendMode: "lighter", opacity: 0.4 },
-];
-
-interface LightingOption {
-  id: string;
-  name: string;
-  image: string | null;
-  blendMode?: BlendMode;
-  opacity?: number;
-  gradient?: string;
-}
-
-// Light/Lighting options - stored in public/lighting/
-const lightingOptions: LightingOption[] = [
-  { id: "none", name: "None", image: null },
-  { id: "speed-lines", name: "Speed Lines", image: "/lighting/speed-lines.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "heavenly-light", name: "Heavenly Light", image: "/lighting/heavenly-light.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "blue-light", name: "Blue Light", image: "/lighting/blue-heaven.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "prism-leak", name: "Prism Leak", image: "/lighting/prism-leak.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "side-flash", name: "SideFlash", image: "/lighting/side-flash.jpg", blendMode: "screen", opacity: 1.0 },
-  { id: "fractal-red", name: "Fractal Red", image: "/lighting/fractal-red.jpg", blendMode: "screen", opacity: 1.0 },
-];
-
-// Parental Advisory options - stored in public/parental-advisory/
-interface ParentalAdvisoryOption {
-  id: string;
-  name: string;
-  image: string;
-}
-
-const parentalAdvisoryOptions: ParentalAdvisoryOption[] = [
-  { id: "none", name: "None", image: "" },
-  { id: "standard", name: "Standard", image: "/parental-advisory/standard.png" },
-  { id: "modern", name: "Modern", image: "/parental-advisory/modern.png" },
-  { id: "minimal", name: "Minimal", image: "/parental-advisory/minimal.png" },
-  { id: "3d", name: "3D", image: "/parental-advisory/3d.png" },
-  { id: "grunge", name: "Grunge", image: "/parental-advisory/grunge.png" },
-  { id: "drippy", name: "Drippy", image: "/parental-advisory/drippy.png" },
-  { id: "futuristic", name: "Futuristic", image: "/parental-advisory/futuristic.png" },
-  { id: "sticker", name: "Sticker", image: "/parental-advisory/sticker.png" },
-  { id: "chaos", name: "Chaos", image: "/parental-advisory/chaos.png" },
-  { id: "smooth", name: "Smooth", image: "/parental-advisory/smooth.png" },
-  { id: "focus", name: "Focus", image: "/parental-advisory/focus.png" },
-];
 
 const EditStudio = () => {
   const { user, loading } = useAuth();
