@@ -4,6 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+interface CoverAnalysis {
+  dominantColors?: string[];
+  subjectPosition?: string;
+  safeTextZones?: string[];
+  avoidZones?: string[];
+  mood?: string;
+}
+
 interface Generation {
   id: string;
   image_url: string;
@@ -13,7 +21,7 @@ interface Generation {
   style?: string;
   mood?: string;
   prompt?: string;
-  cover_analysis?: any;
+  cover_analysis?: CoverAnalysis | null;
 }
 
 interface CoverSelectorProps {

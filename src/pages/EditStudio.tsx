@@ -25,11 +25,11 @@ import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage } from "@/lib/download-utils";
 
 interface CoverAnalysis {
-  dominantColors: string[];
-  subjectPosition: string;
-  safeTextZones: string[];
-  avoidZones: string[];
-  mood: string;
+  dominantColors?: string[];
+  subjectPosition?: string;
+  safeTextZones?: string[];
+  avoidZones?: string[];
+  mood?: string;
 }
 
 interface EditState {
@@ -234,8 +234,17 @@ const EditStudio = () => {
     }
   }, [user, loading, navigate]);
   
-  // Handle selecting a cover from the selector
-  const handleSelectCover = (cover: any) => {
+  // Handle selecting a cover from the selector  
+  const handleSelectCover = (cover: {
+    image_url: string;
+    song_title?: string | null;
+    artist_name?: string | null;
+    genre?: string;
+    style?: string;
+    mood?: string;
+    prompt?: string;
+    cover_analysis?: CoverAnalysis | null;
+  }) => {
     setImageUrl(cover.image_url);
     setCurrentState(prev => ({
       ...prev,
