@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { GenreBanner } from "@/components/GenreBanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -856,10 +855,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
           )}
         </div>
 
-        {/* Genre Banner */}
-        <div className="max-w-6xl mx-auto mt-6">
-          <GenreBanner genre={genre} />
-        </div>
       </div>
 
       {/* Edit Cover Dialog (AI-powered) */}
