@@ -180,9 +180,6 @@ Keep the exact same composition, text, and design - only improve the quality.`;
             }],
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
-              thinkingConfig: {
-                thinkingLevel: "HIGH"  // Deep visual reasoning for text integration
-              },
               imageConfig: {
                 aspectRatio: "1:1",
                 imageSize: "2K"  // Guaranteed 2048x2048 output

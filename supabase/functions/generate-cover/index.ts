@@ -331,7 +331,7 @@ TECHNICAL REQUIREMENTS (MANDATORY):
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model: "google/gemini-3-pro-preview",
               messages: [
                 {
                   role: "system",
@@ -522,9 +522,6 @@ ${technicalSection}
               }],
               generationConfig: {
                 responseModalities: ["TEXT", "IMAGE"],
-                thinkingConfig: {
-                  thinkingLevel: "HIGH"  // Deep visual reasoning for text integration
-                },
                 imageConfig: {
                   aspectRatio: "1:1",
                   imageSize: "2K"  // Guaranteed 2048x2048 output
