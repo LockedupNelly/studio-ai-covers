@@ -575,10 +575,68 @@ const EditStudio = () => {
     const imageToDownload = imageUrl;
     if (!imageToDownload) return;
     
+    // Build overlay configurations for compositing
+    const overlayConfigs: Array<{
+      imageUrl: string;
+      blendMode?: string;
+      opacity?: number;
+      rotation?: number;
+    }> = [];
+    
+    // Add lighting overlays
+    lightings.forEach(lightingId => {
+      const lightingOption = lightingOptions.find(l => l.id === lightingId);
+      if (lightingOption?.image) {
+        const baseOpacity = lightingOption.opacity || 1;
+        const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+        overlayConfigs.push({
+          imageUrl: lightingOption.image,
+          blendMode: lightingOption.blendMode || 'screen',
+          opacity: baseOpacity * intensityMultiplier,
+          rotation: lightingRotations[lightingId] || 0,
+        });
+      }
+    });
+    
+    // Add texture overlays
+    textures.forEach(textureId => {
+      const textureOption = textureOptions.find(t => t.id === textureId);
+      if (textureOption?.image) {
+        const baseOpacity = textureOption.opacity || 0.5;
+        const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+        overlayConfigs.push({
+          imageUrl: textureOption.image,
+          blendMode: textureOption.blendMode || 'overlay',
+          opacity: Math.min(baseOpacity * intensityMultiplier, 1),
+          rotation: textureRotations[textureId] || 0,
+        });
+      }
+    });
+    
+    // Build parental advisory config
+    const paConfig = parentalAdvisory !== "none" ? {
+      imageUrl: parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image || "",
+      position: paPosition,
+      inverted: paInverted,
+      sizePercent: 22,
+    } : undefined;
+    
+    // Build color overlay configs
+    const colorOverlayConfig = mainColor && getColorHex(mainColor) ? {
+      hex: getColorHex(mainColor),
+      opacity: 0.45,
+    } : undefined;
+    
+    const accentOverlayConfig = accentColor && getColorHex(accentColor) ? {
+      hex: getColorHex(accentColor),
+      opacity: 0.35,
+    } : undefined;
+    
     // Check if running on native platform (iOS/Android via Capacitor)
     if (Capacitor.isNativePlatform()) {
       try {
-        // Load image and scale to 3000x3000 JPEG using canvas
+        // For native, we need to composite overlays manually first
+        // Load base image
         const img = new Image();
         img.crossOrigin = "anonymous";
         
@@ -598,6 +656,106 @@ const EditStudio = () => {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, 3000, 3000);
+        
+        // Apply overlays
+        for (const overlay of overlayConfigs) {
+          try {
+            const overlayImg = new Image();
+            overlayImg.crossOrigin = "anonymous";
+            await new Promise((resolve, reject) => {
+              overlayImg.onload = resolve;
+              overlayImg.onerror = reject;
+              overlayImg.src = overlay.imageUrl;
+            });
+            
+            ctx.save();
+            const blendModeMap: Record<string, GlobalCompositeOperation> = {
+              'overlay': 'overlay', 'multiply': 'multiply', 'screen': 'screen',
+              'soft-light': 'soft-light', 'hard-light': 'hard-light', 'lighter': 'lighter',
+              'color-dodge': 'color-dodge',
+            };
+            ctx.globalCompositeOperation = blendModeMap[overlay.blendMode || 'overlay'] || 'source-over';
+            ctx.globalAlpha = overlay.opacity ?? 1;
+            
+            if (overlay.rotation && overlay.rotation !== 0) {
+              ctx.translate(1500, 1500);
+              ctx.rotate((overlay.rotation * Math.PI) / 180);
+              ctx.drawImage(overlayImg, -1500, -1500, 3000, 3000);
+            } else {
+              ctx.drawImage(overlayImg, 0, 0, 3000, 3000);
+            }
+            ctx.restore();
+          } catch (e) {
+            console.warn("Failed to apply overlay:", e);
+          }
+        }
+        
+        // Apply color overlay
+        if (colorOverlayConfig) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'overlay';
+          ctx.globalAlpha = colorOverlayConfig.opacity;
+          ctx.fillStyle = colorOverlayConfig.hex;
+          ctx.fillRect(0, 0, 3000, 3000);
+          ctx.restore();
+        }
+        
+        // Apply accent overlay
+        if (accentOverlayConfig) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'color-dodge';
+          ctx.globalAlpha = accentOverlayConfig.opacity;
+          const grad1 = ctx.createRadialGradient(450, 2550, 0, 450, 2550, 1050);
+          grad1.addColorStop(0, accentOverlayConfig.hex);
+          grad1.addColorStop(1, 'transparent');
+          ctx.fillStyle = grad1;
+          ctx.fillRect(0, 0, 3000, 3000);
+          const grad2 = ctx.createRadialGradient(2550, 450, 0, 2550, 450, 1050);
+          grad2.addColorStop(0, accentOverlayConfig.hex);
+          grad2.addColorStop(1, 'transparent');
+          ctx.fillStyle = grad2;
+          ctx.fillRect(0, 0, 3000, 3000);
+          ctx.restore();
+        }
+        
+        // Apply parental advisory
+        if (paConfig?.imageUrl) {
+          try {
+            const paImg = new Image();
+            paImg.crossOrigin = "anonymous";
+            await new Promise((resolve, reject) => {
+              paImg.onload = resolve;
+              paImg.onerror = reject;
+              paImg.src = paConfig.imageUrl;
+            });
+            
+            const paWidth = 3000 * 0.22;
+            const paHeight = (paImg.height / paImg.width) * paWidth;
+            const margin = 60;
+            let paX = 3000 - paWidth - margin;
+            if (paConfig.position === "bottom-left") paX = margin;
+            else if (paConfig.position === "bottom-center") paX = (3000 - paWidth) / 2;
+            const paY = 3000 - paHeight - margin;
+            
+            if (paConfig.inverted) {
+              const tempCanvas = document.createElement("canvas");
+              tempCanvas.width = paImg.width;
+              tempCanvas.height = paImg.height;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (tempCtx) {
+                tempCtx.drawImage(paImg, 0, 0);
+                tempCtx.globalCompositeOperation = 'difference';
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, paImg.width, paImg.height);
+                ctx.drawImage(tempCanvas, paX, paY, paWidth, paHeight);
+              }
+            } else {
+              ctx.drawImage(paImg, paX, paY, paWidth, paHeight);
+            }
+          } catch (e) {
+            console.warn("Failed to apply PA:", e);
+          }
+        }
 
         const blob = await new Promise<Blob | null>((resolve) => {
           canvas.toBlob(resolve, "image/jpeg", 0.95);
@@ -622,19 +780,32 @@ const EditStudio = () => {
             toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
           } catch (fsError) {
             console.error("Filesystem write error:", fsError);
-            // Fallback to web download utility
-            await downloadImage(imageToDownload, "cover-art");
+            await downloadImage(imageToDownload, "cover-art", {
+              overlays: overlayConfigs,
+              parentalAdvisory: paConfig,
+              colorOverlay: colorOverlayConfig,
+              accentOverlay: accentOverlayConfig,
+            });
           }
         };
         reader.readAsDataURL(blob);
       } catch (error) {
         console.error("Native download error:", error);
-        // Fallback to web download
-        await downloadImage(imageToDownload, "cover-art");
+        await downloadImage(imageToDownload, "cover-art", {
+          overlays: overlayConfigs,
+          parentalAdvisory: paConfig,
+          colorOverlay: colorOverlayConfig,
+          accentOverlay: accentOverlayConfig,
+        });
       }
     } else {
-      // Web browser - use the mobile-optimized download utility
-      await downloadImage(imageToDownload, "cover-art");
+      // Web browser - use the mobile-optimized download utility with overlays
+      await downloadImage(imageToDownload, "cover-art", {
+        overlays: overlayConfigs,
+        parentalAdvisory: paConfig,
+        colorOverlay: colorOverlayConfig,
+        accentOverlay: accentOverlayConfig,
+      });
     }
   };
   

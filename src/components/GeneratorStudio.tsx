@@ -684,13 +684,35 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                         </div>
                       </div>
                       
-                      <div className="relative flex-1 min-h-0">
-                        <div className="aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500">
+                      <div className="relative flex-1 min-h-0 group">
+                        <div className="aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500 relative">
                           <img
                             src={generatedImage}
                             alt="Generated cover art"
                             className="w-full h-full object-cover"
                           />
+                          {/* Regenerate hover overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="lg"
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !songTitle.trim() || !artistName.trim() || !prompt.trim()}
+                                    className="bg-background/90 hover:bg-background border-border"
+                                  >
+                                    <RefreshCw className="w-5 h-5 mr-2" />
+                                    Regenerate
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Generate a new version</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </div>
                       </div>
 
