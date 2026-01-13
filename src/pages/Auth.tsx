@@ -31,11 +31,15 @@ const Auth = () => {
     }
   }, [user, loading, navigate]);
 
-  // If we're in the middle of an OAuth callback (URL has hash with access_token), show loading
+  // If we're in the middle of an OAuth callback, show loading
+  // Check both hash fragments (implicit flow) AND query params (PKCE flow with ?code=)
+  const url = new URL(window.location.href);
   const isOAuthCallback = window.location.hash.includes('access_token') || 
-                          window.location.hash.includes('error');
+                          window.location.hash.includes('error') ||
+                          url.searchParams.has('code') ||
+                          url.searchParams.has('error');
   
-  if (isOAuthCallback) {
+  if (isOAuthCallback || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
