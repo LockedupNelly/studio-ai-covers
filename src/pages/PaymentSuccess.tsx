@@ -4,16 +4,23 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Sparkles, Coins } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useCredits } from "@/hooks/useCredits";
 
-const PaymentSuccess = () => {
+const PaymentSuccessContent = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const type = searchParams.get("type");
+  const { refetch } = useCredits();
 
   useEffect(() => {
-    // Refresh subscription status after successful payment
-    // This would be handled by the AuthContext in a real implementation
-  }, []);
+    // Refresh credits/subscription status after successful payment
+    const timer = setTimeout(() => {
+      refetch();
+    }, 1000); // Small delay to allow webhook to process
+    
+    return () => clearTimeout(timer);
+  }, [refetch]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,5 +75,11 @@ const PaymentSuccess = () => {
     </div>
   );
 };
+
+const PaymentSuccess = () => (
+  <ErrorBoundary>
+    <PaymentSuccessContent />
+  </ErrorBoundary>
+);
 
 export default PaymentSuccess;

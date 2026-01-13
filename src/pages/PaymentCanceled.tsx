@@ -3,8 +3,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { XCircle } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const PaymentCanceled = () => {
+const PaymentCanceledContent = () => {
   const navigate = useNavigate();
 
   return (
@@ -42,5 +43,11 @@ const PaymentCanceled = () => {
     </div>
   );
 };
+
+const PaymentCanceled = () => (
+  <ErrorBoundary>
+    <PaymentCanceledContent />
+  </ErrorBoundary>
+);
 
 export default PaymentCanceled;
