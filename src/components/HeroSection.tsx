@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { BackgroundPaths } from "@/components/ui/background-paths";
 
 const exampleCovers = [
   "/examples/cover-1.jpg",
@@ -22,16 +21,13 @@ export const HeroSection = () => {
       {/* Dark background with red hues */}
       <div className="absolute inset-0 bg-background" />
       
-      {/* Animated background paths */}
-      <BackgroundPaths />
-      
       {/* Red glow from top */}
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/20 rounded-full blur-[150px]" />
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[120px]" />
       <div className="absolute top-20 left-0 w-[300px] h-[300px] bg-red-700/10 rounded-full blur-[100px]" />
       
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
 
       <div className="relative z-10 container mx-auto px-4 max-w-5xl">
         <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
