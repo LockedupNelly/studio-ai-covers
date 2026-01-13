@@ -6,8 +6,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useNavigate, useLocation } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
-// NavLink component for active state styling
+// NavLink component for active state styling - defined after all imports
 const NavLink = ({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,19 +40,6 @@ const NavLink = ({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
     </button>
   );
 };
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
