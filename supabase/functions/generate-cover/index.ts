@@ -495,6 +495,48 @@ ${technicalSection}
         artistName
       });
 
+      // Fetch and convert text style reference image to base64 if provided
+      let textStyleImageBase64: string | null = null;
+      if (textStyleReferenceImage) {
+        try {
+          logStep("Fetching text style reference image", { url: textStyleReferenceImage.slice(0, 100) });
+          const imageResponse = await fetch(textStyleReferenceImage);
+          if (imageResponse.ok) {
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+            textStyleImageBase64 = base64;
+            logStep("Text style reference image converted to base64", { sizeBytes: imageBuffer.byteLength });
+          } else {
+            logStep("Failed to fetch text style reference image", { status: imageResponse.status });
+          }
+        } catch (imgError) {
+          logStep("Error fetching text style reference image", { error: imgError instanceof Error ? imgError.message : String(imgError) });
+        }
+      }
+
+      // Build multimodal content parts
+      const contentParts: any[] = [{ text: unifiedPrompt }];
+      
+      // Add text style reference image if available
+      if (textStyleImageBase64) {
+        contentParts.push({
+          inlineData: {
+            mimeType: "image/png",
+            data: textStyleImageBase64
+          }
+        });
+        // Add instruction to use the reference image
+        contentParts[0].text += `
+
+===== TEXT STYLE VISUAL REFERENCE =====
+CRITICAL: A reference image showing the EXACT text style to replicate is provided below.
+- MATCH the letterforms, effects, textures, and styling shown in this reference image EXACTLY
+- Use this image as your PRIMARY visual target for how the song title text should look
+- Replicate the glow, distortion, brush strokes, or other effects visible in the reference
+- The artist name should complement this style while maintaining visual hierarchy`;
+        logStep("Added text style reference image to multimodal request");
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 120_000); // 2 minute timeout
 
@@ -507,7 +549,7 @@ ${technicalSection}
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{
-                parts: [{ text: unifiedPrompt }]
+                parts: contentParts
               }],
               generationConfig: {
                 responseModalities: ["TEXT", "IMAGE"],
