@@ -154,52 +154,52 @@ serve(async (req) => {
     // ========== GENRE-SPECIFIC DIRECTOR LAYERS ==========
     const genreDirectors: Record<string, { visual: string; narrative: string }> = {
       "Hip-Hop": {
-        visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
-        narrative: "confidence, power, confrontation, movement"
+        visual: "Gritty urban textures, high-contrast wide angles, bold cinematic photography with heavy shadows",
+        narrative: "street authenticity, raw power, cultural weight"
       },
       "Rap": {
-        visual: "gritty cinematic realism, bold presence, high contrast, dramatic lighting, grounded energy",
-        narrative: "confidence, power, confrontation, movement"
+        visual: "Gritty urban textures, high-contrast wide angles, bold cinematic photography with heavy shadows",
+        narrative: "street authenticity, raw power, cultural weight"
       },
       "Pop": {
-        visual: "polished, vibrant, modern, clean composition with strong visual punch",
-        narrative: "confidence, clarity, star presence"
+        visual: "High-saturation, clean commercial aesthetic. Vibrant trendy color palettes, soft lighting, modern iconic imagery",
+        narrative: "mass appeal, visual clarity, star presence"
       },
       "EDM": {
-        visual: "energetic, futuristic, neon accents, motion, light trails",
-        narrative: "movement, intensity, sensory overload"
+        visual: "Synthetic light sources, neon color palettes, abstract energy flows. Liquid textures and symmetrical layouts",
+        narrative: "movement, electronic energy, sensory overload"
       },
       "R&B": {
-        visual: "moody, sensual, cinematic softness, rich shadows",
-        narrative: "intimacy, emotion, closeness"
+        visual: "Soft warm mood lighting. Smooth gradients, intimate close-ups, elegant high-fashion photography vibes",
+        narrative: "intimacy, sensuality, emotional closeness"
       },
       "Rock": {
-        visual: "raw, dramatic, gritty textures, bold lighting",
-        narrative: "rebellion, intensity, impact"
+        visual: "High-grain film aesthetic. Harsh lighting, desaturated tones, distressed textures",
+        narrative: "rebellion, raw intensity, visceral impact"
       },
       "Alternative": {
-        visual: "experimental, atmospheric, unconventional framing",
-        narrative: "ambiguity, tension, individuality"
+        visual: "High-concept surrealism. Moody lighting, unconventional color-grading, avant-garde composition",
+        narrative: "ambiguity, artistic tension, individuality"
       },
       "Indie": {
-        visual: "intimate, cinematic restraint, natural lighting",
-        narrative: "authenticity, emotion, subtle storytelling"
+        visual: "Lo-fi analog aesthetic. Natural lighting, candid film-frame composition, earthy muted color palettes",
+        narrative: "authenticity, intimacy, subtle storytelling"
       },
       "Metal": {
-        visual: "dark fantasy, ominous, epic scale, heavy textures",
-        narrative: "destruction, power, confrontation"
+        visual: "High-grain film aesthetic. Harsh lighting, desaturated tones, distressed textures",
+        narrative: "destruction, power, dark confrontation"
       },
       "Country": {
-        visual: "grounded cinematic realism, rustic textures, warm contrast",
-        narrative: "story, place, nostalgia"
+        visual: "Warm natural light, rustic organic textures, wide-open landscape depth. Golden-hour hues, grounded framing",
+        narrative: "storytelling, sense of place, heartland nostalgia"
       },
       "Jazz": {
-        visual: "elegant, low-key lighting, cinematic noir",
-        narrative: "mood, atmosphere, sophistication"
+        visual: "Smoky late-night atmosphere, soft lighting, sophisticated high-contrast noir vibes",
+        narrative: "mood, elegance, late-night sophistication"
       },
       "Classical": {
-        visual: "refined, timeless, painterly lighting",
-        narrative: "grandeur, emotion, permanence"
+        visual: "Grand scale, dramatic chiaroscuro lighting, ornate timeless textures. Majestic and high-prestige",
+        narrative: "grandeur, timeless emotion, permanence"
       },
     };
 
@@ -267,37 +267,37 @@ TECHNICAL REQUIREMENTS (MANDATORY):
 
   // ========== VISUAL STYLE MODIFIERS ==========
   const styleModifiers: Record<string, string> = {
-    "Realism": `Style: High-End Cinematic Photography. > Optics: Shot on 35mm prime lens, f/2.8. Sharp focal plane with natural depth-of-field falloff. Subtle lens characteristics including natural bloom and organic micro-contrast. Material Fidelity: Hyper-detailed surface shaders. Render authentic material response to light (specular highlights on hard surfaces, subsurface scattering on organic textures). No digital smoothing or artificial sharpening. Lighting: Global illumination with physically accurate shadows. High dynamic range (HDR) with deep, detailed blacks and preserved highlight detail. Finish: Professional color grade, subtle filmic grain, and authentic atmospheric density.`,
+    "Realism": `High-end cinematic photography. 35mm lens, f/2.8. Hyper-detailed surface shaders and physically accurate light falloff. Professional color grade with deep, preserved blacks.`,
 
-    "3D Render": `HYPER-STYLIZED CGI / CINEMA 4D AESTHETIC - Impossibly smooth surfaces, toy-like materials. Subjects look like high-end 3D models. Glowing neon rim lights (cyan, magenta, orange). Reflective floor with gradient studio background. Perfect edge bevels, impossibly smooth curves. Volumetric god rays, atmospheric fog with glow. Octane/Redshift/Arnold render look.`,
+    "3D Render": `Octane render aesthetic. Metallic and glass textures, soft global illumination, and ray-traced reflections. Clean, futuristic, and polished.`,
 
-    "Illustration": `TRADITIONAL ILLUSTRATION - Visible brushstrokes, paint texture, artistic mark-making. Oil painting, gouache, or watercolor aesthetic. Loose, expressive linework with intentional imperfection. Rich color layering with visible underpainting. Must look like it was painted by a human artist.`,
+    "Illustration": `High-quality digital painting. Sharp edges, hand-drawn character, layered depth, and professional cel-shading or textured brushwork.`,
 
-    "Anime": `MAXIMUM INTENSITY JAPANESE ANIME - Exaggerated dramatic expressions, intense eyes. Dynamic action poses, extreme foreshortening. Intense backlighting, lens flares, glowing auras. Speed lines, motion blur streaks, impact frames. High contrast cel-shading. Attack on Titan / Demon Slayer intensity.`,
+    "Anime": `Modern "Makoto Shinkai" style. High-vibrancy sky gradients, dramatic backlighting, hand-painted textures, and cinematic bloom.`,
 
-    "Fine Art": `MUSEUM-QUALITY FINE ART - Chiaroscuro lighting with dramatic light/shadow contrast. Classical composition: rule of thirds, golden ratio. Oil painting texture with visible canvas weave. Renaissance/Baroque color palette. Rembrandt lighting, Caravaggio shadows.`,
+    "Fine Art": `Museum-grade oil on canvas or mixed media. Visible impasto brushstrokes, rich pigment blending, and classical composition.`,
 
-    "Abstract": `PURE ABSTRACT EXPRESSIONISM - Subject IS the color, shape, and texture. NO recognizable faces, NO realistic objects. Bold color fields, gestural brushstrokes, drips, splatters. Rothko color fields, Pollock action painting, Kandinsky geometry.`,
+    "Abstract": `Non-representational form and color. Focus on fluid dynamics, geometric tension, and textured layering. High-concept visual energy.`,
 
-    "Minimalist": `RADICAL MINIMALIST DESIGN - 70-90% empty negative space. Maximum 2-3 visual elements total. FLAT colors only - NO gradients, NO textures. Clean vector-like shapes with mathematically sharp edges. Swiss design principles.`,
+    "Minimalist": `High-contrast composition with vast negative space. Bold geometric balance, muted palettes, and a singular, sharp focal point.`,
 
-    "Cinematic": `HOLLYWOOD MOVIE POSTER - Anamorphic lens characteristics, horizontal lens flares. Film-grade color grading: teal and orange. Dramatic three-point lighting. Depth layers with atmospheric haze. Epic scale, $200M film production quality.`,
+    "Cinematic": `Anamorphic lens flare, high dynamic range, and volumetric lighting. Dramatic framing with professional color grading.`,
 
-    "Retro": `AUTHENTIC VINTAGE AESTHETIC - Heavy film grain (ISO 400-1600). Faded palette with lifted blacks. Kodachrome warmth, Ektachrome saturation. Light leaks, dust, scratches, age wear. VHS tracking lines for 80s/90s vibe. Must feel FROM a past era.`,
+    "Retro": `Vintage 70s/80s film stock. Heavy grain, light leaks, chromatic aberration, and warm, faded analog color palettes.`,
   };
 
     // ========== MOOD / VIBE EMOTIONAL LAYERS ==========
     const moodLayers: Record<string, string> = {
-      "Aggressive": "Sharp lighting, high contrast, forceful energy.",
-      "Dark": "Low-key lighting, ominous shadows, tension.",
-      "Mysterious": "Fog, restrained lighting, partial obscurity.",
-      "Euphoric": "Glowing highlights, motion, energy.",
-      "Uplifting": "Warm contrast, hopeful tone, openness.",
-      "Melancholic": "Muted colors, soft lighting, emotional weight.",
-      "Romantic": "Warm highlights, intimacy, closeness.",
-      "Peaceful": "Balanced composition, gentle lighting.",
-      "Intense": "High tension, dramatic contrast.",
-      "Nostalgic": "Soft contrast, film-like grading.",
+      "Aggressive": "High-contrast harsh lighting. Jagged edges, deep reds or neon accents, sense of forward motion and tension.",
+      "Dark": "Low-key lighting, heavy shadows, monochromatic or desaturated palette. Moody, high-contrast, somber.",
+      "Mysterious": "Volumetric haze, silhouettes, obscured subjects. Cool tones with a single glowing light source.",
+      "Euphoric": "Warm overexposed light. Lens flares, vibrant gradients, sense of weightlessness. Dreamy and glowing.",
+      "Uplifting": "Bright high-key lighting. Happy energy, saturation, open airy composition.",
+      "Melancholic": "Muted desaturated cool tones. Soft diffused lighting, rain-softened edges, stillness or longing.",
+      "Romantic": "Soft-focus glow, warm golden hour lighting, intimate delicate details. Deep warm colors.",
+      "Peaceful": "Harmonious balanced colors, low-contrast lighting, vast calm horizons. Minimalist and steady.",
+      "Intense": "Extreme focal depth, high-vibration color contrast, dynamic centered energy. Powerful and arresting.",
+      "Nostalgic": "Soft-lit hazy memory aesthetic. Sepia undertones, filmic glow, gentle vintage textures.",
     };
 
     const genreDirection = genreDirectors[genre] || { 
