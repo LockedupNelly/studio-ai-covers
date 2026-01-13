@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariant, getTextStyleVariants, hasVariants } from "@/lib/text-style-variants";
 import { Progress } from "@/components/ui/progress";
+import { downloadImage } from "@/lib/download-utils";
 
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
@@ -320,24 +321,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
 
   const handleDownload = async () => {
     if (!generatedImage) return;
-
-    try {
-      const res = await fetch(generatedImage);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "cover-art.png";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      const link = document.createElement("a");
-      link.href = generatedImage;
-      link.download = "cover-art.png";
-      link.click();
-    }
+    
+    // Use mobile-optimized download utility with Web Share API support
+    const filename = songTitle ? `cover-art-${songTitle}` : "cover-art";
+    await downloadImage(generatedImage, filename);
   };
 
   const handleAudioAnalysisComplete = (result: { suggestedPrompt: string; detectedMood: string; suggestedGenre: string; suggestedStyle: string }) => {
