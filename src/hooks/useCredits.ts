@@ -22,8 +22,12 @@ export function useCredits() {
   const { user } = useAuth();
   const [state, setState] = useState<CreditsState>(initialState);
   const mountedRef = useRef(true);
+  const fetchingRef = useRef(false); // Prevent concurrent fetches
 
   const fetchCredits = useCallback(async () => {
+    // Prevent concurrent/duplicate fetches
+    if (fetchingRef.current) return;
+    
     if (!user) {
       setState({
         credits: null,
@@ -35,6 +39,8 @@ export function useCredits() {
       return;
     }
 
+    fetchingRef.current = true;
+
     try {
       // Fetch credits
       const { data, error } = await supabase
@@ -43,9 +49,12 @@ export function useCredits() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        fetchingRef.current = false;
+        return;
+      }
 
-      let newCredits = state.credits;
+      let newCredits = 0;
       if (!error) {
         newCredits = data?.credits ?? 0;
       } else {
@@ -55,7 +64,10 @@ export function useCredits() {
       // Check subscription for tier, usage, and limits
       const { data: subData } = await supabase.functions.invoke("check-subscription");
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        fetchingRef.current = false;
+        return;
+      }
 
       if (subData?.tier) {
         setState({
@@ -79,8 +91,10 @@ export function useCredits() {
       if (mountedRef.current) {
         setState((prev) => ({ ...prev, loading: false }));
       }
+    } finally {
+      fetchingRef.current = false;
     }
-  }, [user, state.credits]);
+  }, [user]); // Only depend on user, NOT state.credits
 
   useEffect(() => {
     mountedRef.current = true;
@@ -88,7 +102,7 @@ export function useCredits() {
     return () => {
       mountedRef.current = false;
     };
-  }, [fetchCredits]);
+  }, [user]); // Only re-run when user changes, not when fetchCredits reference changes
 
   const refetch = useCallback(() => {
     setState((prev) => ({ ...prev, loading: true }));
