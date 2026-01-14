@@ -1,4 +1,8 @@
 import { useState } from "react";
+import {
+  applyMainColorToImageData,
+  applyAccentColorToImageData,
+} from "@/lib/color-blend-math";
 
 type BlendMode = "overlay" | "multiply" | "screen" | "soft-light" | "hard-light" | "lighter" | "color-dodge";
 
@@ -32,25 +36,10 @@ export const useTextureCompositing = () => {
 
   /**
    * Map blend modes to canvas-compatible values that match CSS preview behavior
-   * CSS uses mix-blend-mode which behaves differently than canvas globalCompositeOperation
-   * Key differences:
-   * - "lighter" in canvas is additive (very bright), but CSS maps it to "screen"
-   * - "overlay" in canvas can appear more saturated than CSS, use "soft-light" for color overlays
    */
   const getCanvasBlendMode = (blendMode: BlendMode): GlobalCompositeOperation => {
-    // Match the CSS getCssMixBlendMode behavior exactly
-    if (blendMode === "lighter") return "screen"; // CSS preview uses screen for lighter
+    if (blendMode === "lighter") return "screen";
     return blendMode as GlobalCompositeOperation;
-  };
-
-  /**
-   * Convert hex color to rgba string with specified alpha
-   */
-  const hexToRgba = (hex: string, alpha: number): string => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
   /**
@@ -68,7 +57,7 @@ export const useTextureCompositing = () => {
 
   /**
    * SINGLE-PASS compositing: Apply ALL overlays in one canvas render
-   * This matches exactly what the CSS preview shows and is much faster
+   * Uses pixel-accurate blend math for colors to match CSS preview exactly
    */
   const compositeAllLayers = async (
     baseImageUrl: string,
@@ -86,7 +75,7 @@ export const useTextureCompositing = () => {
         imagesToLoad.push(config.parentalAdvisory.imageUrl);
       }
 
-      // Load ALL images in parallel (much faster than sequential)
+      // Load ALL images in parallel
       const loadedImages = await Promise.all(imagesToLoad.map(loadImage));
       
       const baseImg = loadedImages[0];
@@ -111,7 +100,7 @@ export const useTextureCompositing = () => {
       // Draw base image
       ctx.drawImage(baseImg, 0, 0, size, size);
 
-      // Helper to draw overlay with rotation - uses mapped blend mode to match CSS
+      // Helper to draw overlay with rotation
       const drawOverlay = (
         img: HTMLImageElement,
         blendMode: BlendMode,
@@ -119,7 +108,6 @@ export const useTextureCompositing = () => {
         rotation?: number
       ) => {
         ctx.save();
-        // Use mapped blend mode to match CSS preview behavior
         ctx.globalCompositeOperation = getCanvasBlendMode(blendMode);
         ctx.globalAlpha = opacity;
 
@@ -134,7 +122,7 @@ export const useTextureCompositing = () => {
         ctx.restore();
       };
 
-      // Apply lighting overlays (same order as preview - lightings first)
+      // Apply lighting overlays (same order as preview)
       config.lightings.forEach((lighting, i) => {
         drawOverlay(lightingImages[i], lighting.blendMode, lighting.opacity, lighting.rotation);
       });
@@ -144,53 +132,24 @@ export const useTextureCompositing = () => {
         drawOverlay(textureImages[i], texture.blendMode, texture.opacity, texture.rotation);
       });
 
-      // Apply main color overlay - use exact CSS opacity (0.45)
+      // Apply main color using PIXEL-ACCURATE blend math (matches CSS exactly)
       if (config.mainColor?.hex) {
-        ctx.save();
-        ctx.globalCompositeOperation = getCanvasBlendMode(config.mainColor.blendMode || 'overlay');
-        ctx.globalAlpha = config.mainColor.opacity; // Use exact opacity from config (0.45)
-        ctx.fillStyle = config.mainColor.hex;
-        ctx.fillRect(0, 0, size, size);
-        ctx.restore();
+        const imageData = ctx.getImageData(0, 0, size, size);
+        applyMainColorToImageData(imageData, {
+          hex: config.mainColor.hex,
+          opacity: config.mainColor.opacity,
+        });
+        ctx.putImageData(imageData, 0, 0);
       }
 
-      // Apply accent color as radial gradients (matches CSS preview exactly)
+      // Apply accent color using PIXEL-ACCURATE blend math with gradients
       if (config.accentColor?.hex) {
-        ctx.save();
-        ctx.globalCompositeOperation = getCanvasBlendMode(config.accentColor.blendMode || 'color-dodge');
-        ctx.globalAlpha = config.accentColor.opacity; // Use exact opacity from config (0.35)
-
-        // Bottom-left radial gradient (15% from left, 85% from top)
-        const grad1 = ctx.createRadialGradient(
-          size * 0.15, size * 0.85, 0,
-          size * 0.15, size * 0.85, size * 0.35
-        );
-        grad1.addColorStop(0, config.accentColor.hex);
-        grad1.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad1;
-        ctx.fillRect(0, 0, size, size);
-
-        // Top-right radial gradient (85% from left, 15% from top)
-        const grad2 = ctx.createRadialGradient(
-          size * 0.85, size * 0.15, 0,
-          size * 0.85, size * 0.15, size * 0.35
-        );
-        grad2.addColorStop(0, config.accentColor.hex);
-        grad2.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad2;
-        ctx.fillRect(0, 0, size, size);
-
-        // Center faint glow (50% from left, 50% from top, 60% radius, alpha 0.133)
-        const grad3 = ctx.createRadialGradient(
-          size * 0.5, size * 0.5, 0,
-          size * 0.5, size * 0.5, size * 0.6
-        );
-        grad3.addColorStop(0, hexToRgba(config.accentColor.hex, 0.133));
-        grad3.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad3;
-        ctx.fillRect(0, 0, size, size);
-
-        ctx.restore();
+        const imageData = ctx.getImageData(0, 0, size, size);
+        applyAccentColorToImageData(imageData, {
+          hex: config.accentColor.hex,
+          opacity: config.accentColor.opacity,
+        });
+        ctx.putImageData(imageData, 0, 0);
       }
 
       // Apply parental advisory (always on top, normal blend mode)

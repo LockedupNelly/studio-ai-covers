@@ -1,4 +1,8 @@
 import { toast } from "sonner";
+import {
+  applyMainColorToImageData,
+  applyAccentColorToImageData,
+} from "@/lib/color-blend-math";
 
 /**
  * Check if the device is mobile (iOS or Android)
@@ -84,8 +88,7 @@ const getCssToCanvasBlendMode = (blendMode?: string): GlobalCompositeOperation =
 
 /**
  * Download an image with mobile-optimized handling and overlay compositing
- * On mobile: Uses Web Share API to allow saving to Photos
- * On desktop: Uses traditional download
+ * Uses pixel-accurate blend math for colors to match CSS preview exactly
  */
 export const downloadImage = async (
   imageUrl: string,
@@ -144,43 +147,24 @@ export const downloadImage = async (
       }
     }
 
-    // Apply color overlay
+    // Apply color overlay using PIXEL-ACCURATE blend math (matches CSS exactly)
     if (colorOverlay?.hex) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'overlay';
-      ctx.globalAlpha = colorOverlay.opacity ?? 0.45;
-      ctx.fillStyle = colorOverlay.hex;
-      ctx.fillRect(0, 0, width, height);
-      ctx.restore();
+      const imageData = ctx.getImageData(0, 0, width, height);
+      applyMainColorToImageData(imageData, {
+        hex: colorOverlay.hex,
+        opacity: colorOverlay.opacity ?? 0.45,
+      });
+      ctx.putImageData(imageData, 0, 0);
     }
 
-    // Apply accent overlay as radial gradients
+    // Apply accent overlay using PIXEL-ACCURATE blend math with gradients
     if (accentOverlay?.hex) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'color-dodge';
-      ctx.globalAlpha = accentOverlay.opacity ?? 0.35;
-      
-      // Bottom-left radial
-      const grad1 = ctx.createRadialGradient(
-        width * 0.15, height * 0.85, 0,
-        width * 0.15, height * 0.85, width * 0.35
-      );
-      grad1.addColorStop(0, accentOverlay.hex);
-      grad1.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad1;
-      ctx.fillRect(0, 0, width, height);
-      
-      // Top-right radial
-      const grad2 = ctx.createRadialGradient(
-        width * 0.85, height * 0.15, 0,
-        width * 0.85, height * 0.15, width * 0.35
-      );
-      grad2.addColorStop(0, accentOverlay.hex);
-      grad2.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad2;
-      ctx.fillRect(0, 0, width, height);
-      
-      ctx.restore();
+      const imageData = ctx.getImageData(0, 0, width, height);
+      applyAccentColorToImageData(imageData, {
+        hex: accentOverlay.hex,
+        opacity: accentOverlay.opacity ?? 0.35,
+      });
+      ctx.putImageData(imageData, 0, 0);
     }
 
     // Apply parental advisory logo
