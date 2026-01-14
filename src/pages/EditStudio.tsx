@@ -645,12 +645,18 @@ const EditStudio = () => {
     });
     
     // Build parental advisory config
-    const paConfig = parentalAdvisory !== "none" ? {
-      imageUrl: parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image || "",
-      position: paPosition,
-      inverted: paInverted,
-      sizePercent: 22,
-    } : undefined;
+    const paOption = parentalAdvisory !== "none"
+      ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)
+      : null;
+
+    const paConfig = paOption?.image
+      ? {
+          imageUrl: paOption.image,
+          position: paPosition,
+          inverted: paInverted,
+          sizePercent: 22,
+        }
+      : undefined;
     
     // Build color overlay configs
     const colorOverlayConfig = mainColor && getColorHex(mainColor) ? {
