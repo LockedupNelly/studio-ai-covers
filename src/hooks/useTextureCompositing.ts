@@ -42,10 +42,15 @@ export const useTextureCompositing = () => {
     if (blendMode === "lighter") return "screen"; // CSS preview uses screen for lighter
     return blendMode as GlobalCompositeOperation;
   };
-  
-  // Canvas overlay blend mode is more aggressive than CSS, so we reduce opacity
-  const getColorOverlayOpacity = (opacity: number): number => {
-    return opacity * 0.55; // 55% of CSS opacity to match visual appearance
+
+  /**
+   * Convert hex color to rgba string with specified alpha
+   */
+  const hexToRgba = (hex: string, alpha: number): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
   /**
@@ -139,12 +144,11 @@ export const useTextureCompositing = () => {
         drawOverlay(textureImages[i], texture.blendMode, texture.opacity, texture.rotation);
       });
 
-      // Apply main color overlay - reduce opacity to match CSS overlay behavior
+      // Apply main color overlay - use exact CSS opacity (0.45)
       if (config.mainColor?.hex) {
         ctx.save();
         ctx.globalCompositeOperation = getCanvasBlendMode(config.mainColor.blendMode || 'overlay');
-        // Canvas overlay is more aggressive than CSS, so reduce opacity
-        ctx.globalAlpha = getColorOverlayOpacity(config.mainColor.opacity);
+        ctx.globalAlpha = config.mainColor.opacity; // Use exact opacity from config (0.45)
         ctx.fillStyle = config.mainColor.hex;
         ctx.fillRect(0, 0, size, size);
         ctx.restore();
@@ -154,6 +158,7 @@ export const useTextureCompositing = () => {
       if (config.accentColor?.hex) {
         ctx.save();
         ctx.globalCompositeOperation = getCanvasBlendMode(config.accentColor.blendMode || 'color-dodge');
+        ctx.globalAlpha = config.accentColor.opacity; // Use exact opacity from config (0.35)
 
         // Bottom-left radial gradient (15% from left, 85% from top)
         const grad1 = ctx.createRadialGradient(
@@ -173,6 +178,16 @@ export const useTextureCompositing = () => {
         grad2.addColorStop(0, config.accentColor.hex);
         grad2.addColorStop(1, 'transparent');
         ctx.fillStyle = grad2;
+        ctx.fillRect(0, 0, size, size);
+
+        // Center faint glow (50% from left, 50% from top, 60% radius, alpha 0.133)
+        const grad3 = ctx.createRadialGradient(
+          size * 0.5, size * 0.5, 0,
+          size * 0.5, size * 0.5, size * 0.6
+        );
+        grad3.addColorStop(0, hexToRgba(config.accentColor.hex, 0.133));
+        grad3.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad3;
         ctx.fillRect(0, 0, size, size);
 
         ctx.restore();
