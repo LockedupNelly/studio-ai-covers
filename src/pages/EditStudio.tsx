@@ -23,6 +23,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage } from "@/lib/download-utils";
+import { toPng } from "html-to-image";
 import {
   visualStyles,
   moodOptions,
@@ -69,6 +70,10 @@ const EditStudio = () => {
   // Mobile edit section tabs
   const [mobileEditTab, setMobileEditTab] = useState<"textures" | "lighting" | "pa" | "colors" | "style" | "custom">("textures");
   const mobileTabsRef = useRef<HTMLDivElement>(null);
+  
+  // Refs for DOM-to-PNG baking (captures the preview exactly as shown)
+  const coverPreviewRef = useRef<HTMLDivElement>(null);
+  const mobileCoverPreviewRef = useRef<HTMLDivElement>(null);
   
   // Get passed state from navigation
   const passedState = location.state as EditState | null;
@@ -350,6 +355,46 @@ const EditStudio = () => {
   // Check if we have text metadata for text layer mode
   const hasTextMetadata = !!(currentState.songTitle || currentState.artistName);
 
+  /**
+   * Bake the current preview DOM to a PNG image.
+   * This captures exactly what the user sees (CSS blend modes, overlays, etc.)
+   * guaranteeing pixel-identical output.
+   */
+  const bakePreviewToPng = async (): Promise<string | null> => {
+    const previewEl = isMobile ? mobileCoverPreviewRef.current : coverPreviewRef.current;
+    if (!previewEl) {
+      console.error("Preview element not found for baking");
+      return null;
+    }
+    
+    try {
+      // Use a high pixel ratio for crisp output (2x for balance of quality/speed)
+      const dataUrl = await toPng(previewEl, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: undefined, // transparent background
+        // Skip elements that shouldn't be in the final image
+        filter: (node) => {
+          // Skip version indicator, change button, and progress overlay
+          if (node instanceof HTMLElement) {
+            const classes = node.className || '';
+            if (typeof classes === 'string') {
+              if (classes.includes('backdrop-blur-sm') && (classes.includes('top-2') || classes.includes('top-3'))) {
+                return false; // Skip version indicator and change button
+              }
+            }
+          }
+          return true;
+        }
+      });
+      console.log("Preview baked successfully");
+      return dataUrl;
+    } catch (error) {
+      console.error("Failed to bake preview:", error);
+      return null;
+    }
+  };
+
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
@@ -479,10 +524,11 @@ const EditStudio = () => {
         // (the composition has changed, so we need fresh text removal next time)
         setBaseArtworkUrl(null);
       }
-      // If no instructions but hasCanvasOverlays, we skip AI and go straight to canvas compositing
+      // If no instructions but hasCanvasOverlays, we skip AI and go straight to DOM baking
       
-      // ===== SINGLE-PASS CANVAS COMPOSITING =====
-      // Apply ALL visual overlays in one render pass - matches preview exactly and is much faster
+      // ===== OVERLAY APPLICATION =====
+      // For canvas-only edits (no AI), we bake the preview DOM directly - guarantees pixel-identical output
+      // For AI edits, the overlays haven't been applied to the preview yet, so we use canvas compositing
       const hasCanvasOverlaysToApply = lightings.length > 0 || textures.length > 0 || 
         (mainColor && getColorHex(mainColor)) || (accentColor && getColorHex(accentColor)) ||
         parentalAdvisory !== "none";
@@ -491,6 +537,30 @@ const EditStudio = () => {
         setProgress(90);
         toast.info("Applying overlays...");
         
+        if (!instructions) {
+          // ===== DOM BAKING (canvas-only edits) =====
+          // The preview already shows exactly what the user sees
+          // Capture it directly for pixel-perfect output
+          console.log("Using DOM baking for canvas-only overlays");
+          
+          const bakedUrl = await bakePreviewToPng();
+          if (bakedUrl) {
+            finalImageUrl = bakedUrl;
+          } else {
+            // Fallback to canvas compositing if DOM baking fails
+            console.warn("DOM baking failed, falling back to canvas compositing");
+            finalImageUrl = await compositeWithCanvas(finalImageUrl);
+          }
+        } else {
+          // ===== CANVAS COMPOSITING (after AI edit) =====
+          // AI returned a new base image, overlays need to be applied on top
+          console.log("Using canvas compositing for AI + overlays");
+          finalImageUrl = await compositeWithCanvas(finalImageUrl);
+        }
+      }
+      
+      // Helper function for canvas compositing (used as fallback or for AI edits)
+      async function compositeWithCanvas(baseUrl: string): Promise<string> {
         // Build lighting layers
         const lightingLayers = lightings.map(lightingId => {
           const lightingOption = lightingOptions.find(l => l.id === lightingId);
@@ -541,7 +611,7 @@ const EditStudio = () => {
         } : undefined;
         
         // Single-pass compositing - all layers applied at once
-        finalImageUrl = await compositeAllLayers(finalImageUrl, {
+        return await compositeAllLayers(baseUrl, {
           lightings: lightingLayers,
           textures: textureLayers,
           mainColor: mainColorConfig,
@@ -982,6 +1052,7 @@ const EditStudio = () => {
                 {/* Cover Preview */}
                 <div className="bg-background pb-1">
                   <div 
+                    ref={mobileCoverPreviewRef}
                     className="group/cover aspect-square w-[85vw] max-w-[360px] mx-auto bg-card rounded-xl border border-border overflow-hidden relative"
                   >
                     {imageUrl ? (
@@ -1597,7 +1668,7 @@ const EditStudio = () => {
               <div className="grid lg:grid-cols-2 gap-8">
                 {/* Left: Cover Preview */}
                 <div className="space-y-4">
-                  <div className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
+                  <div ref={coverPreviewRef} className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <>
                         <img
