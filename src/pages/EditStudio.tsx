@@ -551,30 +551,34 @@ const EditStudio = () => {
         // (the composition has changed, so we need fresh text removal next time)
         setBaseArtworkUrl(null);
       }
-      // If no instructions but hasCanvasOverlays, we skip AI and go straight to DOM baking
+      // If no instructions but hasCanvasOverlays, use the already-rendered preview
       
       // ===== OVERLAY APPLICATION =====
-      // For canvas-only edits (no AI), we bake the preview DOM directly - guarantees pixel-identical output
-      // For AI edits, the overlays haven't been applied to the preview yet, so we use canvas compositing
+      // For canvas-only edits: The preview is ALREADY rendered at 3000x3000 with exact same pipeline
+      // Just use previewUrl directly - no need to re-composite!
       const hasCanvasOverlaysToApply = lightings.length > 0 || textures.length > 0 || 
         (mainColor && getColorHex(mainColor)) || (accentColor && getColorHex(accentColor)) ||
         parentalAdvisory !== "none";
       
       if (hasCanvasOverlaysToApply) {
         setProgress(90);
-        toast.info("Applying overlays...");
         
-        // Always use canvas compositing - simple and reliable
-        // DOM baking has CORS issues with external images
-        console.log("Applying overlays with canvas compositing", {
-          lightings: lightings.length,
-          textures: textures.length,
-          mainColor: !!mainColor,
-          accentColor: !!accentColor,
-          parentalAdvisory,
-        });
-        
-        finalImageUrl = await compositeWithCanvas(finalImageUrl);
+        // For canvas-only edits (no AI instructions), just lock in the preview
+        if (isCanvasOnlyEdit && previewUrl) {
+          console.log("Locking in preview directly (no re-render needed)");
+          finalImageUrl = previewUrl;
+        } else {
+          // AI edit + overlays: need to composite overlays onto the AI result
+          toast.info("Applying overlays...");
+          console.log("Applying overlays with canvas compositing", {
+            lightings: lightings.length,
+            textures: textures.length,
+            mainColor: !!mainColor,
+            accentColor: !!accentColor,
+            parentalAdvisory,
+          });
+          finalImageUrl = await compositeWithCanvas(finalImageUrl);
+        }
       }
       
       // Helper function for canvas compositing
