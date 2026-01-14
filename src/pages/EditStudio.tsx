@@ -61,7 +61,7 @@ const EditStudio = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
   const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
-  const { applyTextureOverlay, applyMultipleOverlays, isCompositing: isApplyingTexture } = useTextureCompositing();
+  const { applyTextureOverlay, applyMultipleOverlays, applyColorOverlay, applyParentalAdvisory, isCompositing: isApplyingTexture } = useTextureCompositing();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -353,7 +353,7 @@ const EditStudio = () => {
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
     
-    // Check if we have texture/lighting overlays that use image files (applied via canvas, not AI)
+    // Check if we have canvas-only overlays (applied locally, not via AI)
     const hasCanvasTextures = textures.some(id => {
       const t = textureOptions.find(t => t.id === id);
       return t?.image;
@@ -362,7 +362,9 @@ const EditStudio = () => {
       const l = lightingOptions.find(l => l.id === id);
       return l?.image;
     });
-    const hasCanvasOverlays = hasCanvasTextures || hasCanvasLightings;
+    const hasColorOverlays = !!(mainColor || accentColor);
+    const hasParentalAdvisory = parentalAdvisory !== "none";
+    const hasCanvasOverlays = hasCanvasTextures || hasCanvasLightings || hasColorOverlays || hasParentalAdvisory;
     
     // Allow if we have AI instructions OR canvas overlays to apply
     if (!instructions && !hasCanvasOverlays) {
@@ -370,10 +372,10 @@ const EditStudio = () => {
       return;
     }
     
-    // Texture-only edits (with image files) don't consume credits - they're local canvas operations
-    const isTextureOnlyEditFlag = !instructions && hasCanvasOverlays;
+    // Canvas-only edits (textures, colors, PA) don't consume credits - they're local operations
+    const isCanvasOnlyEdit = !instructions && hasCanvasOverlays;
     
-    if (!isTextureOnlyEditFlag) {
+    if (!isCanvasOnlyEdit) {
       // Check and deduct credit for AI edits
       const creditOk = await deductCredit();
       if (!creditOk) return;
@@ -479,29 +481,16 @@ const EditStudio = () => {
       }
       // If no instructions but hasCanvasOverlays, we skip AI and go straight to canvas compositing
       
-      // ===== APPLY TEXTURE/LIGHTING OVERLAYS VIA CANVAS COMPOSITING =====
+      // ===== APPLY ALL VISUAL OVERLAYS VIA CANVAS COMPOSITING =====
       // This happens AFTER AI edits (or can happen standalone for texture-only changes)
+      // Matches exactly what's shown in preview mode
       const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number; rotation?: number } }> = [];
       
-      // Add texture overlays if selected and have image files
-      textures.forEach(textureId => {
-        const textureOption = textureOptions.find(t => t.id === textureId);
-        if (textureOption?.image && textureOption.blendMode && textureOption.opacity) {
-          overlays.push({
-            imageUrl: textureOption.image,
-            options: {
-              blendMode: textureOption.blendMode,
-              opacity: textureOption.opacity,
-            },
-          });
-        }
-      });
-      
-      // Add lighting overlays if selected and have image files
+      // Add lighting overlays first (same order as preview rendering)
       lightings.forEach(lightingId => {
         const lightingOption = lightingOptions.find(l => l.id === lightingId);
-        if (lightingOption?.image && lightingOption.blendMode && lightingOption.opacity) {
-          const baseOpacity = lightingOption.opacity;
+        if (lightingOption?.image && lightingOption.blendMode) {
+          const baseOpacity = lightingOption.opacity || 1;
           const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
           overlays.push({
             imageUrl: lightingOption.image,
@@ -514,11 +503,50 @@ const EditStudio = () => {
         }
       });
       
+      // Add texture overlays (same opacity calculation as preview)
+      textures.forEach(textureId => {
+        const textureOption = textureOptions.find(t => t.id === textureId);
+        if (textureOption?.image && textureOption.blendMode) {
+          const baseOpacity = textureOption.opacity || 0.5;
+          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
+          overlays.push({
+            imageUrl: textureOption.image,
+            options: {
+              blendMode: textureOption.blendMode,
+              opacity: finalOpacity,
+              rotation: textureRotations[textureId] || 0,
+            },
+          });
+        }
+      });
+      
       // Apply canvas overlays if any
       if (overlays.length > 0) {
-        setProgress(95);
-        toast.info("Applying texture overlay...");
+        setProgress(92);
+        toast.info("Applying overlays...");
         finalImageUrl = await applyMultipleOverlays(finalImageUrl, overlays);
+      }
+      
+      // Apply color overlays (main color uses overlay blend, accent uses color-dodge)
+      if (mainColor && getColorHex(mainColor)) {
+        setProgress(94);
+        finalImageUrl = await applyColorOverlay(finalImageUrl, getColorHex(mainColor)!, 0.45, 'overlay');
+      }
+      
+      if (accentColor && getColorHex(accentColor)) {
+        setProgress(95);
+        // Accent color as radial gradients - approximate with solid overlay at lower opacity
+        finalImageUrl = await applyColorOverlay(finalImageUrl, getColorHex(accentColor)!, 0.25, 'color-dodge');
+      }
+      
+      // Apply parental advisory
+      if (parentalAdvisory !== "none") {
+        setProgress(97);
+        const paOption = parentalAdvisoryOptions.find(p => p.id === parentalAdvisory);
+        if (paOption?.image) {
+          finalImageUrl = await applyParentalAdvisory(finalImageUrl, paOption.image, paPosition, paInverted);
+        }
       }
       
       setProgress(100);
@@ -541,19 +569,22 @@ const EditStudio = () => {
         textStyleVariantId: appliedVariantId || currentState.textStyleVariantId,
       });
       
-      // Reset single-use options
+      // Reset single-use options (these are now baked into the image)
       setMainColor("");
       setAccentColor("");
       setTextures([]);
       setTextureIntensities({});
+      setTextureRotations({});
       setLightings([]);
       setLightingRotations({});
       setLightingIntensities({});
+      setParentalAdvisory("none");
+      setPaInverted(false);
       setCustomInstructions("");
       
       toast.success("Edits applied!", { 
-        description: isTextureOnlyEditFlag 
-          ? "Texture overlay applied (no credits used)" 
+        description: isCanvasOnlyEdit 
+          ? "Overlay applied (no credits used)" 
           : textOnlyEdit 
             ? "Text layer updated (background preserved)" 
             : "Your cover has been updated" 
