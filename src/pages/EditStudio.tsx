@@ -306,33 +306,29 @@ const EditStudio = () => {
       instructions.push(`Adjust the mood/vibe to feel more ${mood}`);
     }
     
-    if (mainColor) {
-      instructions.push(`Apply ${getColorValue(mainColor)} as a semi-transparent COLOR OVERLAY across the entire cover, similar to a Photoshop Overlay blend mode at approximately 40–60% opacity. This should behave like a cinematic color wash layered on top of the image, affecting the artwork, lighting, atmosphere, AND typography together, while preserving underlying detail, contrast, and texture. The overlay should: influence the overall mood and color balance, tint highlights and midtones more than shadows, preserve deep blacks and bright highlights, maintain material texture, depth, and realism, keep text fully readable and dimensional. IMPORTANT CONSTRAINTS: Do NOT fully recolor or flatten the image. Do NOT monochrome the scene. Do NOT replace the original palette. Do NOT eliminate contrast or lighting direction. Shadows must remain dark and grounded. Highlights must retain brightness and detail. The result should feel like a tasteful color grade, not a color replacement.`);
-    }
-    
-    if (accentColor) {
-      instructions.push(`Apply ${getColorValue(accentColor)} as a subtle accent color that influences secondary elements and details throughout the composition. Apply it to: secondary text, small details, borders or outlines of objects, highlights on materials like metal/glass/water reflections, atmospheric glow or ambient light in darker areas, background elements or decorative accents. The accent color should complement the main composition without dominating it. Use approximately 15-30% coverage. It should feel like a tasteful color accent that ties the design together, NOT a full color grade or overlay. The main subjects and primary elements should remain unaffected. Apply naturally and subtly.`);
-    }
-    
+    // Colors are local overlays only; they should NOT trigger AI edits.
+
     // Check if text style variant changed (compare full variant ID, not just category)
     const currentVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
     const hasTextStyleChange = currentVariantId && currentVariantId !== currentState.textStyleVariantId;
-    
+
     if (textStyle && selectedVariant && hasTextStyleChange) {
       // Use the detailed promptInstructions from the variant for accurate styling
-      const stylePrompt = selectedVariant.promptInstructions || selectedVariant.description || `${textStyle} ${selectedVariant.name} style`;
-      const colorRule = mainColor
-        ? `Use the explicitly requested text color (${getColorValue(mainColor)}).`
-        : "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
+      const stylePrompt =
+        selectedVariant.promptInstructions ||
+        selectedVariant.description ||
+        `${textStyle} ${selectedVariant.name} style`;
+
+      const colorRule =
+        "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
 
       instructions.push(
         `TEXT TYPOGRAPHY FULL REPLACE: First, carefully READ and identify the exact words currently shown on the album cover (artist name, song title, any other text). Then ERASE/INPAINT the existing lettering so none of the previous typography/effects remain. Then re-typeset the SAME words in this EXACT typography style: ${stylePrompt}. ${colorRule} Do not blend the old style with the new style—replace it completely.`
       );
     } else if (textStyle && !selectedVariant && textStyle !== currentState.textStyle) {
       // Fallback for text style without variant
-      const colorRule = mainColor
-        ? `Use the explicitly requested text color (${getColorValue(mainColor)}).`
-        : "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
+      const colorRule =
+        "Keep the EXACT same text color as the current cover text (sample it from the image); do not recolor the text.";
 
       instructions.push(
         `TEXT TYPOGRAPHY FULL REPLACE: First, carefully READ and identify the exact words currently shown on the album cover. Then ERASE/INPAINT the existing lettering so none of the previous typography/effects remain. Then re-typeset the SAME words in a ${textStyle} typography style. ${colorRule} Do not blend the old style with the new style—replace it completely.`
@@ -399,20 +395,19 @@ const EditStudio = () => {
   };
   
   // Determine if this is a text-only edit (no visual changes)
-  const isTextOnlyEdit = (
-    hasTextStyleChange: boolean,
-    mainColorSet: boolean
-  ): boolean => {
-    // Text-only if: only text style changed (with optional text color)
-    // No: visual style, mood, accent color, texture, lighting, parental advisory, custom instructions
-    const hasVisualEdits = 
+  const isTextOnlyEdit = (hasTextStyleChange: boolean): boolean => {
+    // Text-only if: only text style changed.
+    // No: visual style, mood, colors, texture, lighting, parental advisory, custom instructions
+    const hasVisualEdits =
       (style !== currentState.style && style !== "None") ||
       (mood !== currentState.mood && mood !== "None") ||
-      accentColor ||
+      !!mainColor ||
+      !!accentColor ||
       textures.length > 0 ||
       lightings.length > 0 ||
-      customInstructions.trim();
-    
+      parentalAdvisory !== "none" ||
+      !!customInstructions.trim();
+
     return hasTextStyleChange && !hasVisualEdits;
   };
 
@@ -468,7 +463,7 @@ const EditStudio = () => {
       // Check if this is a text-only edit
       const currentVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
       const hasTextStyleChange = !!(currentVariantId && currentVariantId !== currentState.textStyleVariantId);
-      const textOnlyEdit = isTextOnlyEdit(hasTextStyleChange, !!mainColor);
+      const textOnlyEdit = isTextOnlyEdit(hasTextStyleChange);
       
       // Only use text layer mode if we have text metadata AND it's a text-only edit
       const useTextLayerMode = textOnlyEdit && hasTextMetadata && user;
@@ -712,121 +707,45 @@ const EditStudio = () => {
   };
   
   const handleDownload = async () => {
+    // IMPORTANT: Download should ONLY download the currently applied image.
+    // Pending selections (colors/textures/lighting) must be applied first via "Apply Edits".
     const imageToDownload = imageUrl;
     if (!imageToDownload) return;
-    
-    // Check if we have any overlays to apply
-    const hasAnyOverlays = lightings.length > 0 || textures.length > 0 || 
-      (mainColor && getColorHex(mainColor)) || (accentColor && getColorHex(accentColor)) ||
-      parentalAdvisory !== "none";
-    
+
     try {
-      let finalImageDataUrl: string;
-      
-      if (hasAnyOverlays) {
-        // Use the SAME compositing pipeline as Apply Edits for consistency (WYSIWYG)
-        toast.info("Compositing overlays...");
-        
-        // Build the same config used for preview/apply
-        const lightingLayers = lightings.map(lightingId => {
-          const lightingOption = lightingOptions.find(l => l.id === lightingId);
-          const baseOpacity = lightingOption?.opacity || 1;
-          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-          return {
-            imageUrl: lightingOption?.image || "",
-            blendMode: lightingOption?.blendMode || "screen" as const,
-            opacity: baseOpacity * intensityMultiplier,
-            rotation: lightingRotations[lightingId] || 0,
-          };
-        }).filter(l => l.imageUrl);
-        
-        const textureLayers = textures.map(textureId => {
-          const textureOption = textureOptions.find(t => t.id === textureId);
-          const baseOpacity = textureOption?.opacity || 0.5;
-          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-          return {
-            imageUrl: textureOption?.image || "",
-            blendMode: textureOption?.blendMode || "overlay" as const,
-            opacity: Math.min(baseOpacity * intensityMultiplier, 1),
-            rotation: textureRotations[textureId] || 0,
-          };
-        }).filter(t => t.imageUrl);
-        
-        const mainColorConfig = mainColor && getColorHex(mainColor) ? {
-          hex: getColorHex(mainColor)!,
-          opacity: 0.45,
-          blendMode: 'overlay' as const,
-        } : undefined;
-        
-        const accentColorConfig = accentColor && getColorHex(accentColor) ? {
-          hex: getColorHex(accentColor)!,
-          opacity: 0.35,
-          blendMode: 'color-dodge' as const,
-        } : undefined;
-        
-        const paOption = parentalAdvisory !== "none" 
-          ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory) 
-          : null;
-        const paConfig = paOption?.image ? {
-          imageUrl: paOption.image,
-          position: paPosition,
-          inverted: paInverted,
-        } : undefined;
-        
-        // Use the SAME compositeAllLayers function - guarantees identical output
-        finalImageDataUrl = await compositeAllLayers(imageToDownload, {
-          lightings: lightingLayers,
-          textures: textureLayers,
-          mainColor: mainColorConfig,
-          accentColor: accentColorConfig,
-          parentalAdvisory: paConfig,
-        });
-      } else {
-        // No overlays - just use the original image
-        finalImageDataUrl = imageToDownload;
-      }
-      
-      // Handle platform-specific download
       if (Capacitor.isNativePlatform()) {
         // Native platform - save to filesystem
         try {
-          // Convert data URL to blob
-          let blob: Blob;
-          if (finalImageDataUrl.startsWith('data:')) {
-            const response = await fetch(finalImageDataUrl);
-            blob = await response.blob();
-          } else {
-            // External URL - fetch and convert
-            const response = await fetch(finalImageDataUrl);
-            blob = await response.blob();
-          }
-          
+          const response = await fetch(imageToDownload);
+          const blob = await response.blob();
+
           const reader = new FileReader();
           reader.onloadend = async () => {
-            const base64Data = (reader.result as string).split(',')[1];
+            const base64Data = (reader.result as string).split(",")[1];
             const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
-            
+
             try {
               await Filesystem.writeFile({
                 path: fileName,
                 data: base64Data,
                 directory: Directory.Documents,
               });
-              toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
+              toast.success("Saved!", {
+                description: "3000x3000 JPEG saved to Documents",
+              });
             } catch (fsError) {
               console.error("Filesystem write error:", fsError);
-              // Fallback to regular download
-              triggerBrowserDownload(finalImageDataUrl, "cover-art");
+              triggerBrowserDownload(imageToDownload, "cover-art");
             }
           };
           reader.readAsDataURL(blob);
         } catch (error) {
           console.error("Native download error:", error);
-          triggerBrowserDownload(finalImageDataUrl, "cover-art");
+          triggerBrowserDownload(imageToDownload, "cover-art");
         }
       } else {
         // Web browser - trigger download
-        triggerBrowserDownload(finalImageDataUrl, "cover-art");
+        triggerBrowserDownload(imageToDownload, "cover-art");
       }
     } catch (error) {
       console.error("Download error:", error);
