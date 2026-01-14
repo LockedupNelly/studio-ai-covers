@@ -61,7 +61,7 @@ const EditStudio = () => {
   const { user, loading } = useAuth();
   const { credits, refetch: refetchCredits, hasUnlimitedGenerations } = useCredits();
   const { compositeAndUpload, isCompositing } = useTextLayerCompositing();
-  const { applyTextureOverlay, applyMultipleOverlays, applyColorOverlay, applyParentalAdvisory, isCompositing: isApplyingTexture } = useTextureCompositing();
+  const { compositeAllLayers, isCompositing: isApplyingTexture } = useTextureCompositing();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -481,72 +481,73 @@ const EditStudio = () => {
       }
       // If no instructions but hasCanvasOverlays, we skip AI and go straight to canvas compositing
       
-      // ===== APPLY ALL VISUAL OVERLAYS VIA CANVAS COMPOSITING =====
-      // This happens AFTER AI edits (or can happen standalone for texture-only changes)
-      // Matches exactly what's shown in preview mode
-      const overlays: Array<{ imageUrl: string; options: { blendMode: BlendMode; opacity: number; rotation?: number } }> = [];
+      // ===== SINGLE-PASS CANVAS COMPOSITING =====
+      // Apply ALL visual overlays in one render pass - matches preview exactly and is much faster
+      const hasCanvasOverlaysToApply = lightings.length > 0 || textures.length > 0 || 
+        (mainColor && getColorHex(mainColor)) || (accentColor && getColorHex(accentColor)) ||
+        parentalAdvisory !== "none";
       
-      // Add lighting overlays first (same order as preview rendering)
-      lightings.forEach(lightingId => {
-        const lightingOption = lightingOptions.find(l => l.id === lightingId);
-        if (lightingOption?.image && lightingOption.blendMode) {
-          const baseOpacity = lightingOption.opacity || 1;
-          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-          overlays.push({
-            imageUrl: lightingOption.image,
-            options: {
-              blendMode: lightingOption.blendMode,
-              opacity: baseOpacity * intensityMultiplier,
-              rotation: lightingRotations[lightingId] || 0,
-            },
-          });
-        }
-      });
-      
-      // Add texture overlays (same opacity calculation as preview)
-      textures.forEach(textureId => {
-        const textureOption = textureOptions.find(t => t.id === textureId);
-        if (textureOption?.image && textureOption.blendMode) {
-          const baseOpacity = textureOption.opacity || 0.5;
-          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-          overlays.push({
-            imageUrl: textureOption.image,
-            options: {
-              blendMode: textureOption.blendMode,
-              opacity: finalOpacity,
-              rotation: textureRotations[textureId] || 0,
-            },
-          });
-        }
-      });
-      
-      // Apply canvas overlays if any
-      if (overlays.length > 0) {
-        setProgress(92);
+      if (hasCanvasOverlaysToApply) {
+        setProgress(90);
         toast.info("Applying overlays...");
-        finalImageUrl = await applyMultipleOverlays(finalImageUrl, overlays);
-      }
-      
-      // Apply color overlays (main color uses overlay blend, accent uses color-dodge)
-      if (mainColor && getColorHex(mainColor)) {
-        setProgress(94);
-        finalImageUrl = await applyColorOverlay(finalImageUrl, getColorHex(mainColor)!, 0.45, 'overlay');
-      }
-      
-      if (accentColor && getColorHex(accentColor)) {
-        setProgress(95);
-        // Accent color as radial gradients - approximate with solid overlay at lower opacity
-        finalImageUrl = await applyColorOverlay(finalImageUrl, getColorHex(accentColor)!, 0.25, 'color-dodge');
-      }
-      
-      // Apply parental advisory
-      if (parentalAdvisory !== "none") {
-        setProgress(97);
-        const paOption = parentalAdvisoryOptions.find(p => p.id === parentalAdvisory);
-        if (paOption?.image) {
-          finalImageUrl = await applyParentalAdvisory(finalImageUrl, paOption.image, paPosition, paInverted);
-        }
+        
+        // Build lighting layers
+        const lightingLayers = lightings.map(lightingId => {
+          const lightingOption = lightingOptions.find(l => l.id === lightingId);
+          const baseOpacity = lightingOption?.opacity || 1;
+          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+          return {
+            imageUrl: lightingOption?.image || "",
+            blendMode: lightingOption?.blendMode || "screen" as const,
+            opacity: baseOpacity * intensityMultiplier,
+            rotation: lightingRotations[lightingId] || 0,
+          };
+        }).filter(l => l.imageUrl);
+        
+        // Build texture layers
+        const textureLayers = textures.map(textureId => {
+          const textureOption = textureOptions.find(t => t.id === textureId);
+          const baseOpacity = textureOption?.opacity || 0.5;
+          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+          return {
+            imageUrl: textureOption?.image || "",
+            blendMode: textureOption?.blendMode || "overlay" as const,
+            opacity: Math.min(baseOpacity * intensityMultiplier, 1),
+            rotation: textureRotations[textureId] || 0,
+          };
+        }).filter(t => t.imageUrl);
+        
+        // Build color configs
+        const mainColorConfig = mainColor && getColorHex(mainColor) ? {
+          hex: getColorHex(mainColor)!,
+          opacity: 0.45,
+          blendMode: 'overlay' as const,
+        } : undefined;
+        
+        const accentColorConfig = accentColor && getColorHex(accentColor) ? {
+          hex: getColorHex(accentColor)!,
+          opacity: 0.35,
+          blendMode: 'color-dodge' as const,
+        } : undefined;
+        
+        // Build parental advisory config
+        const paOption = parentalAdvisory !== "none" 
+          ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory) 
+          : null;
+        const paConfig = paOption?.image ? {
+          imageUrl: paOption.image,
+          position: paPosition,
+          inverted: paInverted,
+        } : undefined;
+        
+        // Single-pass compositing - all layers applied at once
+        finalImageUrl = await compositeAllLayers(finalImageUrl, {
+          lightings: lightingLayers,
+          textures: textureLayers,
+          mainColor: mainColorConfig,
+          accentColor: accentColorConfig,
+          parentalAdvisory: paConfig,
+        });
       }
       
       setProgress(100);
