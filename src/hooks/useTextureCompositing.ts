@@ -84,14 +84,17 @@ export const useTextureCompositing = () => {
       const textureImages = config.textures.map(() => loadedImages[imgIndex++]);
       const paImg = config.parentalAdvisory?.imageUrl ? loadedImages[imgIndex] : null;
 
-      // Create canvas
+      // Create canvas at high resolution for quality output
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Could not create canvas context");
 
-      const size = 1024;
+      const size = 3000; // High quality 3000x3000 output
       canvas.width = size;
       canvas.height = size;
+      
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
       // Draw base image
       ctx.drawImage(baseImg, 0, 0, size, size);
@@ -211,7 +214,8 @@ export const useTextureCompositing = () => {
         ctx.restore();
       }
 
-      return canvas.toDataURL("image/png", 1.0);
+      // Return as JPEG for smaller file size and wider compatibility
+      return canvas.toDataURL("image/jpeg", 0.95);
     } finally {
       setIsCompositing(false);
     }
