@@ -59,7 +59,8 @@ const getCanvasBlendMode = (blendMode: BlendMode): GlobalCompositeOperation => {
 const renderPreview = async (
   baseImageUrl: string,
   config: PreviewConfig,
-  size: number = 1024
+  // Render at full export resolution so preview == Apply/Download pixel-for-pixel
+  size: number = 3000
 ): Promise<string> => {
   // Collect all image URLs to load in parallel
   const imagesToLoad: string[] = [baseImageUrl];
@@ -189,8 +190,8 @@ const renderPreview = async (
     ctx.restore();
   }
 
-  // Return as JPEG for smaller size
-  return canvas.toDataURL("image/jpeg", 0.92);
+  // Return as JPEG (match export quality)
+  return canvas.toDataURL("image/jpeg", 0.95);
 };
 
 export interface UseCoverPreviewProps {
@@ -229,7 +230,7 @@ export const useCoverPreview = ({
     setIsRendering(true);
 
     try {
-      const result = await renderPreview(baseImageUrl, config, 1024);
+      const result = await renderPreview(baseImageUrl, config, 3000);
       
       // Only update if this is still the latest render
       if (currentRenderId === renderIdRef.current) {
