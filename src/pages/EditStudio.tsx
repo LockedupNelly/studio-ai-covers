@@ -23,7 +23,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage } from "@/lib/download-utils";
-import { toPng } from "html-to-image";
+// import { toJpeg } from "html-to-image"; // Removed - CORS issues with external images
 import {
   visualStyles,
   moodOptions,
@@ -355,45 +355,8 @@ const EditStudio = () => {
   // Check if we have text metadata for text layer mode
   const hasTextMetadata = !!(currentState.songTitle || currentState.artistName);
 
-  /**
-   * Bake the current preview DOM to a PNG image.
-   * This captures exactly what the user sees (CSS blend modes, overlays, etc.)
-   * guaranteeing pixel-identical output.
-   */
-  const bakePreviewToPng = async (): Promise<string | null> => {
-    const previewEl = isMobile ? mobileCoverPreviewRef.current : coverPreviewRef.current;
-    if (!previewEl) {
-      console.error("Preview element not found for baking");
-      return null;
-    }
-    
-    try {
-      // Use a high pixel ratio for crisp output (2x for balance of quality/speed)
-      const dataUrl = await toPng(previewEl, {
-        pixelRatio: 2,
-        cacheBust: true,
-        backgroundColor: undefined, // transparent background
-        // Skip elements that shouldn't be in the final image
-        filter: (node) => {
-          // Skip version indicator, change button, and progress overlay
-          if (node instanceof HTMLElement) {
-            const classes = node.className || '';
-            if (typeof classes === 'string') {
-              if (classes.includes('backdrop-blur-sm') && (classes.includes('top-2') || classes.includes('top-3'))) {
-                return false; // Skip version indicator and change button
-              }
-            }
-          }
-          return true;
-        }
-      });
-      console.log("Preview baked successfully");
-      return dataUrl;
-    } catch (error) {
-      console.error("Failed to bake preview:", error);
-      return null;
-    }
-  };
+  // Note: DOM baking removed due to CORS issues with external images
+  // Canvas compositing is used instead which handles CORS properly
 
   const handleApplyEdits = async () => {
     const instructions = buildEditInstructions();
@@ -537,41 +500,34 @@ const EditStudio = () => {
         setProgress(90);
         toast.info("Applying overlays...");
         
-        if (!instructions) {
-          // ===== DOM BAKING (canvas-only edits) =====
-          // The preview already shows exactly what the user sees
-          // Capture it directly for pixel-perfect output
-          console.log("Using DOM baking for canvas-only overlays");
-          
-          const bakedUrl = await bakePreviewToPng();
-          if (bakedUrl) {
-            finalImageUrl = bakedUrl;
-          } else {
-            // Fallback to canvas compositing if DOM baking fails
-            console.warn("DOM baking failed, falling back to canvas compositing");
-            finalImageUrl = await compositeWithCanvas(finalImageUrl);
-          }
-        } else {
-          // ===== CANVAS COMPOSITING (after AI edit) =====
-          // AI returned a new base image, overlays need to be applied on top
-          console.log("Using canvas compositing for AI + overlays");
-          finalImageUrl = await compositeWithCanvas(finalImageUrl);
-        }
+        // Always use canvas compositing - simple and reliable
+        // DOM baking has CORS issues with external images
+        console.log("Applying overlays with canvas compositing", {
+          lightings: lightings.length,
+          textures: textures.length,
+          mainColor: !!mainColor,
+          accentColor: !!accentColor,
+          parentalAdvisory,
+        });
+        
+        finalImageUrl = await compositeWithCanvas(finalImageUrl);
       }
       
-      // Helper function for canvas compositing (used as fallback or for AI edits)
+      // Helper function for canvas compositing
       async function compositeWithCanvas(baseUrl: string): Promise<string> {
         // Build lighting layers
         const lightingLayers = lightings.map(lightingId => {
           const lightingOption = lightingOptions.find(l => l.id === lightingId);
           const baseOpacity = lightingOption?.opacity || 1;
           const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-          return {
+          const layer = {
             imageUrl: lightingOption?.image || "",
             blendMode: lightingOption?.blendMode || "screen" as const,
             opacity: baseOpacity * intensityMultiplier,
             rotation: lightingRotations[lightingId] || 0,
           };
+          console.log("Lighting layer:", lightingId, layer);
+          return layer;
         }).filter(l => l.imageUrl);
         
         // Build texture layers
@@ -579,12 +535,14 @@ const EditStudio = () => {
           const textureOption = textureOptions.find(t => t.id === textureId);
           const baseOpacity = textureOption?.opacity || 0.5;
           const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-          return {
+          const layer = {
             imageUrl: textureOption?.image || "",
             blendMode: textureOption?.blendMode || "overlay" as const,
             opacity: Math.min(baseOpacity * intensityMultiplier, 1),
             rotation: textureRotations[textureId] || 0,
           };
+          console.log("Texture layer:", textureId, layer);
+          return layer;
         }).filter(t => t.imageUrl);
         
         // Build color configs
@@ -610,14 +568,26 @@ const EditStudio = () => {
           inverted: paInverted,
         } : undefined;
         
+        console.log("Compositing config:", {
+          baseUrl: baseUrl.substring(0, 50) + "...",
+          lightingLayers: lightingLayers.length,
+          textureLayers: textureLayers.length,
+          mainColorConfig,
+          accentColorConfig,
+          paConfig,
+        });
+        
         // Single-pass compositing - all layers applied at once
-        return await compositeAllLayers(baseUrl, {
+        const result = await compositeAllLayers(baseUrl, {
           lightings: lightingLayers,
           textures: textureLayers,
           mainColor: mainColorConfig,
           accentColor: accentColorConfig,
           parentalAdvisory: paConfig,
         });
+        
+        console.log("Composite result length:", result.length, "starts with:", result.substring(0, 30));
+        return result;
       }
       
       setProgress(100);
@@ -1155,16 +1125,17 @@ const EditStudio = () => {
                           </div>
                         )}
                         
-                        {/* Version indicator */}
+                        {/* Version indicator - excluded from capture */}
                         {editHistory.length > 1 && (
-                          <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                          <div data-exclude-from-capture="true" className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
                             <History className="w-2.5 h-2.5" />
                             {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
                           </div>
                         )}
                         
-                        {/* Change Cover button overlay - shows on hover */}
+                        {/* Change Cover button overlay - excluded from capture */}
                         <button
+                          data-exclude-from-capture="true"
                           onClick={handleBackToSelector}
                           disabled={isEditing}
                           className="absolute top-2 right-2 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-[10px] font-medium flex items-center gap-1 transition-all duration-200 disabled:opacity-50 opacity-0 hover:opacity-100 focus:opacity-100 group-hover/cover:opacity-100"
@@ -1173,9 +1144,9 @@ const EditStudio = () => {
                           Change
                         </button>
                         
-                        {/* Progress overlay */}
+                        {/* Progress overlay - excluded from capture */}
                         {isEditing && (
-                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                          <div data-exclude-from-capture="true" className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
                             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                             <p className="text-xs font-medium">Applying...</p>
                           </div>
@@ -1769,16 +1740,17 @@ const EditStudio = () => {
                           </div>
                         )}
                         
-                        {/* Version indicator */}
+                        {/* Version indicator - excluded from capture */}
                         {editHistory.length > 1 && (
-                          <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
+                          <div data-exclude-from-capture="true" className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1">
                             <History className="w-3 h-3" />
                             {isAtOriginal ? "Original" : `Edit ${historyIndex}`}
                           </div>
                         )}
                         
-                        {/* Change Cover button overlay - shows on hover */}
+                        {/* Change Cover button overlay - excluded from capture */}
                         <button
+                          data-exclude-from-capture="true"
                           onClick={handleBackToSelector}
                           disabled={isEditing}
                           className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-background/90 backdrop-blur-sm text-xs font-medium flex items-center gap-1.5 transition-all duration-200 border border-border disabled:opacity-50 opacity-0 hover:opacity-100 focus:opacity-100 group-hover/cover:opacity-100"
@@ -1787,9 +1759,9 @@ const EditStudio = () => {
                           Change Cover
                         </button>
                         
-                        {/* Progress overlay during editing */}
+                        {/* Progress overlay during editing - excluded from capture */}
                         {isEditing && (
-                          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
+                          <div data-exclude-from-capture="true" className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
                             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                             <div className="text-center">
                               <p className="text-lg font-semibold mb-2">Applying edits...</p>
