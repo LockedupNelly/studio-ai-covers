@@ -31,6 +31,17 @@ export const useTextureCompositing = () => {
   const [isCompositing, setIsCompositing] = useState(false);
 
   /**
+   * Map blend modes to canvas-compatible values that match CSS preview behavior
+   * CSS uses mix-blend-mode which behaves differently than canvas globalCompositeOperation
+   * Key fix: "lighter" in canvas is additive (very bright), but CSS maps it to "screen"
+   */
+  const getCanvasBlendMode = (blendMode: BlendMode): GlobalCompositeOperation => {
+    // Match the CSS getCssMixBlendMode behavior exactly
+    if (blendMode === "lighter") return "screen"; // CSS preview uses screen for lighter
+    return blendMode as GlobalCompositeOperation;
+  };
+
+  /**
    * Load an image from URL and return a promise that resolves when loaded
    */
   const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -85,7 +96,7 @@ export const useTextureCompositing = () => {
       // Draw base image
       ctx.drawImage(baseImg, 0, 0, size, size);
 
-      // Helper to draw overlay with rotation
+      // Helper to draw overlay with rotation - uses mapped blend mode to match CSS
       const drawOverlay = (
         img: HTMLImageElement,
         blendMode: BlendMode,
@@ -93,7 +104,8 @@ export const useTextureCompositing = () => {
         rotation?: number
       ) => {
         ctx.save();
-        ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation;
+        // Use mapped blend mode to match CSS preview behavior
+        ctx.globalCompositeOperation = getCanvasBlendMode(blendMode);
         ctx.globalAlpha = opacity;
 
         if (rotation && rotation !== 0) {
@@ -117,20 +129,20 @@ export const useTextureCompositing = () => {
         drawOverlay(textureImages[i], texture.blendMode, texture.opacity, texture.rotation);
       });
 
-      // Apply main color overlay
+      // Apply main color overlay - use mapped blend mode
       if (config.mainColor?.hex) {
         ctx.save();
-        ctx.globalCompositeOperation = (config.mainColor.blendMode || 'overlay') as GlobalCompositeOperation;
+        ctx.globalCompositeOperation = getCanvasBlendMode(config.mainColor.blendMode || 'overlay');
         ctx.globalAlpha = config.mainColor.opacity;
         ctx.fillStyle = config.mainColor.hex;
         ctx.fillRect(0, 0, size, size);
         ctx.restore();
       }
 
-      // Apply accent color as radial gradients (matches CSS preview exactly)
+      // Apply accent color as radial gradients (matches CSS preview exactly) - use mapped blend mode
       if (config.accentColor?.hex) {
         ctx.save();
-        ctx.globalCompositeOperation = (config.accentColor.blendMode || 'color-dodge') as GlobalCompositeOperation;
+        ctx.globalCompositeOperation = getCanvasBlendMode(config.accentColor.blendMode || 'color-dodge');
         ctx.globalAlpha = config.accentColor.opacity;
 
         // Bottom-left radial gradient (15% from left, 85% from top)
