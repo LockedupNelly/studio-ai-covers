@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { useTextLayerCompositing } from "@/hooks/useTextLayerCompositing";
 import { useTextureCompositing } from "@/hooks/useTextureCompositing";
+import { useCoverPreview } from "@/hooks/useCoverPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Sparkles, Palette, Image as ImageIcon, Sun, Layers, Zap, Check, RefreshCw, RotateCcw, RotateCw, History, Coins, ChevronLeft, ChevronRight, Minus, Plus, ShieldAlert, Expand } from "lucide-react";
@@ -23,7 +24,6 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage } from "@/lib/download-utils";
-// import { toJpeg } from "html-to-image"; // Removed - CORS issues with external images
 import {
   visualStyles,
   moodOptions,
@@ -136,7 +136,71 @@ const EditStudio = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   
-  // Long-press preview state removed
+  // Build preview config for the unified render pipeline
+  const previewConfig = useMemo(() => {
+    // Build lighting layers
+    const lightingLayers = lightings.map(lightingId => {
+      const lightingOption = lightingOptions.find(l => l.id === lightingId);
+      const baseOpacity = lightingOption?.opacity || 1;
+      const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+      return {
+        imageUrl: lightingOption?.image || "",
+        blendMode: lightingOption?.blendMode || "screen" as const,
+        opacity: baseOpacity * intensityMultiplier,
+        rotation: lightingRotations[lightingId] || 0,
+      };
+    }).filter(l => l.imageUrl);
+    
+    // Build texture layers
+    const textureLayers = textures.map(textureId => {
+      const textureOption = textureOptions.find(t => t.id === textureId);
+      const baseOpacity = textureOption?.opacity || 0.5;
+      const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+      return {
+        imageUrl: textureOption?.image || "",
+        blendMode: textureOption?.blendMode || "overlay" as const,
+        opacity: Math.min(baseOpacity * intensityMultiplier, 1),
+        rotation: textureRotations[textureId] || 0,
+      };
+    }).filter(t => t.imageUrl);
+    
+    // Build color configs  
+    const mainColorConfig = mainColor && getColorHex(mainColor) ? {
+      hex: getColorHex(mainColor)!,
+      opacity: 0.45,
+    } : undefined;
+    
+    const accentColorConfig = accentColor && getColorHex(accentColor) ? {
+      hex: getColorHex(accentColor)!,
+      opacity: 0.35,
+    } : undefined;
+    
+    // Build parental advisory config
+    const paOption = parentalAdvisory !== "none" 
+      ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory) 
+      : null;
+    const paConfig = paOption?.image ? {
+      imageUrl: paOption.image,
+      position: paPosition,
+      inverted: paInverted,
+    } : undefined;
+    
+    return {
+      lightings: lightingLayers,
+      textures: textureLayers,
+      mainColor: mainColorConfig,
+      accentColor: accentColorConfig,
+      parentalAdvisory: paConfig,
+    };
+  }, [lightings, lightingIntensities, lightingRotations, textures, textureIntensities, textureRotations, mainColor, accentColor, parentalAdvisory, paPosition, paInverted]);
+
+  // Use unified canvas preview - WYSIWYG: preview uses same pipeline as Apply/Download
+  const { previewUrl, isRendering: isPreviewRendering, hasOverlays } = useCoverPreview({
+    baseImageUrl: imageUrl,
+    config: previewConfig,
+    enabled: !!imageUrl,
+    debounceMs: 100,
+  });
   
   useEffect(() => {
     if (!loading && !user) {
@@ -647,243 +711,153 @@ const EditStudio = () => {
     const imageToDownload = imageUrl;
     if (!imageToDownload) return;
     
-    // Build overlay configurations for compositing
-    const overlayConfigs: Array<{
-      imageUrl: string;
-      blendMode?: string;
-      opacity?: number;
-      rotation?: number;
-    }> = [];
+    // Check if we have any overlays to apply
+    const hasAnyOverlays = lightings.length > 0 || textures.length > 0 || 
+      (mainColor && getColorHex(mainColor)) || (accentColor && getColorHex(accentColor)) ||
+      parentalAdvisory !== "none";
     
-    // Add lighting overlays
-    lightings.forEach(lightingId => {
-      const lightingOption = lightingOptions.find(l => l.id === lightingId);
-      if (lightingOption?.image) {
-        const baseOpacity = lightingOption.opacity || 1;
-        const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-        overlayConfigs.push({
-          imageUrl: lightingOption.image,
-          blendMode: lightingOption.blendMode || 'screen',
-          opacity: baseOpacity * intensityMultiplier,
-          rotation: lightingRotations[lightingId] || 0,
-        });
-      }
-    });
-    
-    // Add texture overlays
-    textures.forEach(textureId => {
-      const textureOption = textureOptions.find(t => t.id === textureId);
-      if (textureOption?.image) {
-        const baseOpacity = textureOption.opacity || 0.5;
-        const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-        overlayConfigs.push({
-          imageUrl: textureOption.image,
-          blendMode: textureOption.blendMode || 'overlay',
-          opacity: Math.min(baseOpacity * intensityMultiplier, 1),
-          rotation: textureRotations[textureId] || 0,
-        });
-      }
-    });
-    
-    // Build parental advisory config
-    const paOption = parentalAdvisory !== "none"
-      ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)
-      : null;
-
-    const paConfig = paOption?.image
-      ? {
+    try {
+      let finalImageDataUrl: string;
+      
+      if (hasAnyOverlays) {
+        // Use the SAME compositing pipeline as Apply Edits for consistency (WYSIWYG)
+        toast.info("Compositing overlays...");
+        
+        // Build the same config used for preview/apply
+        const lightingLayers = lightings.map(lightingId => {
+          const lightingOption = lightingOptions.find(l => l.id === lightingId);
+          const baseOpacity = lightingOption?.opacity || 1;
+          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
+          return {
+            imageUrl: lightingOption?.image || "",
+            blendMode: lightingOption?.blendMode || "screen" as const,
+            opacity: baseOpacity * intensityMultiplier,
+            rotation: lightingRotations[lightingId] || 0,
+          };
+        }).filter(l => l.imageUrl);
+        
+        const textureLayers = textures.map(textureId => {
+          const textureOption = textureOptions.find(t => t.id === textureId);
+          const baseOpacity = textureOption?.opacity || 0.5;
+          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
+          return {
+            imageUrl: textureOption?.image || "",
+            blendMode: textureOption?.blendMode || "overlay" as const,
+            opacity: Math.min(baseOpacity * intensityMultiplier, 1),
+            rotation: textureRotations[textureId] || 0,
+          };
+        }).filter(t => t.imageUrl);
+        
+        const mainColorConfig = mainColor && getColorHex(mainColor) ? {
+          hex: getColorHex(mainColor)!,
+          opacity: 0.45,
+          blendMode: 'overlay' as const,
+        } : undefined;
+        
+        const accentColorConfig = accentColor && getColorHex(accentColor) ? {
+          hex: getColorHex(accentColor)!,
+          opacity: 0.35,
+          blendMode: 'color-dodge' as const,
+        } : undefined;
+        
+        const paOption = parentalAdvisory !== "none" 
+          ? parentalAdvisoryOptions.find(p => p.id === parentalAdvisory) 
+          : null;
+        const paConfig = paOption?.image ? {
           imageUrl: paOption.image,
           position: paPosition,
           inverted: paInverted,
-          sizePercent: 22,
-        }
-      : undefined;
-    
-    // Build color overlay configs
-    const colorOverlayConfig = mainColor && getColorHex(mainColor) ? {
-      hex: getColorHex(mainColor),
-      opacity: 0.45,
-    } : undefined;
-    
-    const accentOverlayConfig = accentColor && getColorHex(accentColor) ? {
-      hex: getColorHex(accentColor),
-      opacity: 0.35,
-    } : undefined;
-    
-    // Check if running on native platform (iOS/Android via Capacitor)
-    if (Capacitor.isNativePlatform()) {
-      try {
-        // For native, we need to composite overlays manually first
-        // Load base image
-        const img = new Image();
-        img.crossOrigin = "anonymous";
+        } : undefined;
         
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = imageToDownload;
-        });
-
-        const canvas = document.createElement("canvas");
-        canvas.width = 3000;
-        canvas.height = 3000;
-        const ctx = canvas.getContext("2d");
-        
-        if (!ctx) throw new Error("Canvas context failed");
-        
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, 3000, 3000);
-        
-        // Apply overlays
-        for (const overlay of overlayConfigs) {
-          try {
-            const overlayImg = new Image();
-            overlayImg.crossOrigin = "anonymous";
-            await new Promise((resolve, reject) => {
-              overlayImg.onload = resolve;
-              overlayImg.onerror = reject;
-              overlayImg.src = overlay.imageUrl;
-            });
-            
-            ctx.save();
-            const blendModeMap: Record<string, GlobalCompositeOperation> = {
-              'overlay': 'overlay', 'multiply': 'multiply', 'screen': 'screen',
-              'soft-light': 'soft-light', 'hard-light': 'hard-light', 'lighter': 'lighter',
-              'color-dodge': 'color-dodge',
-            };
-            ctx.globalCompositeOperation = blendModeMap[overlay.blendMode || 'overlay'] || 'source-over';
-            ctx.globalAlpha = overlay.opacity ?? 1;
-            
-            if (overlay.rotation && overlay.rotation !== 0) {
-              ctx.translate(1500, 1500);
-              ctx.rotate((overlay.rotation * Math.PI) / 180);
-              ctx.drawImage(overlayImg, -1500, -1500, 3000, 3000);
-            } else {
-              ctx.drawImage(overlayImg, 0, 0, 3000, 3000);
-            }
-            ctx.restore();
-          } catch (e) {
-            console.warn("Failed to apply overlay:", e);
-          }
-        }
-        
-        // Apply color overlay
-        if (colorOverlayConfig) {
-          ctx.save();
-          ctx.globalCompositeOperation = 'overlay';
-          ctx.globalAlpha = colorOverlayConfig.opacity;
-          ctx.fillStyle = colorOverlayConfig.hex;
-          ctx.fillRect(0, 0, 3000, 3000);
-          ctx.restore();
-        }
-        
-        // Apply accent overlay
-        if (accentOverlayConfig) {
-          ctx.save();
-          ctx.globalCompositeOperation = 'color-dodge';
-          ctx.globalAlpha = accentOverlayConfig.opacity;
-          const grad1 = ctx.createRadialGradient(450, 2550, 0, 450, 2550, 1050);
-          grad1.addColorStop(0, accentOverlayConfig.hex);
-          grad1.addColorStop(1, 'transparent');
-          ctx.fillStyle = grad1;
-          ctx.fillRect(0, 0, 3000, 3000);
-          const grad2 = ctx.createRadialGradient(2550, 450, 0, 2550, 450, 1050);
-          grad2.addColorStop(0, accentOverlayConfig.hex);
-          grad2.addColorStop(1, 'transparent');
-          ctx.fillStyle = grad2;
-          ctx.fillRect(0, 0, 3000, 3000);
-          ctx.restore();
-        }
-        
-        // Apply parental advisory
-        if (paConfig?.imageUrl) {
-          try {
-            const paImg = new Image();
-            paImg.crossOrigin = "anonymous";
-            await new Promise((resolve, reject) => {
-              paImg.onload = resolve;
-              paImg.onerror = reject;
-              paImg.src = paConfig.imageUrl;
-            });
-            
-            const paWidth = 3000 * 0.22;
-            const paHeight = (paImg.height / paImg.width) * paWidth;
-            const margin = 60;
-            let paX = 3000 - paWidth - margin;
-            if (paConfig.position === "bottom-left") paX = margin;
-            else if (paConfig.position === "bottom-center") paX = (3000 - paWidth) / 2;
-            const paY = 3000 - paHeight - margin;
-            
-            if (paConfig.inverted) {
-              const tempCanvas = document.createElement("canvas");
-              tempCanvas.width = paImg.width;
-              tempCanvas.height = paImg.height;
-              const tempCtx = tempCanvas.getContext("2d");
-              if (tempCtx) {
-                tempCtx.drawImage(paImg, 0, 0);
-                tempCtx.globalCompositeOperation = 'difference';
-                tempCtx.fillStyle = 'white';
-                tempCtx.fillRect(0, 0, paImg.width, paImg.height);
-                ctx.drawImage(tempCanvas, paX, paY, paWidth, paHeight);
-              }
-            } else {
-              ctx.drawImage(paImg, paX, paY, paWidth, paHeight);
-            }
-          } catch (e) {
-            console.warn("Failed to apply PA:", e);
-          }
-        }
-
-        const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob(resolve, "image/jpeg", 0.95);
-        });
-
-        if (!blob) {
-          toast.error("Download failed");
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Data = (reader.result as string).split(',')[1];
-          const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
-          
-          try {
-            await Filesystem.writeFile({
-              path: fileName,
-              data: base64Data,
-              directory: Directory.Documents,
-            });
-            toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
-          } catch (fsError) {
-            console.error("Filesystem write error:", fsError);
-            await downloadImage(imageToDownload, "cover-art", {
-              overlays: overlayConfigs,
-              parentalAdvisory: paConfig,
-              colorOverlay: colorOverlayConfig,
-              accentOverlay: accentOverlayConfig,
-            });
-          }
-        };
-        reader.readAsDataURL(blob);
-      } catch (error) {
-        console.error("Native download error:", error);
-        await downloadImage(imageToDownload, "cover-art", {
-          overlays: overlayConfigs,
+        // Use the SAME compositeAllLayers function - guarantees identical output
+        finalImageDataUrl = await compositeAllLayers(imageToDownload, {
+          lightings: lightingLayers,
+          textures: textureLayers,
+          mainColor: mainColorConfig,
+          accentColor: accentColorConfig,
           parentalAdvisory: paConfig,
-          colorOverlay: colorOverlayConfig,
-          accentOverlay: accentOverlayConfig,
         });
+      } else {
+        // No overlays - just use the original image
+        finalImageDataUrl = imageToDownload;
       }
-    } else {
-      // Web browser - use the mobile-optimized download utility with overlays
-      await downloadImage(imageToDownload, "cover-art", {
-        overlays: overlayConfigs,
-        parentalAdvisory: paConfig,
-        colorOverlay: colorOverlayConfig,
-        accentOverlay: accentOverlayConfig,
-      });
+      
+      // Handle platform-specific download
+      if (Capacitor.isNativePlatform()) {
+        // Native platform - save to filesystem
+        try {
+          // Convert data URL to blob
+          let blob: Blob;
+          if (finalImageDataUrl.startsWith('data:')) {
+            const response = await fetch(finalImageDataUrl);
+            blob = await response.blob();
+          } else {
+            // External URL - fetch and convert
+            const response = await fetch(finalImageDataUrl);
+            blob = await response.blob();
+          }
+          
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Data = (reader.result as string).split(',')[1];
+            const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
+            
+            try {
+              await Filesystem.writeFile({
+                path: fileName,
+                data: base64Data,
+                directory: Directory.Documents,
+              });
+              toast.success("Saved!", { description: "3000x3000 JPEG saved to Documents" });
+            } catch (fsError) {
+              console.error("Filesystem write error:", fsError);
+              // Fallback to regular download
+              triggerBrowserDownload(finalImageDataUrl, "cover-art");
+            }
+          };
+          reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Native download error:", error);
+          triggerBrowserDownload(finalImageDataUrl, "cover-art");
+        }
+      } else {
+        // Web browser - trigger download
+        triggerBrowserDownload(finalImageDataUrl, "cover-art");
+      }
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Download failed", { description: "Please try again" });
+    }
+  };
+  
+  // Helper for browser downloads
+  const triggerBrowserDownload = async (imageUrl: string, filename: string) => {
+    try {
+      let blob: Blob;
+      
+      if (imageUrl.startsWith('data:')) {
+        // Data URL - convert to blob
+        const response = await fetch(imageUrl);
+        blob = await response.blob();
+      } else {
+        // External URL - need to composite first or download directly
+        const response = await fetch(imageUrl);
+        blob = await response.blob();
+      }
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}-3000x3000-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Download started!", { description: "3000x3000 JPEG" });
+    } catch (error) {
+      console.error("Browser download error:", error);
+      toast.error("Download failed");
     }
   };
   
@@ -1027,101 +1001,19 @@ const EditStudio = () => {
                   >
                     {imageUrl ? (
                       <>
+                        {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
+                        {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={imageUrl}
+                          src={previewUrl || imageUrl}
                           alt="Cover preview"
                           className="w-full h-full object-cover"
                         />
-                    
-                        {/* Lighting Preview Overlays */}
-                        {lightings.map(lightingId => {
-                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                          if (!lightingOption?.image) return null;
-                          const rotation = lightingRotations[lightingId] || 0;
-                          const baseOpacity = lightingOption.opacity || 1;
-                          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-                          const finalOpacity = baseOpacity * intensityMultiplier;
-                          return (
-                            <div 
-                              key={lightingId}
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ 
-                                backgroundImage: `url(${lightingOption.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                                opacity: finalOpacity,
-                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                              }}
-                            />
-                          );
-                        })}
                         
-                        {/* Texture Preview Overlays */}
-                        {textures.map(textureId => {
-                          const textureOption = textureOptions.find(t => t.id === textureId);
-                          if (!textureOption?.image) return null;
-                          const baseOpacity = textureOption.opacity || 0.5;
-                          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-                          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-                          const rotation = textureRotations[textureId] || 0;
-                          return (
-                            <div 
-                              key={textureId}
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ 
-                                backgroundImage: `url(${textureOption.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                                opacity: finalOpacity,
-                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                              }}
-                            />
-                          );
-                        })}
-                        
-                        {/* Color Filter Overlays - Real-time preview */}
-                        {mainColor && getColorHex(mainColor) && (
-                          <div 
-                            className="absolute inset-0 pointer-events-none"
-                            style={{ 
-                              backgroundColor: getColorHex(mainColor),
-                              mixBlendMode: 'overlay',
-                              opacity: 0.45,
-                            }}
-                          />
-                        )}
-                        {accentColor && getColorHex(accentColor) && (
-                          <div 
-                            className="absolute inset-0 pointer-events-none"
-                            style={{ 
-                              background: `
-                                radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                                radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                                radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
-                              `,
-                              mixBlendMode: 'color-dodge',
-                              opacity: 0.35,
-                            }}
-                          />
-                        )}
-                        
-                        {/* Parental Advisory Logo Overlay */}
-                        {parentalAdvisory !== "none" && (
-                          <div 
-                            className={`absolute w-[22%] ${
-                              paPosition === "bottom-right" ? "bottom-2 right-2" :
-                              paPosition === "bottom-left" ? "bottom-2 left-2" :
-                              "bottom-2 left-1/2 -translate-x-1/2"
-                            }`}
-                          >
-                            <img 
-                              src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
-                              alt="Parental Advisory"
-                              className="w-full h-auto"
-                              style={{ filter: paInverted ? "invert(1)" : "none" }}
-                            />
+                        {/* Preview rendering indicator */}
+                        {isPreviewRendering && hasOverlays && (
+                          <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-[10px] flex items-center gap-1">
+                            <div className="w-2 h-2 border border-primary border-t-transparent rounded-full animate-spin" />
+                            Rendering...
                           </div>
                         )}
                         
@@ -1642,101 +1534,19 @@ const EditStudio = () => {
                   <div ref={coverPreviewRef} className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <>
+                        {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
+                        {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={imageUrl}
+                          src={previewUrl || imageUrl}
                           alt="Cover preview"
                           className="w-full h-full object-cover"
                         />
                         
-                        {/* Lighting Preview Overlays */}
-                        {lightings.map(lightingId => {
-                          const lightingOption = lightingOptions.find(l => l.id === lightingId);
-                          if (!lightingOption?.image) return null;
-                          const rotation = lightingRotations[lightingId] || 0;
-                          const baseOpacity = lightingOption.opacity || 1;
-                          const intensityMultiplier = (lightingIntensities[lightingId] ?? 100) / 100;
-                          const finalOpacity = baseOpacity * intensityMultiplier;
-                          return (
-                            <div 
-                              key={lightingId}
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ 
-                                backgroundImage: `url(${lightingOption.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                mixBlendMode: getCssMixBlendMode(lightingOption.blendMode) || 'screen',
-                                opacity: finalOpacity,
-                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                              }}
-                            />
-                          );
-                        })}
-                        
-                        {/* Texture Preview Overlays */}
-                        {textures.map(textureId => {
-                          const textureOption = textureOptions.find(t => t.id === textureId);
-                          if (!textureOption?.image) return null;
-                          const baseOpacity = textureOption.opacity || 0.5;
-                          const intensityMultiplier = (textureIntensities[textureId] ?? 50) / 40;
-                          const finalOpacity = Math.min(baseOpacity * intensityMultiplier, 1);
-                          const rotation = textureRotations[textureId] || 0;
-                          return (
-                            <div 
-                              key={textureId}
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ 
-                                backgroundImage: `url(${textureOption.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                mixBlendMode: getCssMixBlendMode(textureOption.blendMode) || 'overlay',
-                                opacity: finalOpacity,
-                                transform: rotation ? `rotate(${rotation}deg)` : undefined,
-                              }}
-                            />
-                          );
-                        })}
-                        
-                        {/* Color Filter Overlays - Real-time preview */}
-                        {mainColor && getColorHex(mainColor) && (
-                          <div 
-                            className="absolute inset-0 pointer-events-none"
-                            style={{ 
-                              backgroundColor: getColorHex(mainColor),
-                              mixBlendMode: 'overlay',
-                              opacity: 0.45,
-                            }}
-                          />
-                        )}
-                        {accentColor && getColorHex(accentColor) && (
-                          <div 
-                            className="absolute inset-0 pointer-events-none"
-                            style={{ 
-                              background: `
-                                radial-gradient(ellipse at 15% 85%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                                radial-gradient(ellipse at 85% 15%, ${getColorHex(accentColor)} 0%, transparent 35%),
-                                radial-gradient(ellipse at 50% 50%, ${getColorHex(accentColor)}22 0%, transparent 60%)
-                              `,
-                              mixBlendMode: 'color-dodge',
-                              opacity: 0.35,
-                            }}
-                          />
-                        )}
-                        
-                        {/* Parental Advisory Logo Overlay */}
-                        {parentalAdvisory !== "none" && (
-                          <div 
-                            className={`absolute w-[20%] ${
-                              paPosition === "bottom-right" ? "bottom-3 right-3" :
-                              paPosition === "bottom-left" ? "bottom-3 left-3" :
-                              "bottom-3 left-1/2 -translate-x-1/2"
-                            }`}
-                          >
-                            <img 
-                              src={parentalAdvisoryOptions.find(p => p.id === parentalAdvisory)?.image}
-                              alt="Parental Advisory"
-                              className="w-full h-auto"
-                              style={{ filter: paInverted ? "invert(1)" : "none" }}
-                            />
+                        {/* Preview rendering indicator */}
+                        {isPreviewRendering && hasOverlays && (
+                          <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs flex items-center gap-1.5 z-10">
+                            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            Rendering...
                           </div>
                         )}
                         
