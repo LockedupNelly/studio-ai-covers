@@ -33,11 +33,15 @@ export const useTextureCompositing = () => {
   /**
    * Map blend modes to canvas-compatible values that match CSS preview behavior
    * CSS uses mix-blend-mode which behaves differently than canvas globalCompositeOperation
-   * Key fix: "lighter" in canvas is additive (very bright), but CSS maps it to "screen"
+   * Key differences:
+   * - "lighter" in canvas is additive (very bright), but CSS maps it to "screen"
+   * - "overlay" in canvas can appear more saturated than CSS, use "soft-light" for color overlays
    */
-  const getCanvasBlendMode = (blendMode: BlendMode): GlobalCompositeOperation => {
+  const getCanvasBlendMode = (blendMode: BlendMode, isColorOverlay: boolean = false): GlobalCompositeOperation => {
     // Match the CSS getCssMixBlendMode behavior exactly
     if (blendMode === "lighter") return "screen"; // CSS preview uses screen for lighter
+    // For solid color overlays, soft-light produces more similar results to CSS overlay
+    if (blendMode === "overlay" && isColorOverlay) return "soft-light";
     return blendMode as GlobalCompositeOperation;
   };
 
@@ -132,21 +136,22 @@ export const useTextureCompositing = () => {
         drawOverlay(textureImages[i], texture.blendMode, texture.opacity, texture.rotation);
       });
 
-      // Apply main color overlay - use mapped blend mode
+      // Apply main color overlay - use soft-light for better CSS match
       if (config.mainColor?.hex) {
         ctx.save();
-        ctx.globalCompositeOperation = getCanvasBlendMode(config.mainColor.blendMode || 'overlay');
+        // Pass isColorOverlay=true to use soft-light instead of overlay
+        ctx.globalCompositeOperation = getCanvasBlendMode(config.mainColor.blendMode || 'overlay', true);
         ctx.globalAlpha = config.mainColor.opacity;
         ctx.fillStyle = config.mainColor.hex;
         ctx.fillRect(0, 0, size, size);
         ctx.restore();
       }
 
-      // Apply accent color as radial gradients (matches CSS preview exactly) - use mapped blend mode
+      // Apply accent color as radial gradients (matches CSS preview exactly)
       if (config.accentColor?.hex) {
         ctx.save();
-        ctx.globalCompositeOperation = getCanvasBlendMode(config.accentColor.blendMode || 'color-dodge');
-        ctx.globalAlpha = config.accentColor.opacity;
+        // Accent color uses color-dodge, no special handling needed
+        ctx.globalCompositeOperation = getCanvasBlendMode(config.accentColor.blendMode || 'color-dodge', false);
 
         // Bottom-left radial gradient (15% from left, 85% from top)
         const grad1 = ctx.createRadialGradient(
