@@ -149,7 +149,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
       
       const progressInterval = setInterval(() => {
         const elapsed = Date.now() - (generationStartTime.current || Date.now());
-        const targetProgress = Math.min(95, 50 * (1 - Math.exp(-elapsed / 8000)) + 45 * (1 - Math.exp(-elapsed / 25000)));
+        // Progress quickly to ~80%, then slow down and cap at 99% until complete
+        const targetProgress = Math.min(99, 60 * (1 - Math.exp(-elapsed / 6000)) + 39 * (1 - Math.exp(-elapsed / 30000)));
         setSmoothProgress((prev) => Math.max(prev, targetProgress));
         
         const stageIdx = progressStages.findIndex(s => s.progress > targetProgress);
@@ -160,8 +161,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
         clearInterval(progressInterval);
       };
     } else if (generatedImage) {
+      // Only snap to 100% when generation actually completes
       setSmoothProgress(100);
       setProgressStage(progressStages.length - 1);
+      // Reset generation timer
+      generationStartTime.current = null;
     } else {
       setProgressStage(0);
       setSmoothProgress(0);

@@ -1105,8 +1105,8 @@ const EditStudio = () => {
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
                                   ? textures[textures.length - 1] === t.id 
-                                    ? "border-white ring-1 ring-white/50" 
-                                    : "border-primary ring-1 ring-primary/50"
+                                    ? "border-white ring-2 ring-white/50" 
+                                    : "border-white/60 ring-1 ring-white/30"
                                   : "border-border"
                               }`}
                               style={{
@@ -1134,16 +1134,17 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 py-4">
+                          <div className="flex items-center justify-center gap-3 py-4">
                             {/* Rotate button */}
                             <button
                               onClick={() => setTextureRotations({ ...textureRotations, [activeTextureId]: (currentRotation + 90) % 360 })}
-                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-card border-2 border-white/30 shadow-lg"
+                              title="Rotate texture"
                             >
-                              <RotateCw className="w-5 h-5" />
+                              <RotateCw className="w-5 h-5 text-white" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1.5 bg-secondary rounded-lg px-2.5 h-12 border border-border">
+                            <div className="flex items-center gap-1.5 bg-card rounded-lg px-3 h-12 border-2 border-white/30 shadow-lg">
                               <button
                                 onClick={() => setTextureIntensities({ ...textureIntensities, [activeTextureId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
@@ -1205,8 +1206,8 @@ const EditStudio = () => {
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
                                   ? lightings[lightings.length - 1] === l.id 
-                                    ? "border-white ring-1 ring-white/50" 
-                                    : "border-primary ring-1 ring-primary/50"
+                                    ? "border-white ring-2 ring-white/50" 
+                                    : "border-white/60 ring-1 ring-white/30"
                                   : "border-border"
                               }`}
                               style={{
@@ -1234,16 +1235,17 @@ const EditStudio = () => {
                         const isMin = currentIntensity <= 25;
                         const isMax = currentIntensity >= 100;
                         return (
-                          <div className="flex items-center justify-center gap-2 py-4">
+                          <div className="flex items-center justify-center gap-3 py-4">
                             {/* Rotate button */}
                             <button
                               onClick={() => setLightingRotations({ ...lightingRotations, [activeLightingId]: (currentRotation + 90) % 360 })}
-                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary border border-border"
+                              className="w-12 h-12 flex items-center justify-center rounded-lg bg-card border-2 border-white/30 shadow-lg"
+                              title="Rotate lighting"
                             >
-                              <RotateCw className="w-5 h-5" />
+                              <RotateCw className="w-5 h-5 text-white" />
                             </button>
                             {/* Intensity controls */}
-                            <div className="flex items-center gap-1.5 bg-secondary rounded-lg px-2.5 h-12 border border-border">
+                            <div className="flex items-center gap-1.5 bg-card rounded-lg px-3 h-12 border-2 border-white/30 shadow-lg">
                               <button
                                 onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLightingId]: Math.max(25, currentIntensity - 25) })}
                                 disabled={isMin}
@@ -1815,26 +1817,26 @@ const EditStudio = () => {
                         
                         {activeTexture && textures.includes(activeTexture) && (
                           <div className="flex items-center gap-2">
-                            {/* Intensity controls */}
-                            <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                            {/* Intensity controls - more prominent styling */}
+                            <div className="flex items-center gap-1 bg-card border border-white/30 rounded-lg px-2 py-1">
                               <button
                                 onClick={() => {
                                   const current = textureIntensities[activeTexture] ?? 50;
                                   setTextureIntensities({ ...textureIntensities, [activeTexture]: Math.max(0, current - 25) });
                                 }}
                                 disabled={isEditing || (textureIntensities[activeTexture] ?? 50) <= 0}
-                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-white flex items-center justify-center disabled:opacity-50"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
-                              <span className="text-[9px] text-muted-foreground min-w-[28px] text-center">{textureIntensities[activeTexture] ?? 50}%</span>
+                              <span className="text-xs text-white font-medium min-w-[32px] text-center">{textureIntensities[activeTexture] ?? 50}%</span>
                               <button
                                 onClick={() => {
                                   const current = textureIntensities[activeTexture] ?? 50;
                                   setTextureIntensities({ ...textureIntensities, [activeTexture]: Math.min(100, current + 25) });
                                 }}
                                 disabled={isEditing || (textureIntensities[activeTexture] ?? 50) >= 100}
-                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-white flex items-center justify-center disabled:opacity-50"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
@@ -1869,8 +1871,8 @@ const EditStudio = () => {
                               title={t.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? "border-primary ring-2 ring-primary"
-                                  : "border-border hover:border-primary/50"
+                                  ? "border-white ring-2 ring-white/50"
+                                  : "border-border hover:border-white/50"
                               }`}
                               style={{ 
                                 background: t.image 
@@ -1903,32 +1905,33 @@ const EditStudio = () => {
                           const isMax = currentIntensity >= 100;
                           return (
                             <div className="flex items-center gap-2">
-                              {/* Rotation */}
+                              {/* Rotation - more prominent styling */}
                               <button
                                 onClick={() => {
                                   const nextRotation = (currentRotation + 90) % 360;
                                   setLightingRotations({ ...lightingRotations, [activeLighting]: nextRotation });
                                 }}
                                 disabled={isEditing}
-                                className="w-5 h-5 rounded bg-secondary/50 hover:bg-secondary/80 text-muted-foreground flex items-center justify-center"
+                                className="w-6 h-6 rounded bg-card border border-white/30 hover:bg-secondary text-white flex items-center justify-center"
+                                title="Rotate lighting"
                               >
                                 <RotateCw className="w-3 h-3" />
                               </button>
                               
-                              {/* Intensity controls */}
-                              <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                              {/* Intensity controls - more prominent styling */}
+                              <div className="flex items-center gap-1 bg-card border border-white/30 rounded-lg px-2 py-1">
                                 <button
                                   onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLighting]: Math.max(25, currentIntensity - 25) })}
                                   disabled={isEditing || isMin}
-                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMin ? 'text-destructive' : 'text-muted-foreground'}`}
+                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMin ? 'text-destructive' : 'text-white'}`}
                                 >
                                   <Minus className="w-3 h-3" />
                                 </button>
-                                <Zap className={`w-3 h-3 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                <Zap className={`w-3 h-3 ${isMin || isMax ? 'text-destructive' : 'text-white'}`} />
                                 <button
                                   onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLighting]: Math.min(100, currentIntensity + 25) })}
                                   disabled={isEditing || isMax}
-                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMax ? 'text-destructive' : 'text-muted-foreground'}`}
+                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMax ? 'text-destructive' : 'text-white'}`}
                                 >
                                   <Plus className="w-3 h-3" />
                                 </button>
@@ -1966,8 +1969,8 @@ const EditStudio = () => {
                               title={l.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? "border-primary ring-2 ring-primary"
-                                  : "border-border hover:border-primary/50"
+                                  ? "border-white ring-2 ring-white/50"
+                                  : "border-border hover:border-white/50"
                               }`}
                               style={{ 
                                 background: l.image 
