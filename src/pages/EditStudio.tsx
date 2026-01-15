@@ -108,9 +108,11 @@ const EditStudio = () => {
   const [textures, setTextures] = useState<string[]>([]);
   const [textureIntensities, setTextureIntensities] = useState<Record<string, number>>({}); // Track intensity per texture ID (0-100)
   const [textureRotations, setTextureRotations] = useState<Record<string, number>>({}); // Track rotation per texture ID
+  const [activeTexture, setActiveTexture] = useState<string | null>(null); // Currently focused texture for controls
   const [lightings, setLightings] = useState<string[]>([]);
   const [lightingRotations, setLightingRotations] = useState<Record<string, number>>({}); // Track rotation per lighting ID
   const [lightingIntensities, setLightingIntensities] = useState<Record<string, number>>({}); // Track intensity per lighting ID (25-100)
+  const [activeLighting, setActiveLighting] = useState<string | null>(null); // Currently focused lighting for controls
   const [parentalAdvisory, setParentalAdvisory] = useState<string>("none");
   const [paPosition, setPaPosition] = useState<"bottom-right" | "bottom-left" | "bottom-center" | "top-right" | "top-left" | "top-center">("bottom-right");
   const [paSize, setPaSize] = useState<"small" | "medium" | "large">("medium");
@@ -1772,76 +1774,90 @@ const EditStudio = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {/* Textures - Visual squares (multi-select) */}
                     <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                        <Layers className="w-4 h-4 text-primary" />
-                        Textures
-                        {textures.length > 0 && <span className="text-primary">({textures.length})</span>}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+                          <Layers className="w-4 h-4 text-primary" />
+                          Textures
+                          {textures.length > 0 && <span className="text-primary">({textures.length})</span>}
+                        </div>
+                        
+                        {activeTexture && textures.includes(activeTexture) && (
+                          <div className="flex items-center gap-2">
+                            {/* Intensity controls */}
+                            <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                              <button
+                                onClick={() => {
+                                  const current = textureIntensities[activeTexture] ?? 50;
+                                  setTextureIntensities({ ...textureIntensities, [activeTexture]: Math.max(0, current - 25) });
+                                }}
+                                disabled={isEditing || (textureIntensities[activeTexture] ?? 50) <= 0}
+                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="text-[9px] text-muted-foreground min-w-[28px] text-center">{textureIntensities[activeTexture] ?? 50}%</span>
+                              <button
+                                onClick={() => {
+                                  const current = textureIntensities[activeTexture] ?? 50;
+                                  setTextureIntensities({ ...textureIntensities, [activeTexture]: Math.min(100, current + 25) });
+                                }}
+                                disabled={isEditing || (textureIntensities[activeTexture] ?? 50) >= 100}
+                                className="w-5 h-5 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-3 gap-1.5">
                         {textureOptions.filter(t => t.id !== "none").map(t => {
                           const isSelected = textures.includes(t.id);
-                          const currentIntensity = textureIntensities[t.id] ?? 50;
+                          const isActive = activeTexture === t.id;
                           return (
-                            <div key={t.id} className="flex flex-col gap-1">
-                              <button
-                                onClick={() => {
-                                  if (isSelected) {
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  // If clicking on selected texture, toggle active or deselect
+                                  if (isActive) {
                                     setTextures(textures.filter(id => id !== t.id));
                                     const { [t.id]: _, ...rest } = textureIntensities;
                                     setTextureIntensities(rest);
+                                    setActiveTexture(textures.length > 1 ? textures.find(id => id !== t.id) || null : null);
                                   } else {
-                                    setTextures([...textures, t.id]);
+                                    setActiveTexture(t.id);
                                   }
-                                }}
-                                disabled={isEditing}
-                                title={t.name}
-                                className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                                  isSelected
-                                    ? "border-primary ring-1 ring-primary"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                                style={{ 
-                                  background: t.image 
-                                    ? `url(${t.image}) center/cover` 
-                                    : t.gradient || "var(--secondary)" 
-                                }}
-                              >
-                                {isSelected && (
-                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                    <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                  </div>
-                                )}
-                                <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                                  {t.name}
-                                </span>
-                              </button>
+                                } else {
+                                  setTextures([...textures, t.id]);
+                                  setActiveTexture(t.id);
+                                }
+                              }}
+                              disabled={isEditing}
+                              title={t.name}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                isSelected
+                                  ? isActive
+                                    ? "border-primary ring-2 ring-primary"
+                                    : "border-primary ring-1 ring-primary/50"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              style={{ 
+                                background: t.image 
+                                  ? `url(${t.image}) center/cover` 
+                                  : t.gradient || "var(--secondary)" 
+                              }}
+                            >
                               {isSelected && (
-                                <div className="flex items-center justify-between gap-1 py-0.5">
-                                  <button
-                                    onClick={() => {
-                                      const newIntensity = Math.max(0, currentIntensity - 25);
-                                      setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
-                                    }}
-                                    disabled={isEditing || currentIntensity <= 0}
-                                    className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </button>
-                                  <span className="text-[9px] text-muted-foreground">{currentIntensity}%</span>
-                                  <button
-                                    onClick={() => {
-                                      const newIntensity = Math.min(100, currentIntensity + 25);
-                                      setTextureIntensities({ ...textureIntensities, [t.id]: newIntensity });
-                                    }}
-                                    disabled={isEditing || currentIntensity >= 100}
-                                    className="w-6 h-6 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground flex items-center justify-center disabled:opacity-50"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </button>
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                            </div>
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                {t.name}
+                              </span>
+                            </button>
                           );
                         })}
                       </div>
@@ -1849,88 +1865,105 @@ const EditStudio = () => {
                     
                     {/* Lighting - Visual squares (multi-select) */}
                     <div className="bg-card rounded-xl border border-border p-4">
-                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                        <Zap className="w-4 h-4 text-primary" />
-                        Lighting
-                        {lightings.length > 0 && <span className="text-primary">({lightings.length})</span>}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+                          <Zap className="w-4 h-4 text-primary" />
+                          Lighting
+                          {lightings.length > 0 && <span className="text-primary">({lightings.length})</span>}
+                        </div>
+                        
+                        {activeLighting && lightings.includes(activeLighting) && (() => {
+                          const currentRotation = lightingRotations[activeLighting] || 0;
+                          const currentIntensity = lightingIntensities[activeLighting] ?? 100;
+                          const isMin = currentIntensity <= 25;
+                          const isMax = currentIntensity >= 100;
+                          return (
+                            <div className="flex items-center gap-2">
+                              {/* Rotation */}
+                              <button
+                                onClick={() => {
+                                  const nextRotation = (currentRotation + 90) % 360;
+                                  setLightingRotations({ ...lightingRotations, [activeLighting]: nextRotation });
+                                }}
+                                disabled={isEditing}
+                                className="w-5 h-5 rounded bg-secondary/50 hover:bg-secondary/80 text-muted-foreground flex items-center justify-center"
+                              >
+                                <RotateCw className="w-3 h-3" />
+                              </button>
+                              
+                              {/* Intensity controls */}
+                              <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                                <button
+                                  onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLighting]: Math.max(25, currentIntensity - 25) })}
+                                  disabled={isEditing || isMin}
+                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMin ? 'text-destructive' : 'text-muted-foreground'}`}
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <Zap className={`w-3 h-3 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                <button
+                                  onClick={() => setLightingIntensities({ ...lightingIntensities, [activeLighting]: Math.min(100, currentIntensity + 25) })}
+                                  disabled={isEditing || isMax}
+                                  className={`w-5 h-5 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMax ? 'text-destructive' : 'text-muted-foreground'}`}
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                       
                       <div className="grid grid-cols-3 gap-1.5">
                         {lightingOptions.filter(l => l.id !== "none").map(l => {
                           const isSelected = lightings.includes(l.id);
-                          const currentRotation = lightingRotations[l.id] || 0;
-                          const currentIntensity = lightingIntensities[l.id] ?? 100;
-                          const isMin = currentIntensity <= 25;
-                          const isMax = currentIntensity >= 100;
+                          const isActive = activeLighting === l.id;
                           return (
-                            <div key={l.id} className="flex flex-col gap-1">
-                              <button
-                                onClick={() => {
-                                  if (isSelected) {
+                            <button
+                              key={l.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  // If clicking on selected lighting, toggle active or deselect
+                                  if (isActive) {
                                     setLightings(lightings.filter(id => id !== l.id));
                                     const { [l.id]: _, ...rest } = lightingRotations;
                                     setLightingRotations(rest);
                                     const { [l.id]: __, ...restIntensity } = lightingIntensities;
                                     setLightingIntensities(restIntensity);
+                                    setActiveLighting(lightings.length > 1 ? lightings.find(id => id !== l.id) || null : null);
                                   } else {
-                                    setLightings([...lightings, l.id]);
-                                    setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
+                                    setActiveLighting(l.id);
                                   }
-                                }}
-                                disabled={isEditing}
-                                title={l.name}
-                                className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
-                                  isSelected
-                                    ? "border-primary ring-1 ring-primary"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                                style={{ 
-                                  background: l.image 
-                                    ? `url(${l.image}) center/cover` 
-                                    : l.gradient || "var(--secondary)" 
-                                }}
-                              >
-                                {isSelected && (
-                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                    <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                  </div>
-                                )}
-                                <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
-                                  {l.name}
-                                </span>
-                              </button>
-                              {isSelected && l.image && (
-                                <div className="flex flex-col gap-1">
-                                  <button
-                                    onClick={() => {
-                                      const nextRotation = (currentRotation + 90) % 360;
-                                      setLightingRotations({ ...lightingRotations, [l.id]: nextRotation });
-                                    }}
-                                    disabled={isEditing}
-                                    className="flex items-center justify-center gap-1 py-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground text-[10px] transition-all"
-                                  >
-                                    <RotateCw className="w-3 h-3" />
-                                  </button>
-                                  <div className="flex items-center justify-between gap-1 py-0.5">
-                                    <button
-                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.max(25, currentIntensity - 25) })}
-                                      disabled={isEditing || isMin}
-                                      className={`w-6 h-6 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMin ? 'text-destructive' : 'text-muted-foreground'}`}
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </button>
-                                    <Zap className={`w-3 h-3 ${isMin || isMax ? 'text-destructive' : 'text-muted-foreground'}`} />
-                                    <button
-                                      onClick={() => setLightingIntensities({ ...lightingIntensities, [l.id]: Math.min(100, currentIntensity + 25) })}
-                                      disabled={isEditing || isMax}
-                                      className={`w-6 h-6 rounded bg-secondary hover:bg-secondary/80 flex items-center justify-center disabled:opacity-50 ${isMax ? 'text-destructive' : 'text-muted-foreground'}`}
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                    </button>
-                                  </div>
+                                } else {
+                                  setLightings([...lightings, l.id]);
+                                  setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
+                                  setActiveLighting(l.id);
+                                }
+                              }}
+                              disabled={isEditing}
+                              title={l.name}
+                              className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
+                                isSelected
+                                  ? isActive
+                                    ? "border-primary ring-2 ring-primary"
+                                    : "border-primary ring-1 ring-primary/50"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              style={{ 
+                                background: l.image 
+                                  ? `url(${l.image}) center/cover` 
+                                  : l.gradient || "var(--secondary)" 
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                            </div>
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                                {l.name}
+                              </span>
+                            </button>
                           );
                         })}
                       </div>
@@ -1947,10 +1980,10 @@ const EditStudio = () => {
                       </div>
                       
                       {parentalAdvisory !== "none" && (
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-3">
                           {/* Size */}
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
-                            <span className="text-[9px] text-muted-foreground">Size</span>
+                          <div className="flex items-center gap-1.5 bg-secondary/50 rounded px-2 py-1">
+                            <span className="text-[10px] text-muted-foreground">Size</span>
                             {[
                               { id: "small", label: "S" },
                               { id: "medium", label: "M" },
@@ -1959,7 +1992,7 @@ const EditStudio = () => {
                               <button
                                 key={size.id}
                                 onClick={() => setPaSize(size.id as typeof paSize)}
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                                   paSize === size.id
                                     ? "bg-primary text-primary-foreground"
                                     : "text-foreground/70 hover:bg-secondary"
@@ -1971,8 +2004,8 @@ const EditStudio = () => {
                           </div>
                           
                           {/* Position */}
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
-                            <span className="text-[9px] text-muted-foreground">Pos</span>
+                          <div className="flex items-center gap-1.5 bg-secondary/50 rounded px-2 py-1">
+                            <span className="text-[10px] text-muted-foreground">Pos</span>
                             {[
                               { id: "top", label: "T" },
                               { id: "bottom", label: "B" },
@@ -1984,7 +2017,7 @@ const EditStudio = () => {
                                                      paPosition.includes("center") ? "center" : "right";
                                   setPaPosition(`${pos.id}-${horizontal}` as typeof paPosition);
                                 }}
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                                   paPosition.startsWith(pos.id)
                                     ? "bg-primary text-primary-foreground"
                                     : "text-foreground/70 hover:bg-secondary"
@@ -1993,7 +2026,7 @@ const EditStudio = () => {
                                 {pos.label}
                               </button>
                             ))}
-                            <span className="text-muted-foreground/50">|</span>
+                            <span className="text-muted-foreground/50 mx-0.5">|</span>
                             {[
                               { id: "left", label: "L" },
                               { id: "center", label: "C" },
@@ -2005,7 +2038,7 @@ const EditStudio = () => {
                                   const vertical = paPosition.startsWith("top") ? "top" : "bottom";
                                   setPaPosition(`${vertical}-${pos.id}` as typeof paPosition);
                                 }}
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                                   paPosition.includes(pos.id)
                                     ? "bg-primary text-primary-foreground"
                                     : "text-foreground/70 hover:bg-secondary"
@@ -2019,7 +2052,7 @@ const EditStudio = () => {
                           {/* Color */}
                           <button
                             onClick={() => setPaInverted(!paInverted)}
-                            className={`px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                            className={`px-3 py-1 rounded text-[10px] font-medium transition-colors ${
                               paInverted
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-secondary/50 text-foreground/70 hover:bg-secondary"
