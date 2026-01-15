@@ -474,14 +474,12 @@ const EditStudio = () => {
       return;
     }
     
-    // Canvas-only edits (textures, colors, PA) don't consume credits - they're local operations
-    const isCanvasOnlyEdit = !instructions && hasCanvasOverlays;
+    // ALL Apply Edits actions cost 1 credit
+    const creditOk = await deductCredit();
+    if (!creditOk) return;
     
-    if (!isCanvasOnlyEdit) {
-      // Check and deduct credit for AI edits
-      const creditOk = await deductCredit();
-      if (!creditOk) return;
-    }
+    // Track if this is overlay-only for toast messaging
+    const isCanvasOnlyEdit = !instructions && hasCanvasOverlays;
     
     setIsEditing(true);
     setProgress(0);
@@ -724,10 +722,10 @@ const EditStudio = () => {
       
       toast.success("Edits applied!", { 
         description: isCanvasOnlyEdit 
-          ? "Overlay applied (no credits used)" 
+          ? "Overlays applied" 
           : textOnlyEdit 
             ? "Text layer updated (background preserved)" 
-            : "Your cover has been updated" 
+            : "Your cover has been updated"
       });
     } catch (error) {
       console.error("Edit error:", error);
@@ -899,7 +897,7 @@ const EditStudio = () => {
     parentalAdvisory !== "none" ||
     customInstructions.trim();
   
-  // Determine if the current changes are canvas-only (overlays that don't use credits)
+  // Determine if the current changes are canvas-only (for internal tracking, but still costs 1 credit)
   const isCanvasOnlyChange = useMemo(() => {
     const hasAIChanges = 
       (style !== currentState.style && style !== "None") || 
@@ -1497,7 +1495,7 @@ const EditStudio = () => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        {isCanvasOnlyChange ? "Apply Overlays (free)" : "Apply Edit (1 Credit)"}
+                        Apply Edit (1 Credit)
                       </>
                     )}
                   </Button>
@@ -1645,7 +1643,7 @@ const EditStudio = () => {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4" />
-                          {isCanvasOnlyChange ? "Apply Overlays (free)" : "Apply Edits (1 credit)"}
+                          Apply Edits (1 Credit)
                         </>
                       )}
                     </Button>
