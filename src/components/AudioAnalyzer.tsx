@@ -8,6 +8,7 @@ import { Upload, Loader2, Music, Sparkles, X, Wand2, Edit3, Check, Image, Chevro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { downloadImage } from "@/lib/download-utils";
 import { TextStyleVariant, getTextStyleVariants, hasVariants } from "@/lib/text-style-variants";
 import { 
   genres, 
@@ -282,15 +283,40 @@ export const AudioAnalyzer = ({
     }
   };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+  
   const handleDownload = async () => {
     if (!generatedImage) return;
     
-    const link = document.createElement('a');
-    link.href = generatedImage;
-    link.download = songTitle ? `cover-art-${songTitle}.jpg` : 'cover-art.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setIsDownloading(true);
+    const filename = songTitle ? `cover-art-${songTitle}` : "cover-art";
+    
+    try {
+      // First, upscale the image using AI to get true 3000x3000+ quality
+      toast.info("Preparing high-resolution download...", { duration: 10000 });
+      
+      const { data, error } = await supabase.functions.invoke("upscale-cover", {
+        body: { imageUrl: generatedImage },
+      });
+      
+      if (error) {
+        console.error("Upscale failed, using original:", error);
+        // Fallback to canvas upscaling
+        await downloadImage(generatedImage, filename);
+      } else if (data?.upscaledUrl) {
+        // Use the AI-upscaled image for download
+        await downloadImage(data.upscaledUrl, filename);
+      } else {
+        // Fallback
+        await downloadImage(generatedImage, filename);
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      // Fallback to canvas upscaling
+      await downloadImage(generatedImage, filename);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const textClass = "text-foreground";
@@ -663,10 +689,20 @@ export const AudioAnalyzer = ({
                     variant="outline"
                     size="sm"
                     onClick={handleDownload}
+                    disabled={isDownloading}
                     className="flex-1"
                   >
-                    <Download className="w-4 h-4 mr-1" />
-                    Download
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Upscaling...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="outline"

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music, RotateCcw } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music, RotateCcw, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -326,12 +326,40 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
     setFormModifiedSinceGeneration(false);
   };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+  
   const handleDownload = async () => {
     if (!generatedImage) return;
     
-    // Use mobile-optimized download utility with Web Share API support
+    setIsDownloading(true);
     const filename = songTitle ? `cover-art-${songTitle}` : "cover-art";
-    await downloadImage(generatedImage, filename);
+    
+    try {
+      // First, upscale the image using AI to get true 3000x3000+ quality
+      toast.info("Preparing high-resolution download...", { duration: 10000 });
+      
+      const { data, error } = await supabase.functions.invoke("upscale-cover", {
+        body: { imageUrl: generatedImage },
+      });
+      
+      if (error) {
+        console.error("Upscale failed, using original:", error);
+        // Fallback to canvas upscaling
+        await downloadImage(generatedImage, filename);
+      } else if (data?.upscaledUrl) {
+        // Use the AI-upscaled image for download
+        await downloadImage(data.upscaledUrl, filename);
+      } else {
+        // Fallback
+        await downloadImage(generatedImage, filename);
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      // Fallback to canvas upscaling
+      await downloadImage(generatedImage, filename);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleAudioAnalysisComplete = (result: { suggestedPrompt: string; detectedMood: string; suggestedGenre: string; suggestedStyle: string }) => {
@@ -787,10 +815,20 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                             variant="outline"
                             size="sm"
                             onClick={handleDownload}
+                            disabled={isDownloading}
                             className="flex-1"
                           >
-                            <Download className="w-4 h-4 mr-1" />
-                            Download
+                            {isDownloading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                Upscaling...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4 mr-1" />
+                                Download
+                              </>
+                            )}
                           </Button>
                           <Button
                             variant="studio"
@@ -935,9 +973,18 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                 />
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" onClick={handleDownload} className="border-gray-600 text-white hover:bg-gray-800">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
+                <Button variant="outline" onClick={handleDownload} disabled={isDownloading} className="border-gray-600 text-white hover:bg-gray-800">
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Upscaling...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" onClick={() => setShowFullscreen(false)} className="border-gray-600 text-white hover:bg-gray-800">
                   Close
