@@ -543,9 +543,9 @@ ${technicalSection}
 - Album cover framing, edge-to-edge artwork
 - NO borders, NO margins
 - Professional studio quality
-- Text must be spelled EXACTLY as provided
-- Song title: "${songTitle || "Untitled"}" - spell each letter correctly
-- Artist name: "${artistName || ""}" - spell each letter correctly`;
+- Text must be spelled EXACTLY as provided above
+- ONLY render each text element ONCE - do NOT duplicate song title or artist name
+- If artist name appears above the title, do NOT repeat it below (or vice versa)`;
 
       logStep("POWER CALL: Starting unified artwork + text generation", { 
         style, 
