@@ -474,12 +474,18 @@ const EditStudio = () => {
       return;
     }
     
+    // For canvas-only edits, ensure we have a valid preview URL
+    const isCanvasOnlyEdit = !instructions && hasCanvasOverlays;
+    if (isCanvasOnlyEdit && !previewUrl) {
+      toast.error("Please wait", { description: "Preview is still rendering, try again in a moment" });
+      return;
+    }
+    
     // ALL Apply Edits actions cost 1 credit
     const creditOk = await deductCredit();
     if (!creditOk) return;
     
-    // Track if this is overlay-only for toast messaging
-    const isCanvasOnlyEdit = !instructions && hasCanvasOverlays;
+    // isCanvasOnlyEdit already defined above
     
     setIsEditing(true);
     setProgress(0);
@@ -688,6 +694,11 @@ const EditStudio = () => {
       }
       
       setProgress(100);
+      
+      // Validate finalImageUrl before saving
+      if (!finalImageUrl || finalImageUrl.length < 100) {
+        throw new Error("Failed to generate image - result was empty");
+      }
       
       // Update history
       const newHistory = [...editHistory.slice(0, historyIndex + 1), finalImageUrl];
