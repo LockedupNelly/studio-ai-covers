@@ -494,9 +494,16 @@ ${moodStyle}
 
 ${genreSection}
 
-===== TYPOGRAPHY CONTENT =====
+===== TYPOGRAPHY CONTENT (STRICT RULES) =====
 Song Title: "${songTitle || "Untitled"}"
 Artist Name: "${artistName || ""}"
+
+**ABSOLUTE MANDATORY RULE - TEXT MUST APPEAR EXACTLY ONCE:**
+- The SONG TITLE must appear EXACTLY ONE TIME on the cover - NEVER twice
+- The ARTIST NAME must appear EXACTLY ONE TIME on the cover - NEVER twice
+- Do NOT place artist name both above AND below the title
+- Do NOT repeat any text element anywhere on the cover
+- This is NON-NEGOTIABLE - violating this rule makes the cover unusable
 
 ${textStyleInstructions ? `===== TYPOGRAPHY STYLE (CRITICAL - FOLLOW EXACTLY) =====
 ${textStyleInstructions}
@@ -544,8 +551,14 @@ ${technicalSection}
 - NO borders, NO margins
 - Professional studio quality
 - Text must be spelled EXACTLY as provided above
-- ONLY render each text element ONCE - do NOT duplicate song title or artist name
-- If artist name appears above the title, do NOT repeat it below (or vice versa)`;
+
+**CRITICAL - TEXT DUPLICATION IS FORBIDDEN:**
+- Song title appears ONCE and ONLY ONCE - never repeated
+- Artist name appears ONCE and ONLY ONCE - never repeated
+- If you place artist above the title, do NOT also place it below
+- If you place artist below the title, do NOT also place it above
+- TOTAL TEXT ELEMENTS ON COVER: Maximum 2 (one title + one artist name)
+- ANY DUPLICATE TEXT = COMPLETE FAILURE`;
 
       logStep("POWER CALL: Starting unified artwork + text generation", { 
         style, 
