@@ -16,6 +16,7 @@ interface ReturnedState {
   textStyle?: string;
   songTitle?: string;
   artistName?: string;
+  hadReferenceImages?: boolean;
 }
 
 const DesignStudio = () => {
@@ -234,6 +235,15 @@ const DesignStudio = () => {
           onGenerate={handleGenerate}
           generatedImage={generatedImage}
           isGenerating={isGenerating}
+          initialState={returnedState ? {
+            genre: returnedState.genre,
+            style: returnedState.style,
+            mood: returnedState.mood,
+            textStyle: returnedState.textStyle,
+            songTitle: returnedState.songTitle,
+            artistName: returnedState.artistName,
+            hadReferenceImages: returnedState.hadReferenceImages,
+          } : undefined}
         />
       </main>
       <Footer />
