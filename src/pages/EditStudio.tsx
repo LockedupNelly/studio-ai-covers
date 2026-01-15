@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -122,6 +123,11 @@ const EditStudio = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [paInverted, setPaInverted] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
+
+  // Mobile web "Save to Photos" flow (requires a second tap to keep user gesture)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sharePreparing, setSharePreparing] = useState(false);
+  const [shareFile, setShareFile] = useState<File | null>(null);
   
   // Version history
   const [editHistory, setEditHistory] = useState<string[]>([passedState?.imageUrl || ""]);
@@ -803,52 +809,51 @@ const EditStudio = () => {
               });
             } catch (fsError) {
               console.error("Filesystem write error:", fsError);
-              triggerBrowserDownload(imageToDownload, "cover-art");
+              await downloadImage(imageToDownload, "cover-art", { width: 3000, height: 3000 });
             }
           };
           reader.readAsDataURL(blob);
         } catch (error) {
           console.error("Native download error:", error);
-          triggerBrowserDownload(imageToDownload, "cover-art");
+          await downloadImage(imageToDownload, "cover-art", { width: 3000, height: 3000 });
         }
-      } else {
-        // Web browser - trigger download
-        triggerBrowserDownload(imageToDownload, "cover-art");
+        return;
       }
+
+      // Mobile web: prepare the file first, then user taps Share (required by iOS gesture rules)
+      const canNativeShareFiles =
+        isMobile &&
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function";
+
+      if (canNativeShareFiles) {
+        setSharePreparing(true);
+        setShareDialogOpen(true);
+
+        try {
+          const res = await fetch(imageToDownload, { cache: "no-store" });
+          const blob = await res.blob();
+          const fileName = `cover-art-3000x3000-${Date.now()}.jpg`;
+          const file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
+          setShareFile(file);
+        } catch (e) {
+          console.error("Share preparation failed:", e);
+          toast.error("Couldn't prepare share", { description: "Falling back to download" });
+          setShareDialogOpen(false);
+          setShareFile(null);
+          await downloadImage(imageToDownload, "cover-art", { width: 3000, height: 3000 });
+        } finally {
+          setSharePreparing(false);
+        }
+
+        return;
+      }
+
+      // Desktop or browsers without share sheet: regular download
+      await downloadImage(imageToDownload, "cover-art", { width: 3000, height: 3000 });
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Download failed", { description: "Please try again" });
-    }
-  };
-  
-  // Helper for browser downloads
-  const triggerBrowserDownload = async (imageUrl: string, filename: string) => {
-    try {
-      let blob: Blob;
-      
-      if (imageUrl.startsWith('data:')) {
-        // Data URL - convert to blob
-        const response = await fetch(imageUrl);
-        blob = await response.blob();
-      } else {
-        // External URL - need to composite first or download directly
-        const response = await fetch(imageUrl);
-        blob = await response.blob();
-      }
-      
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${filename}-3000x3000-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success("Download started!", { description: "3000x3000 JPEG" });
-    } catch (error) {
-      console.error("Browser download error:", error);
-      toast.error("Download failed");
     }
   };
   
@@ -2202,6 +2207,61 @@ const EditStudio = () => {
           selectedVariantId={selectedVariant?.id}
         />
       )}
+
+      {/* Mobile web: Share sheet dialog (Save to Photos / AirDrop) */}
+      <Dialog
+        open={shareDialogOpen}
+        onOpenChange={(open) => {
+          setShareDialogOpen(open);
+          if (!open) {
+            setShareFile(null);
+            setSharePreparing(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save to Photos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {sharePreparing
+                ? "Preparing your image…"
+                : "Tap Share to open your phone’s save options (Photos, AirDrop, etc.)."}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShareDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                disabled={sharePreparing || !shareFile}
+                onClick={async () => {
+                  if (!shareFile) return;
+                  try {
+                    await navigator.share({ files: [shareFile], title: "Cover Art" });
+                    setShareDialogOpen(false);
+                    setShareFile(null);
+                  } catch (e) {
+                    const err = e as Error;
+                    if (err?.name !== "AbortError") {
+                      toast.error("Share failed", { description: "Try again or use Download" });
+                    }
+                  }
+                }}
+              >
+                Share
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Fullscreen Modal */}
       {isFullscreen && imageUrl && (
