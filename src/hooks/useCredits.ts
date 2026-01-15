@@ -159,6 +159,8 @@ export function useCredits() {
   }, [user]); // Only re-run when user changes, not when fetchCredits reference changes
 
   const refetch = useCallback(() => {
+    // Force a refresh even if a previous fetch is "in flight" and got stuck.
+    fetchingRef.current = false;
     setState((prev) => ({ ...prev, loading: true }));
     fetchCredits();
   }, [fetchCredits]);

@@ -216,11 +216,18 @@ const EditStudio = () => {
     }
   }, [user, loading, navigate]);
   
-  // Reset image loaded state when BASE image changes (not previewUrl)
-  // Don't reset when previewUrl changes to avoid flashing/blacking out
+  // Track the actual image src being displayed (preview takes precedence)
+  const displaySrc = previewUrl || imageUrl;
+  const lastDisplaySrcRef = useRef<string | null>(null);
+
+  // Reset load state only when the displayed src changes.
+  // This avoids the "blank" state when we commit previewUrl into imageUrl (src stays the same).
   useEffect(() => {
+    if (!displaySrc) return;
+    if (lastDisplaySrcRef.current === displaySrc) return;
+    lastDisplaySrcRef.current = displaySrc;
     setIsImageLoaded(false);
-  }, [imageUrl]);
+  }, [displaySrc]);
   
   // Handle selecting a cover from the selector  
   const handleSelectCover = (cover: {
@@ -993,7 +1000,7 @@ const EditStudio = () => {
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={previewUrl || imageUrl}
+                          src={displaySrc}
                           alt="Cover preview"
                           className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                           loading="eager"
@@ -1588,7 +1595,7 @@ const EditStudio = () => {
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={previewUrl || imageUrl}
+                          src={displaySrc}
                           alt="Cover preview"
                           className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                           loading="eager"
