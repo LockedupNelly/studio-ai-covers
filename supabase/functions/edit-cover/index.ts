@@ -1,9 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Subscription tier limits (monthly generation counts)
+const SUBSCRIPTION_TIERS = {
+  "prod_TaUTWhd9yIEw4B": { name: "starter", limit: 50 },
+  "prod_TaUUCtQXelHcBD": { name: "pro", limit: 150 },
+  "prod_TaUUG2rRmV18Nz": { name: "studio", limit: 500 },
+};
+
+// Get current month in YYYY-MM format
+const getCurrentMonthYear = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
 const logStep = (step: string, details?: any) => {
@@ -79,6 +93,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
+  // Declare outside try block so catch can access for rollback
+  let userId: string | null = null;
+  let creditDeducted = false;
+  let previousCredits = 0;
+
   try {
     const body = await req.json();
     const { 
@@ -114,10 +138,146 @@ serve(async (req) => {
       );
     }
 
+    // ========== AUTHENTICATION & CREDIT CHECK ==========
+    const authHeader = req.headers.get("Authorization");
+    let userEmail: string | null = null;
+    let hasUnlimitedAccess = false;
+    let subscriptionTier: string | null = null;
+    let subscriptionLimit: number | null = null;
+
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await supabaseClient.auth.getUser(token);
+      if (userData?.user) {
+        userId = userData.user.id;
+        userEmail = userData.user.email || null;
+        logStep("User authenticated", { userId, email: userEmail });
+
+        // Check for subscription and determine tier/limits
+        if (userEmail) {
+          const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+          if (stripeKey) {
+            try {
+              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+              const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+              
+              if (customers.data.length > 0) {
+                const subscriptions = await stripe.subscriptions.list({
+                  customer: customers.data[0].id,
+                  status: "active",
+                  limit: 10,
+                });
+
+                for (const sub of subscriptions.data) {
+                  const productId = sub.items.data[0]?.price?.product as string;
+                  const tierInfo = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
+                  
+                  if (tierInfo) {
+                    subscriptionTier = tierInfo.name;
+                    subscriptionLimit = tierInfo.limit;
+                    hasUnlimitedAccess = true; // All subscription tiers skip credit check
+                    logStep("User has subscription", { tier: subscriptionTier, limit: subscriptionLimit });
+                    break;
+                  }
+                }
+              }
+            } catch (stripeError) {
+              logStep("Stripe check error (continuing)", { error: stripeError instanceof Error ? stripeError.message : String(stripeError) });
+            }
+          }
+        }
+      }
+    }
+
+    // If user has subscription, check and enforce monthly limits
+    if (subscriptionTier && subscriptionLimit && userId) {
+      const currentMonth = getCurrentMonthYear();
+      
+      // Get current usage
+      const { data: usageData, error: usageError } = await supabaseClient
+        .from("subscription_usage")
+        .select("generation_count")
+        .eq("user_id", userId)
+        .eq("month_year", currentMonth)
+        .maybeSingle();
+
+      if (usageError) {
+        logStep("Error fetching usage (non-blocking)", { error: usageError.message });
+      }
+
+      const currentUsage = usageData?.generation_count || 0;
+      logStep("Current monthly usage", { month: currentMonth, usage: currentUsage, limit: subscriptionLimit });
+
+      // Check if limit exceeded
+      if (currentUsage >= subscriptionLimit) {
+        logStep("Monthly limit exceeded", { usage: currentUsage, limit: subscriptionLimit });
+        return new Response(
+          JSON.stringify({ 
+            error: `Monthly generation limit reached (${currentUsage}/${subscriptionLimit}). Your limit resets at the start of next month.` 
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ========== CREDIT DEDUCTION (BEFORE EDIT) ==========
+    if (userId && !hasUnlimitedAccess) {
+      // Fetch current credits
+      const { data: creditsData, error: creditsError } = await supabaseClient
+        .from("user_credits")
+        .select("credits")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (creditsError) {
+        logStep("Error fetching credits", { error: creditsError.message });
+        return new Response(
+          JSON.stringify({ error: "Failed to check credits. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      previousCredits = creditsData?.credits ?? 0;
+
+      if (previousCredits < 1) {
+        logStep("No credits remaining", { userId, credits: previousCredits });
+        return new Response(
+          JSON.stringify({ error: "No credits remaining. Please purchase more credits." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Deduct credit BEFORE edit starts
+      const { error: updateError } = await supabaseClient
+        .from("user_credits")
+        .update({ credits: previousCredits - 1 })
+        .eq("user_id", userId)
+        .eq("credits", previousCredits); // Optimistic lock
+
+      if (updateError) {
+        logStep("Error deducting credit (race condition?)", { error: updateError.message });
+        return new Response(
+          JSON.stringify({ error: "Failed to reserve credit. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      creditDeducted = true;
+      logStep("Credit reserved upfront", { previousCredits, newBalance: previousCredits - 1 });
+    }
+
     const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!GOOGLE_AI_API_KEY) {
+      // Rollback credit if we already deducted
+      if (creditDeducted && userId) {
+        await supabaseClient
+          .from("user_credits")
+          .update({ credits: previousCredits })
+          .eq("user_id", userId);
+        logStep("Credit rolled back due to missing API key");
+      }
       throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
@@ -362,6 +522,34 @@ OUTPUT: The album cover with the styled text integrated into the scene.`;
         logStep("TEXT LAYER MODE: Text integration complete");
         
         clearTimeout(timeout);
+        
+        // ========== INCREMENT SUBSCRIPTION USAGE (ON SUCCESS) ==========
+        if (userId && hasUnlimitedAccess && subscriptionTier) {
+          const currentMonth = getCurrentMonthYear();
+          try {
+            const { data: existingUsage } = await supabaseClient
+              .from("subscription_usage")
+              .select("generation_count")
+              .eq("user_id", userId)
+              .eq("month_year", currentMonth)
+              .maybeSingle();
+
+            if (existingUsage) {
+              await supabaseClient
+                .from("subscription_usage")
+                .update({ generation_count: existingUsage.generation_count + 1 })
+                .eq("user_id", userId)
+                .eq("month_year", currentMonth);
+            } else {
+              await supabaseClient
+                .from("subscription_usage")
+                .insert({ user_id: userId, month_year: currentMonth, generation_count: 1 });
+            }
+            logStep("Subscription usage incremented", { month: currentMonth });
+          } catch (usageError) {
+            logStep("Error incrementing usage (non-blocking)", { error: usageError instanceof Error ? usageError.message : String(usageError) });
+          }
+        }
         
         return new Response(JSON.stringify({ 
           imageUrl: finalImageUrl,
@@ -641,12 +829,55 @@ OUTPUT: The same album cover artwork with the styled text overlay added.`;
     const finalImageUrl = currentImageUrl;
 
     clearTimeout(timeout);
+    
+    // ========== INCREMENT SUBSCRIPTION USAGE (ON SUCCESS) ==========
+    if (userId && hasUnlimitedAccess && subscriptionTier) {
+      const currentMonth = getCurrentMonthYear();
+      try {
+        // Try to upsert the usage record
+        const { data: existingUsage } = await supabaseClient
+          .from("subscription_usage")
+          .select("generation_count")
+          .eq("user_id", userId)
+          .eq("month_year", currentMonth)
+          .maybeSingle();
+
+        if (existingUsage) {
+          await supabaseClient
+            .from("subscription_usage")
+            .update({ generation_count: existingUsage.generation_count + 1 })
+            .eq("user_id", userId)
+            .eq("month_year", currentMonth);
+        } else {
+          await supabaseClient
+            .from("subscription_usage")
+            .insert({ user_id: userId, month_year: currentMonth, generation_count: 1 });
+        }
+        logStep("Subscription usage incremented", { month: currentMonth });
+      } catch (usageError) {
+        logStep("Error incrementing usage (non-blocking)", { error: usageError instanceof Error ? usageError.message : String(usageError) });
+      }
+    }
+    
     logStep("Cover edited successfully");
 
     return new Response(JSON.stringify({ imageUrl: finalImageUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    // ========== ROLLBACK CREDIT ON FAILURE ==========
+    if (creditDeducted && userId) {
+      try {
+        await supabaseClient
+          .from("user_credits")
+          .update({ credits: previousCredits })
+          .eq("user_id", userId);
+        logStep("Credit rolled back due to error", { previousCredits });
+      } catch (rollbackError) {
+        logStep("Failed to rollback credit", { error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError) });
+      }
+    }
+    
     logStep("Error", { error: error instanceof Error ? error.message : String(error) });
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Failed to edit cover" }),
