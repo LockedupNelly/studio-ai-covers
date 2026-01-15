@@ -1,74 +1,78 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Loader2, Music, Sparkles, X, Wand2, Edit3, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Upload, Loader2, Music, Sparkles, X, Wand2, Edit3, Check, Image, ChevronLeft, RefreshCw, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
-interface AudioSuggestion {
+interface CoverOption {
+  id: string;
   title: string;
   prompt: string;
   mood: string;
   style: string;
-  isEditing?: boolean;
-  editedPrompt?: string;
-}
-
-interface AudioAnalysisResult {
-  suggestedPrompt: string;
-  detectedMood: string;
-  suggestedGenre: string;
-  suggestedStyle: string;
-  confidence: number;
-  suggestions?: AudioSuggestion[];
+  genre: string;
+  imageUrl: string | null;
+  isGenerating: boolean;
 }
 
 interface AudioAnalyzerProps {
-  themeMode: "dark" | "light";
-  onAnalysisComplete: (result: AudioAnalysisResult) => void;
-  onGenerateSuggestion?: (suggestion: AudioSuggestion, genre: string) => void;
+  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImages?: string[], textStyleReferenceImage?: string) => void;
+  generatedImage: string | null;
+  isGenerating: boolean;
+  songTitle: string;
+  setSongTitle: (value: string) => void;
+  artistName: string;
+  setArtistName: (value: string) => void;
 }
 
-const truncateWords = (text: string, maxWords: number): string => {
-  const words = text.split(' ');
-  if (words.length <= maxWords) return text;
-  return words.slice(0, maxWords).join(' ') + '...';
-};
-
-const generateDifferentConcepts = (data: AudioAnalysisResult): AudioSuggestion[] => {
-  const basePrompt = data.suggestedPrompt;
-  
-  const conceptVariations: { title: string; modifier: string; moodTwist: string; styleTwist: string }[] = [
-    {
-      title: "Concept A",
-      modifier: "with dramatic lighting and deep shadows, cinematic composition",
-      moodTwist: data.detectedMood,
-      styleTwist: data.suggestedStyle
-    },
-    {
-      title: "Concept B", 
-      modifier: "reimagined with abstract geometric shapes, vibrant colors, and surreal elements",
-      moodTwist: data.detectedMood === "Dark" ? "Mysterious" : data.detectedMood === "Euphoric" ? "Dreamy" : "Ethereal",
-      styleTwist: data.suggestedStyle === "Grunge" ? "Abstract Art" : data.suggestedStyle === "Neon Glow" ? "Surreal" : "Mixed Media"
-    }
-  ];
-
-  return conceptVariations.map(variation => ({
-    title: variation.title,
-    prompt: truncateWords(`${basePrompt} ${variation.modifier}`, 30),
-    mood: variation.moodTwist,
-    style: variation.styleTwist,
-    isEditing: false,
-    editedPrompt: ""
-  }));
-};
-
-export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggestion }: AudioAnalyzerProps) => {
+export const AudioAnalyzer = ({ 
+  onGenerate, 
+  generatedImage, 
+  isGenerating,
+  songTitle,
+  setSongTitle,
+  artistName,
+  setArtistName,
+}: AudioAnalyzerProps) => {
+  const navigate = useNavigate();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
-  const [suggestions, setSuggestions] = useState<AudioSuggestion[]>([]);
+  const [coverOptions, setCoverOptions] = useState<CoverOption[]>([]);
+  const [selectedOption, setSelectedOption] = useState<CoverOption | null>(null);
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState("");
+  const [analysisResult, setAnalysisResult] = useState<{ genre: string; mood: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Progress state
+  const [smoothProgress, setSmoothProgress] = useState(0);
+  const generationStartTime = useRef<number | null>(null);
+
+  // Progress animation
+  useEffect(() => {
+    if (isGenerating) {
+      generationStartTime.current = Date.now();
+      setSmoothProgress(0);
+      
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - (generationStartTime.current || Date.now());
+        const targetProgress = Math.min(99, 99 * (1 - Math.exp(-elapsed / 12000)));
+        setSmoothProgress(targetProgress);
+      }, 100);
+      
+      return () => clearInterval(progressInterval);
+    } else if (generatedImage) {
+      setSmoothProgress(100);
+      generationStartTime.current = null;
+    } else {
+      setSmoothProgress(0);
+      generationStartTime.current = null;
+    }
+  }, [isGenerating, generatedImage]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,21 +89,19 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
       }
       
       setSelectedFile(file);
-      setAnalysisResult(null);
-      setSuggestions([]);
+      setCoverOptions([]);
+      setSelectedOption(null);
+      
+      // Auto-analyze after file selection
+      handleAnalyze(file);
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!selectedFile) {
-      toast.error("Please select an audio file first");
-      return;
-    }
-
+  const handleAnalyze = async (file: File) => {
     setIsAnalyzing(true);
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
+      const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
       
       let binary = '';
@@ -113,18 +115,45 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
       const { data, error } = await supabase.functions.invoke('analyze-audio', {
         body: { 
           audio: base64Audio,
-          mimeType: selectedFile.type
+          mimeType: file.type
         }
       });
 
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
 
-      const differentConcepts = generateDifferentConcepts(data);
-      const resultWithSuggestions = { ...data, suggestions: differentConcepts };
-      setAnalysisResult(resultWithSuggestions);
-      setSuggestions(differentConcepts);
-      toast.success("Audio analyzed successfully!");
+      // Store analysis result
+      setAnalysisResult({
+        genre: data.suggestedGenre,
+        mood: data.detectedMood,
+      });
+
+      // Create 2 different cover options from the response
+      const options: CoverOption[] = [
+        {
+          id: "option-a",
+          title: "Option A",
+          prompt: data.conceptA?.prompt || data.suggestedPrompt,
+          mood: data.conceptA?.mood || data.detectedMood,
+          style: data.conceptA?.style || data.suggestedStyle,
+          genre: data.suggestedGenre,
+          imageUrl: null,
+          isGenerating: false,
+        },
+        {
+          id: "option-b",
+          title: "Option B",
+          prompt: data.conceptB?.prompt || `${data.suggestedPrompt} with an alternative artistic interpretation`,
+          mood: data.conceptB?.mood || data.detectedMood,
+          style: data.conceptB?.style || "Abstract Art",
+          genre: data.suggestedGenre,
+          imageUrl: null,
+          isGenerating: false,
+        },
+      ];
+
+      setCoverOptions(options);
+      toast.success("Audio analyzed! Choose a cover concept.");
     } catch (error) {
       console.error('Analysis error:', error);
       toast.error("Failed to analyze audio. Please try again.");
@@ -133,63 +162,72 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
     }
   };
 
-  const handleToggleEdit = (index: number) => {
-    setSuggestions(prev => prev.map((s, i) => {
-      if (i === index) {
-        return {
-          ...s,
-          isEditing: !s.isEditing,
-          editedPrompt: s.isEditing ? "" : s.prompt
-        };
-      }
-      return s;
-    }));
+  const handleSelectOption = (option: CoverOption) => {
+    setSelectedOption(option);
+    setEditedPrompt(option.prompt);
+    setIsEditingPrompt(false);
   };
 
-  const handleUpdatePrompt = (index: number, newPrompt: string) => {
-    setSuggestions(prev => prev.map((s, i) => {
-      if (i === index) {
-        return { ...s, editedPrompt: newPrompt };
-      }
-      return s;
-    }));
+  const handleRevealOptions = () => {
+    setSelectedOption(null);
+    setIsEditingPrompt(false);
   };
 
-  const handleConfirmEdit = (index: number) => {
-    setSuggestions(prev => prev.map((s, i) => {
-      if (i === index && s.editedPrompt) {
-        return { 
-          ...s, 
-          prompt: s.editedPrompt,
-          isEditing: false,
-          editedPrompt: ""
-        };
-      }
-      return { ...s, isEditing: false };
-    }));
-  };
-
-  const handleGenerateSuggestion = (suggestion: AudioSuggestion) => {
-    if (analysisResult && onGenerateSuggestion) {
-      onGenerateSuggestion(suggestion, analysisResult.suggestedGenre);
+  const handleGenerateCover = () => {
+    if (!selectedOption) return;
+    
+    if (!songTitle.trim() || !artistName.trim()) {
+      toast.error("Please enter a song title and artist name.");
+      return;
     }
+
+    const promptToUse = isEditingPrompt ? editedPrompt : selectedOption.prompt;
+    
+    let fullPrompt = promptToUse;
+    fullPrompt += ` | Song Title: ${songTitle}`;
+    fullPrompt += ` | Artist: ${artistName}`;
+    fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Choose an appropriate and integrated text style for the song title and artist name that fits the overall cover design.`;
+    fullPrompt += ` | CRITICAL: The text must be deeply integrated into the cover design.`;
+
+    onGenerate(fullPrompt, selectedOption.genre, selectedOption.style, selectedOption.mood);
+  };
+
+  const handleConfirmEdit = () => {
+    if (selectedOption) {
+      setSelectedOption({ ...selectedOption, prompt: editedPrompt });
+    }
+    setIsEditingPrompt(false);
   };
 
   const clearSelection = () => {
     setSelectedFile(null);
+    setCoverOptions([]);
+    setSelectedOption(null);
     setAnalysisResult(null);
-    setSuggestions([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const cardBg = themeMode === "light" ? "bg-gray-50 border-gray-200" : "bg-secondary/30 border-border";
-  const textColor = themeMode === "light" ? "text-gray-900" : "text-foreground";
-  const mutedText = themeMode === "light" ? "text-gray-500" : "text-foreground/60";
+  const handleDownload = async () => {
+    if (!generatedImage) return;
+    
+    const link = document.createElement('a');
+    link.href = generatedImage;
+    link.download = songTitle ? `cover-art-${songTitle}.jpg` : 'cover-art.jpg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const textClass = "text-foreground";
+  const mutedTextClass = "text-foreground/60";
+  const labelClass = "text-primary";
+  const inputBgClass = "bg-secondary border-border";
+  const cardBgClass = "bg-secondary/50 border-border";
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col lg:flex-row gap-6">
       <input
         ref={fileInputRef}
         type="file"
@@ -198,183 +236,328 @@ export const AudioAnalyzer = ({ themeMode, onAnalysisComplete, onGenerateSuggest
         className="hidden"
       />
 
-      {!selectedFile ? (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className={`w-full border-2 border-dashed rounded-xl p-6 text-center transition-all hover:border-primary/50 ${
-            themeMode === "light"
-              ? "border-gray-300 bg-gray-50/50 hover:bg-gray-100"
-              : "border-border bg-secondary/20 hover:bg-secondary/40"
-          }`}
-        >
-          <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center ${
-            themeMode === "light" ? "bg-gray-200" : "bg-secondary"
-          }`}>
-            <Upload className={`w-5 h-5 ${mutedText}`} />
+      {/* Left Column - Controls */}
+      <div className="lg:w-1/2 space-y-4 lg:flex-shrink-0">
+        {/* Song Title + Artist Name Row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+              Song Title
+            </label>
+            <Input
+              placeholder="Song title..."
+              value={songTitle}
+              onChange={(e) => setSongTitle(e.target.value)}
+              disabled={isGenerating}
+              className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
+            />
           </div>
-          <p className={`font-medium text-sm ${textColor}`}>
-            Upload your track
-          </p>
-          <p className={`text-xs mt-1 ${mutedText}`}>
-            MP3, WAV, M4A • Max 20MB
-          </p>
-        </button>
-      ) : !analysisResult ? (
-        <div className={`rounded-xl border p-4 ${cardBg}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              themeMode === "light" ? "bg-primary/10" : "bg-primary/20"
-            }`}>
-              <Music className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`font-medium text-sm truncate ${textColor}`}>
-                {selectedFile.name}
-              </p>
-              <p className={`text-xs ${mutedText}`}>
-                {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
-              </p>
-            </div>
-            <button
-              onClick={clearSelection}
-              className={`p-1.5 rounded-full transition-colors ${
-                themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
-              }`}
-            >
-              <X className={`w-4 h-4 ${mutedText}`} />
-            </button>
+          <div className="space-y-1">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+              Artist Name
+            </label>
+            <Input
+              placeholder="Artist name..."
+              value={artistName}
+              onChange={(e) => setArtistName(e.target.value)}
+              disabled={isGenerating}
+              className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
+            />
           </div>
-
-          <Button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing}
-            className="w-full mt-4"
-            size="default"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Analyze Track
-              </>
-            )}
-          </Button>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Analysis Summary */}
-          <div className={`rounded-xl border p-4 ${cardBg}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  themeMode === "light" ? "bg-primary/10" : "bg-primary/20"
-                }`}>
-                  <Music className="w-5 h-5 text-primary" />
+
+        {/* Main Content Area */}
+        <div className={`rounded-xl border p-6 ${cardBgClass}`}>
+          {!selectedFile ? (
+            /* Upload Button */
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAnalyzing}
+              className="w-full border-2 border-dashed rounded-xl p-8 text-center transition-all hover:border-primary/50 border-border bg-secondary/20 hover:bg-secondary/40"
+            >
+              <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center bg-secondary">
+                <Upload className={`w-6 h-6 ${mutedTextClass}`} />
+              </div>
+              <p className={`font-medium text-base ${textClass}`}>
+                Upload your track
+              </p>
+              <p className={`text-sm mt-1 ${mutedTextClass}`}>
+                MP3, WAV, M4A • Max 20MB
+              </p>
+            </button>
+          ) : isAnalyzing ? (
+            /* Analyzing State */
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center bg-primary/20 mb-4">
+                <Loader2 className="w-7 h-7 text-primary animate-spin" />
+              </div>
+              <p className={`font-medium ${textClass}`}>Analyzing your track...</p>
+              <p className={`text-sm mt-1 ${mutedTextClass}`}>This may take a moment</p>
+            </div>
+          ) : !selectedOption ? (
+            /* Show Cover Options */
+            <div className="space-y-4">
+              {/* File info header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/20">
+                    <Music className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className={`font-medium text-sm truncate max-w-[200px] ${textClass}`}>
+                      {selectedFile.name}
+                    </p>
+                    <div className="flex gap-2 mt-0.5">
+                      {analysisResult && (
+                        <>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground/80">
+                            {analysisResult.genre}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground/80">
+                            {analysisResult.mood}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className={`font-medium text-sm truncate ${textColor}`}>
-                    {selectedFile.name}
-                  </p>
-                  <p className={`text-xs ${mutedText}`}>
-                    {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
-                  </p>
+                <button
+                  onClick={clearSelection}
+                  className="p-1.5 rounded-full hover:bg-secondary transition-colors"
+                >
+                  <X className={`w-4 h-4 ${mutedTextClass}`} />
+                </button>
+              </div>
+
+              {/* Option Cards */}
+              <div className="space-y-3">
+                <p className={`text-sm font-medium ${textClass}`}>Choose a cover concept:</p>
+                {coverOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => handleSelectOption(option)}
+                    className="w-full text-left rounded-xl border border-border p-4 transition-all hover:border-primary/50 hover:bg-secondary/30"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className={`font-medium ${textClass}`}>{option.title}</h4>
+                      <div className="flex gap-1.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-foreground/60">
+                          {option.mood}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-foreground/60">
+                          {option.style}
+                        </span>
+                      </div>
+                    </div>
+                    <p className={`text-sm line-clamp-2 ${mutedTextClass}`}>
+                      {option.prompt}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Selected Option - Edit Mode */
+            <div className="space-y-4">
+              {/* Back button */}
+              <button
+                onClick={handleRevealOptions}
+                disabled={isGenerating}
+                className={`flex items-center gap-1.5 text-sm ${mutedTextClass} hover:text-foreground transition-colors`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Choose different option
+              </button>
+
+              {/* Selected option header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className={`font-medium ${textClass}`}>{selectedOption.title}</h4>
+                  <div className="flex gap-1.5 mt-1">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground/80">
+                      {selectedOption.mood}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground/80">
+                      {selectedOption.style}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => isEditingPrompt ? handleConfirmEdit() : setIsEditingPrompt(true)}
+                  className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  {isEditingPrompt ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Edit3 className={`w-4 h-4 ${mutedTextClass}`} />
+                  )}
+                </button>
+              </div>
+
+              {/* Prompt display/edit */}
+              {isEditingPrompt ? (
+                <Textarea
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  placeholder="Edit the concept..."
+                  className="min-h-[100px] resize-none bg-secondary/50 border-border"
+                />
+              ) : (
+                <p className={`text-sm p-3 rounded-lg bg-secondary/30 ${mutedTextClass}`}>
+                  {selectedOption.prompt}
+                </p>
+              )}
+
+              {/* Generate button */}
+              <Button
+                onClick={handleGenerateCover}
+                disabled={isGenerating || !songTitle.trim() || !artistName.trim()}
+                className="w-full h-12"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-5 h-5 mr-2" />
+                    Generate Cover Art
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column - Cover Preview */}
+      <div className="lg:w-1/2 lg:max-h-full lg:overflow-hidden">
+        <div className={`rounded-2xl border p-4 flex flex-col h-full overflow-hidden ${cardBgClass}`}>
+          {generatedImage ? (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`font-display text-lg tracking-wide ${textClass}`}>YOUR COVER</h3>
+              </div>
+              
+              <div className="relative flex-1 min-h-0">
+                <div className={`aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500 relative ${isGenerating ? 'opacity-50' : ''}`}>
+                  <img
+                    src={generatedImage}
+                    alt="Generated cover art"
+                    className="w-full h-full object-cover"
+                  />
+                  {isGenerating && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <RefreshCw className="w-8 h-8 text-white animate-spin" />
+                    </div>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={clearSelection}
-                className={`p-1.5 rounded-full transition-colors ${
-                  themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
-                }`}
-              >
-                <X className={`w-4 h-4 ${mutedText}`} />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                themeMode === "light" ? "bg-gray-200 text-gray-700" : "bg-secondary text-foreground/80"
-              }`}>
-                {analysisResult.suggestedGenre}
-              </span>
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                themeMode === "light" ? "bg-gray-200 text-gray-700" : "bg-secondary text-foreground/80"
-              }`}>
-                {analysisResult.detectedMood}
-              </span>
-            </div>
-          </div>
+              
+              {/* Progress bar during generation */}
+              {isGenerating && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={`font-medium ${textClass}`}>Generating...</span>
+                    <span className={mutedTextClass}>{Math.round(smoothProgress)}%</span>
+                  </div>
+                  <Progress value={smoothProgress} className="h-2" />
+                </div>
+              )}
 
-          {/* Concept Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {suggestions.map((suggestion, index) => (
-              <div 
-                key={index}
-                className={`rounded-xl border p-4 ${cardBg}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`font-medium text-sm ${textColor}`}>
-                    {suggestion.title}
-                  </h4>
-                  <button
-                    onClick={() => suggestion.isEditing ? handleConfirmEdit(index) : handleToggleEdit(index)}
-                    className={`p-1 rounded transition-colors ${
-                      themeMode === "light" ? "hover:bg-gray-200" : "hover:bg-secondary"
-                    }`}
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownload}
+                    className="flex-1"
                   >
-                    {suggestion.isEditing ? (
-                      <Check className="w-3.5 h-3.5 text-green-500" />
-                    ) : (
-                      <Edit3 className={`w-3.5 h-3.5 ${mutedText}`} />
-                    )}
+                    <Download className="w-4 h-4 mr-1" />
+                    Download
+                  </Button>
+                  <Button
+                    variant="studio"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate("/edit-studio", {
+                      state: {
+                        imageUrl: generatedImage,
+                        genre: selectedOption?.genre,
+                        style: selectedOption?.style,
+                        mood: selectedOption?.mood,
+                        songTitle: songTitle.trim(),
+                        artistName: artistName.trim(),
+                      }
+                    })}
+                    disabled={isGenerating}
+                  >
+                    Edit Cover
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-center pt-1">
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="text-xs font-medium transition-colors underline text-foreground/60 hover:text-foreground"
+                  >
+                    View Past Creations
                   </button>
                 </div>
-                
-                <div className="flex gap-1.5 mb-2">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    themeMode === "light" ? "bg-gray-200 text-gray-600" : "bg-secondary text-foreground/60"
-                  }`}>
-                    {suggestion.mood}
-                  </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    themeMode === "light" ? "bg-gray-200 text-gray-600" : "bg-secondary text-foreground/60"
-                  }`}>
-                    {suggestion.style}
-                  </span>
-                </div>
-
-                {suggestion.isEditing ? (
-                  <Textarea
-                    value={suggestion.editedPrompt}
-                    onChange={(e) => handleUpdatePrompt(index, e.target.value)}
-                    placeholder="Edit the concept..."
-                    className={`text-xs mb-3 min-h-[60px] resize-none ${
-                      themeMode === "light" ? "bg-white border-gray-200" : "bg-secondary/50 border-border"
-                    }`}
-                  />
-                ) : (
-                  <p className={`text-xs mb-3 line-clamp-3 ${mutedText}`}>
-                    {suggestion.prompt}
-                  </p>
-                )}
-                
-                <Button
-                  size="sm"
-                  onClick={() => handleGenerateSuggestion(suggestion)}
-                  className="w-full"
-                  disabled={suggestion.isEditing}
-                >
-                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                  Generate
-                </Button>
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex items-center justify-center">
+                <div className="aspect-square w-full max-w-[360px] rounded-lg border-2 flex flex-col items-center justify-center text-center mx-auto border-gray-500 bg-secondary/30">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-3 bg-secondary">
+                    <Image className="w-7 h-7 text-foreground/30" />
+                  </div>
+                  {isGenerating ? (
+                    <div className="transition-opacity duration-700 ease-in-out animate-fade-in">
+                      <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
+                        Creating your cover...
+                      </h3>
+                      <p className={`text-xs px-4 ${mutedTextClass}`}>
+                        Our AI is crafting unique artwork
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className={`font-display text-sm tracking-wide mb-1 ${textClass}`}>
+                        Cover will appear here
+                      </h3>
+                      <p className={`text-xs px-4 ${mutedTextClass}`}>
+                        Upload audio and select a concept
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {isGenerating && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={`font-medium ${textClass}`}>Generating...</span>
+                    <span className={mutedTextClass}>{Math.round(smoothProgress)}%</span>
+                  </div>
+                  <Progress value={smoothProgress} className="h-2" />
+                </div>
+              )}
+
+              <div className="pt-4 text-center">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="text-xs font-medium transition-colors underline text-foreground/60 hover:text-foreground"
+                >
+                  View Past Creations
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
