@@ -13,7 +13,7 @@ const exampleCovers = [
   "/examples/cover-3.jpg",
   "/examples/cover-4.jpg",
   "/examples/cover-5.jpg",
-  "/examples/cover-6.jpg",
+  "/examples/cover-7.jpg",
 ];
 
 const Index = () => {
