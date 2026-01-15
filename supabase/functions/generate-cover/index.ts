@@ -624,20 +624,26 @@ ${technicalSection}
       // Add inspiration images FIRST if available
       if (inspirationImagesBase64.length > 0) {
         contentParts.push({
-          text: `===== INSPIRATION REFERENCE IMAGES =====
-Study these reference images for visual inspiration. Extract and apply:
-- Color palette and color harmony
-- Mood and atmospheric qualities
-- Composition style and visual flow
-- Texture treatments and surface qualities
-- Overall aesthetic direction
+          text: `===== VISUAL REFERENCE IMAGES (HIGH PRIORITY) =====
+CRITICAL: These reference images define the visual direction. You MUST closely match:
+- Color palette and color grading - replicate the exact tones and color relationships
+- Mood and atmospheric qualities - capture the same emotional feel
+- Composition approach - follow similar layout principles and visual hierarchy
+- Texture and surface treatments - match the tactile quality and finish
+- Lighting style and contrast levels
+- Overall aesthetic signature
 
-IMPORTANT: Use these as INSPIRATION and AESTHETIC GUIDANCE only. The final cover must:
-- Still follow the specified genre (${genre}) conventions
-- Apply the selected style (${style}) treatment
-- Match the user's described concept
-- Be ORIGINAL artwork - not a copy or derivative of these references
-- Ignore any text in these reference images - only use the song title and artist name provided`
+MATCHING REQUIREMENTS (60-70% visual similarity expected):
+- The generated cover should feel like it belongs in the same visual "series" as these references
+- Extract the core visual DNA and apply it faithfully
+- Color temperature, saturation levels, and contrast must closely align
+- Atmospheric effects (haze, grain, glow) should match the references
+
+STILL REQUIRED:
+- Apply the ${genre} genre conventions where they don't conflict
+- Use the ${style} style treatment as a secondary guide
+- Create ORIGINAL artwork (don't literally copy compositions)
+- Ignore any text in references - only use the provided song title and artist name`
         });
         
         // Add each inspiration image
