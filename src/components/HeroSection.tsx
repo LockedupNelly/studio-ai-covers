@@ -36,25 +36,25 @@ export const HeroSection = () => {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-zinc-300">AI-Powered Cover Art</span>
+              <span className="text-sm font-medium text-zinc-300">Most Advanced AI for Cover Art</span>
             </div>
 
             {/* Main headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-display tracking-tight mb-6 leading-[1.1]">
               <span className="text-foreground">Create </span>
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-primary via-red-500 to-red-600 bg-clip-text text-transparent">Stunning</span>
+                <span className="bg-gradient-to-r from-primary via-red-500 to-red-600 bg-clip-text text-transparent">Pro-Level</span>
                 <svg className="absolute -bottom-2 left-0 w-full h-4 text-primary/40" viewBox="0 0 200 16" fill="none">
                   <path d="M2 14C50 2 150 2 198 14" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
                 </svg>
               </span>
               <br />
-              <span className="text-foreground">Album Covers</span>
+              <span className="text-foreground">Cover Art</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-md mx-auto lg:mx-0">
-              Professional AI-generated cover art in seconds. Describe your vision, choose a style, and watch the magic happen.
+              The most advanced AI trained specifically for cover art. Generate, then perfect with our Edit Studio. Pay per cover, no subscriptions.
             </p>
 
             {/* CTA Button */}
@@ -77,7 +77,7 @@ export const HeroSection = () => {
               </div>
               <div className="flex items-center gap-2 text-blue-400">
                 <div className="w-2 h-2 rounded-full bg-blue-400" />
-                No Watermarks
+                No Subscriptions
               </div>
               <div className="flex items-center gap-2 text-primary underline underline-offset-2">
                 <div className="w-2 h-2 rounded-full bg-primary" />
