@@ -1,12 +1,20 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, Music, Sparkles, X, Wand2, Edit3, Check, Image, ChevronLeft, RefreshCw, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { TextStyleVariant, getTextStyleVariants, hasVariants } from "@/lib/text-style-variants";
+import { 
+  genres, 
+  visualStylesWithDescriptions as visualStyles, 
+  moodOptions, 
+  textStyleCategoryIds as textStyleCategories 
+} from "@/lib/studio-config";
 
 interface CoverOption {
   id: string;
@@ -29,6 +37,20 @@ interface AudioAnalyzerProps {
   setArtistName: (value: string) => void;
 }
 
+// Get all variants for all categories
+const getAllTextStyleVariants = () => {
+  const allVariants: { category: string; variant: TextStyleVariant }[] = [];
+  textStyleCategories.forEach(category => {
+    if (hasVariants(category)) {
+      const variants = getTextStyleVariants(category);
+      variants.forEach(variant => {
+        allVariants.push({ category, variant });
+      });
+    }
+  });
+  return allVariants;
+};
+
 export const AudioAnalyzer = ({ 
   onGenerate, 
   generatedImage, 
@@ -47,6 +69,18 @@ export const AudioAnalyzer = ({
   const [editedPrompt, setEditedPrompt] = useState("");
   const [analysisResult, setAnalysisResult] = useState<{ genre: string; mood: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textStylesScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Genre, style, mood state
+  const [genre, setGenre] = useState("Hip-Hop / Rap");
+  const [style, setStyle] = useState("");
+  const [mood, setMood] = useState("");
+  
+  // Text style state
+  const [selectedVariant, setSelectedVariant] = useState<TextStyleVariant | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  const allTextStyleVariants = useMemo(() => getAllTextStyleVariants(), []);
   
   // Progress state
   const [smoothProgress, setSmoothProgress] = useState(0);
@@ -122,11 +156,19 @@ export const AudioAnalyzer = ({
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
 
-      // Store analysis result
+      // Store analysis result and update dropdowns
       setAnalysisResult({
         genre: data.suggestedGenre,
         mood: data.detectedMood,
       });
+      
+      // Update genre and mood dropdowns from analysis
+      if (genres.includes(data.suggestedGenre)) {
+        setGenre(data.suggestedGenre);
+      }
+      if (moodOptions.includes(data.detectedMood)) {
+        setMood(data.detectedMood);
+      }
 
       // Create 2 different cover options from the response
       const options: CoverOption[] = [
@@ -173,6 +215,12 @@ export const AudioAnalyzer = ({
     setIsEditingPrompt(false);
   };
 
+  const handleSelectTextStyle = (category: string, variant: TextStyleVariant) => {
+    setSelectedCategory(category);
+    setSelectedVariant(variant);
+    toast.success(`Selected: ${variant.name}`);
+  };
+
   const handleGenerateCover = () => {
     if (!selectedOption) return;
     
@@ -186,10 +234,35 @@ export const AudioAnalyzer = ({
     let fullPrompt = promptToUse;
     fullPrompt += ` | Song Title: ${songTitle}`;
     fullPrompt += ` | Artist: ${artistName}`;
-    fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Choose an appropriate and integrated text style for the song title and artist name that fits the overall cover design.`;
+    
+    let textStyleRefImage: string | undefined = undefined;
+    
+    if (selectedVariant) {
+      if (selectedVariant.promptInstructions) {
+        fullPrompt += ` | TEXT STYLING INSTRUCTIONS: ${selectedVariant.promptInstructions}`;
+      } else {
+        fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Match the EXACT text style shown in the provided reference image (letterforms, brush strokes, glow, colors, texture).`;
+      }
+
+      fullPrompt += ` | ARTIST NAME STYLING: Create a text design for the artist name that complements the chosen song title text style while maintaining visual hierarchy.`;
+
+      const rawRef = selectedVariant.previewImage || selectedVariant.referenceImages?.[0];
+      if (rawRef) {
+        const normalized = rawRef.startsWith("/") ? rawRef : `/${rawRef}`;
+        textStyleRefImage = rawRef.startsWith("http") ? rawRef : `${window.location.origin}${normalized}`;
+      }
+    } else {
+      fullPrompt += ` | TEXT STYLING INSTRUCTIONS: Choose an appropriate and integrated text style for the song title and artist name that fits the overall cover design.`;
+    }
+    
     fullPrompt += ` | CRITICAL: The text must be deeply integrated into the cover design.`;
 
-    onGenerate(fullPrompt, selectedOption.genre, selectedOption.style, selectedOption.mood);
+    // Use genre/style/mood from dropdowns (which may have been updated by analysis)
+    const finalStyle = style || selectedOption.style;
+    const finalMood = mood || selectedOption.mood;
+    const finalGenre = genre || selectedOption.genre;
+
+    onGenerate(fullPrompt, finalGenre, finalStyle, finalMood, undefined, textStyleRefImage);
   };
 
   const handleConfirmEdit = () => {
@@ -223,6 +296,7 @@ export const AudioAnalyzer = ({
   const textClass = "text-foreground";
   const mutedTextClass = "text-foreground/60";
   const labelClass = "text-primary";
+  const mutedLabelClass = "text-foreground/60";
   const inputBgClass = "bg-secondary border-border";
   const cardBgClass = "bg-secondary/50 border-border";
 
@@ -266,17 +340,134 @@ export const AudioAnalyzer = ({
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className={`rounded-xl border p-6 ${cardBgClass}`}>
+        {/* Genre + Visual Style + Mood Row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${mutedLabelClass}`}>
+              Genre
+            </label>
+            <Select value={genre} onValueChange={setGenre}>
+              <SelectTrigger className={`h-10 ${inputBgClass}`}>
+                <SelectValue placeholder="Genre" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {genres.map((g) => (
+                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${mutedLabelClass}`}>
+              Style
+            </label>
+            <Select value={style} onValueChange={setStyle}>
+              <SelectTrigger className={`h-10 ${inputBgClass}`}>
+                <SelectValue placeholder="Style" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {visualStyles.map((vs) => (
+                  <SelectItem key={vs.id} value={vs.id}>{vs.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${mutedLabelClass}`}>
+              Mood
+            </label>
+            <Select value={mood} onValueChange={setMood}>
+              <SelectTrigger className={`h-10 ${inputBgClass}`}>
+                <SelectValue placeholder="Mood" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {moodOptions.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Text Style Horizontal Scroll */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
+              Text Style
+            </label>
+            {selectedVariant && (
+              <button
+                onClick={() => {
+                  setSelectedVariant(null);
+                  setSelectedCategory(null);
+                }}
+                className="text-xs text-foreground/60 hover:text-foreground"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
+          <div 
+            ref={textStylesScrollRef}
+            className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {/* AI Select option */}
+            <button
+              onClick={() => {
+                setSelectedVariant(null);
+                setSelectedCategory(null);
+                toast.success("AI will choose the best text style");
+              }}
+              className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                !selectedVariant
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-secondary/50 hover:border-primary/50"
+              }`}
+            >
+              <Sparkles className={`w-4 h-4 ${!selectedVariant ? "text-primary" : mutedTextClass}`} />
+              <span className={`text-[10px] font-medium ${!selectedVariant ? textClass : mutedTextClass}`}>AI Select</span>
+            </button>
+            
+            {/* All text style variants */}
+            {allTextStyleVariants.map(({ category, variant }) => (
+              <button
+                key={`${category}-${variant.id}`}
+                onClick={() => handleSelectTextStyle(category, variant)}
+                className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all ${
+                  selectedVariant?.id === variant.id && selectedCategory === category
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <img 
+                  src={variant.previewImage} 
+                  alt={variant.name}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+          {selectedVariant && (
+            <p className={`text-xs ${mutedTextClass}`}>
+              Selected: <span className={textClass}>{selectedVariant.name}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Upload Track Area - same position as textarea in Create Cover */}
+        <div className={`rounded-xl border p-4 ${cardBgClass}`}>
           {!selectedFile ? (
             /* Upload Button */
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
-              className="w-full border-2 border-dashed rounded-xl p-8 text-center transition-all hover:border-primary/50 border-border bg-secondary/20 hover:bg-secondary/40"
+              className="w-full border-2 border-dashed rounded-xl p-6 text-center transition-all hover:border-primary/50 border-border bg-secondary/20 hover:bg-secondary/40 min-h-[120px] flex flex-col items-center justify-center"
             >
-              <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center bg-secondary">
-                <Upload className={`w-6 h-6 ${mutedTextClass}`} />
+              <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center bg-secondary">
+                <Upload className={`w-5 h-5 ${mutedTextClass}`} />
               </div>
               <p className={`font-medium text-base ${textClass}`}>
                 Upload your track
