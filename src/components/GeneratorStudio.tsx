@@ -149,9 +149,10 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
       
       const progressInterval = setInterval(() => {
         const elapsed = Date.now() - (generationStartTime.current || Date.now());
-        // Progress quickly to ~80%, then slow down and cap at 99% until complete
-        const targetProgress = Math.min(99, 60 * (1 - Math.exp(-elapsed / 6000)) + 39 * (1 - Math.exp(-elapsed / 30000)));
-        setSmoothProgress((prev) => Math.max(prev, targetProgress));
+        // Reach ~99% in about 35 seconds using asymptotic curve
+        // Formula tuned: fast start, slows down, caps at 99
+        const targetProgress = Math.min(99, 99 * (1 - Math.exp(-elapsed / 12000)));
+        setSmoothProgress(targetProgress);
         
         const stageIdx = progressStages.findIndex(s => s.progress > targetProgress);
         setProgressStage(Math.max(0, stageIdx - 1));
@@ -784,14 +785,30 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                       </div>
                       
                       <div className="relative flex-1 min-h-0">
-                        <div className="aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500 relative">
+                        <div className={`aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500 relative ${isGenerating ? 'opacity-50' : ''}`}>
                           <img
                             src={generatedImage}
                             alt="Generated cover art"
                             className="w-full h-full object-cover"
                           />
+                          {isGenerating && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <RefreshCw className="w-8 h-8 text-white animate-spin" />
+                            </div>
+                          )}
                         </div>
                       </div>
+                      
+                      {/* Progress bar during regeneration */}
+                      {isGenerating && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={`font-medium ${textClass}`}>{progressStages[progressStage]?.label}</span>
+                            <span className={mutedTextClass}>{Math.round(smoothProgress)}%</span>
+                          </div>
+                          <Progress value={smoothProgress} className="h-2" />
+                        </div>
+                      )}
 
                       <div className="mt-3 space-y-2">
                         <div className="flex gap-2">
