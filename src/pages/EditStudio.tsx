@@ -1820,16 +1820,15 @@ const EditStudio = () => {
                               key={t.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  // If clicking on selected texture, toggle active or deselect
+                                  // Deselect
+                                  setTextures(textures.filter(id => id !== t.id));
+                                  const { [t.id]: _, ...rest } = textureIntensities;
+                                  setTextureIntensities(rest);
                                   if (isActive) {
-                                    setTextures(textures.filter(id => id !== t.id));
-                                    const { [t.id]: _, ...rest } = textureIntensities;
-                                    setTextureIntensities(rest);
                                     setActiveTexture(textures.length > 1 ? textures.find(id => id !== t.id) || null : null);
-                                  } else {
-                                    setActiveTexture(t.id);
                                   }
                                 } else {
+                                  // Select
                                   setTextures([...textures, t.id]);
                                   setActiveTexture(t.id);
                                 }
@@ -1838,9 +1837,7 @@ const EditStudio = () => {
                               title={t.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? isActive
-                                    ? "border-primary ring-2 ring-primary"
-                                    : "border-primary ring-1 ring-primary/50"
+                                  ? "border-primary ring-2 ring-primary"
                                   : "border-border hover:border-primary/50"
                               }`}
                               style={{ 
@@ -1849,11 +1846,6 @@ const EditStudio = () => {
                                   : t.gradient || "var(--secondary)" 
                               }}
                             >
-                              {isSelected && (
-                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                </div>
-                              )}
                               <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
                                 {t.name}
                               </span>
@@ -1917,24 +1909,22 @@ const EditStudio = () => {
                       <div className="grid grid-cols-3 gap-1.5">
                         {lightingOptions.filter(l => l.id !== "none").map(l => {
                           const isSelected = lightings.includes(l.id);
-                          const isActive = activeLighting === l.id;
                           return (
                             <button
                               key={l.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  // If clicking on selected lighting, toggle active or deselect
-                                  if (isActive) {
-                                    setLightings(lightings.filter(id => id !== l.id));
-                                    const { [l.id]: _, ...rest } = lightingRotations;
-                                    setLightingRotations(rest);
-                                    const { [l.id]: __, ...restIntensity } = lightingIntensities;
-                                    setLightingIntensities(restIntensity);
+                                  // Deselect
+                                  setLightings(lightings.filter(id => id !== l.id));
+                                  const { [l.id]: _, ...rest } = lightingRotations;
+                                  setLightingRotations(rest);
+                                  const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                  setLightingIntensities(restIntensity);
+                                  if (activeLighting === l.id) {
                                     setActiveLighting(lightings.length > 1 ? lightings.find(id => id !== l.id) || null : null);
-                                  } else {
-                                    setActiveLighting(l.id);
                                   }
                                 } else {
+                                  // Select
                                   setLightings([...lightings, l.id]);
                                   setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
                                   setActiveLighting(l.id);
@@ -1944,9 +1934,7 @@ const EditStudio = () => {
                               title={l.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? isActive
-                                    ? "border-primary ring-2 ring-primary"
-                                    : "border-primary ring-1 ring-primary/50"
+                                  ? "border-primary ring-2 ring-primary"
                                   : "border-border hover:border-primary/50"
                               }`}
                               style={{ 
@@ -1955,11 +1943,6 @@ const EditStudio = () => {
                                   : l.gradient || "var(--secondary)" 
                               }}
                             >
-                              {isSelected && (
-                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                                </div>
-                              )}
                               <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
                                 {l.name}
                               </span>
