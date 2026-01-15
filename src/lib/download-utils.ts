@@ -231,31 +231,54 @@ export const downloadImage = async (
     const finalFilename = `${filename.replace(/\s+/g, "-")}-${width}x${height}.jpg`;
     const file = new File([blob], finalFilename, { type: "image/jpeg" });
 
-    // Try Web Share API first on mobile (allows saving to Photos)
-    if (isMobileDevice() && canShareFiles()) {
-      try {
-        // Check if we can share this specific file
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "Cover Art",
-          });
-          toast.success("Shared!", { 
-            description: "Choose 'Save Image' to add to Photos" 
-          });
-          return true;
+    // Mobile: Try Web Share API first (best way to save to Photos)
+    if (isMobileDevice()) {
+      // Try Web Share API with file sharing
+      if (canShareFiles()) {
+        try {
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "Cover Art",
+            });
+            toast.success("Shared!", { 
+              description: "Choose 'Save Image' to add to Photos" 
+            });
+            return true;
+          }
+        } catch (shareError) {
+          if ((shareError as Error).name === 'AbortError') {
+            return false; // User cancelled
+          }
+          console.log("Share failed, trying blob URL:", shareError);
         }
-      } catch (shareError) {
-        // User cancelled or share failed - fall through to download
-        if ((shareError as Error).name === 'AbortError') {
-          // User cancelled, don't show error
-          return false;
-        }
-        console.log("Share failed, falling back to download:", shareError);
+      }
+      
+      // Mobile fallback: Open blob URL in new tab for long-press save
+      // This works better than anchor download on iOS/Android
+      const blobUrl = URL.createObjectURL(blob);
+      const newTab = window.open(blobUrl, '_blank');
+      
+      if (newTab) {
+        toast.success("Image opened!", { 
+          description: "Long-press the image → Save to Photos",
+          duration: 5000,
+        });
+        // Clean up blob URL after a delay (give user time to save)
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        return true;
+      } else {
+        // Popup blocked - try direct navigation
+        window.location.href = blobUrl;
+        toast.info("Image loading...", { 
+          description: "Long-press to save to Photos",
+          duration: 5000,
+        });
+        return true;
       }
     }
 
-    // Fallback: Traditional download
+    // Desktop: Traditional download works fine
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -265,16 +288,9 @@ export const downloadImage = async (
     link.remove();
     URL.revokeObjectURL(url);
 
-    // Show mobile-specific hint
-    if (isMobileDevice() && showMobileHint) {
-      toast.success("Downloaded!", { 
-        description: "Check your Downloads folder, then save to Photos" 
-      });
-    } else {
-      toast.success("Downloaded!", { 
-        description: `${width}x${height} JPEG saved` 
-      });
-    }
+    toast.success("Downloaded!", { 
+      description: `${width}x${height} JPEG saved` 
+    });
 
     return true;
   } catch (error) {
