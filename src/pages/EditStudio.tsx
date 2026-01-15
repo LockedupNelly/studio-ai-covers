@@ -140,8 +140,10 @@ const EditStudio = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   
-  // Image loading state
+  // Image loading state (used to prevent dark/blank flashes)
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [committedSrc, setCommittedSrc] = useState<string>(passedState?.imageUrl || "");
+  const coverImgRef = useRef<HTMLImageElement | null>(null);
   
   // Build preview config for the unified render pipeline
   const previewConfig = useMemo(() => {
@@ -218,16 +220,30 @@ const EditStudio = () => {
   
   // Track the actual image src being displayed (preview takes precedence)
   const displaySrc = previewUrl || imageUrl;
-  const lastDisplaySrcRef = useRef<string | null>(null);
 
-  // Reset load state only when the displayed src changes.
-  // This avoids the "blank" state when we commit previewUrl into imageUrl (src stays the same).
+  // Keep the last successfully-loaded image on screen while the next one loads.
+  // This prevents the preview from going dark after Apply Edits / history navigation.
   useEffect(() => {
     if (!displaySrc) return;
-    if (lastDisplaySrcRef.current === displaySrc) return;
-    lastDisplaySrcRef.current = displaySrc;
+    if (displaySrc === committedSrc) {
+      setIsImageLoaded(true);
+      return;
+    }
+
     setIsImageLoaded(false);
-  }, [displaySrc]);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setCommittedSrc(displaySrc);
+      setIsImageLoaded(true);
+    };
+    img.onerror = () => {
+      // If preload fails, keep showing the last good image instead of going dark.
+      setIsImageLoaded(true);
+    };
+    img.src = displaySrc;
+  }, [displaySrc, committedSrc]);
   
   // Handle selecting a cover from the selector  
   const handleSelectCover = (cover: {
@@ -993,19 +1009,19 @@ const EditStudio = () => {
                   >
                     {imageUrl ? (
                       <>
-                        {/* Loading skeleton */}
+                        {/* Loading skeleton (only while next image is preloading) */}
                         {!isImageLoaded && (
-                          <div className="absolute inset-0 bg-secondary animate-pulse" />
+                          <div className="absolute inset-0 bg-secondary/50 animate-pulse" />
                         )}
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={displaySrc}
+                          ref={coverImgRef}
+                          src={committedSrc}
                           alt="Cover preview"
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          className="w-full h-full object-cover"
                           loading="eager"
                           decoding="async"
-                          onLoad={() => setIsImageLoaded(true)}
                         />
                         
                         {/* Preview rendering indicator */}
@@ -1588,19 +1604,19 @@ const EditStudio = () => {
                   <div ref={coverPreviewRef} className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <>
-                        {/* Loading skeleton */}
+                        {/* Loading skeleton (only while next image is preloading) */}
                         {!isImageLoaded && (
-                          <div className="absolute inset-0 bg-secondary animate-pulse" />
+                          <div className="absolute inset-0 bg-secondary/50 animate-pulse" />
                         )}
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
-                          src={displaySrc}
+                          ref={coverImgRef}
+                          src={committedSrc}
                           alt="Cover preview"
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          className="w-full h-full object-cover"
                           loading="eager"
                           decoding="async"
-                          onLoad={() => setIsImageLoaded(true)}
                         />
                         
                         {/* Preview rendering indicator */}
