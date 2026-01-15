@@ -669,24 +669,34 @@ export const AudioAnalyzer = ({
                     Download
                   </Button>
                   <Button
-                    variant="studio"
+                    variant="outline"
                     size="sm"
-                    className="flex-1"
-                    onClick={() => navigate("/edit-studio", {
-                      state: {
-                        imageUrl: generatedImage,
-                        genre: selectedOption?.genre,
-                        style: selectedOption?.style,
-                        mood: selectedOption?.mood,
-                        songTitle: songTitle.trim(),
-                        artistName: artistName.trim(),
-                      }
-                    })}
+                    onClick={handleGenerateCover}
                     disabled={isGenerating}
+                    className="flex-1"
                   >
-                    Edit Cover
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Regenerate
                   </Button>
                 </div>
+                <Button
+                  variant="studio"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => navigate("/edit-studio", {
+                    state: {
+                      imageUrl: generatedImage,
+                      genre: selectedOption?.genre || genre,
+                      style: selectedOption?.style || style,
+                      mood: selectedOption?.mood || mood,
+                      songTitle: songTitle.trim(),
+                      artistName: artistName.trim(),
+                    }
+                  })}
+                  disabled={isGenerating}
+                >
+                  Edit Cover
+                </Button>
                 
                 <div className="flex items-center justify-center pt-1">
                   <button
