@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
-import { downloadImage } from "@/lib/download-utils";
+import { downloadImage, isMobileDevice } from "@/lib/download-utils";
 import {
   visualStyles,
   moodOptions,
@@ -822,7 +822,7 @@ const EditStudio = () => {
 
       // Mobile web: prepare the file first, then user taps Share (required by iOS gesture rules)
       const canNativeShareFiles =
-        isMobile &&
+        isMobileDevice() &&
         typeof navigator !== "undefined" &&
         typeof navigator.share === "function";
 
