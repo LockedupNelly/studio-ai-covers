@@ -7,13 +7,14 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Layers, Palette, Sun, Wand2, Image as ImageIcon, Star, Check, Sparkles, MessageCircle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// All 6 covers for examples section (Yellow Guitar at end for less visibility)
 const exampleCovers = [
-  "/examples/cover-1.jpg",
-  "/examples/cover-2.jpg",
-  "/examples/cover-3.jpg",
-  "/examples/cover-4.jpg",
-  "/examples/cover-5.jpg",
-  "/examples/cover-7.jpg",
+  "/examples/cover-1.jpg", // Die For You
+  "/examples/cover-2.jpg", // Heading Home
+  "/examples/cover-3.jpg", // Lost Without You
+  "/examples/cover-4.jpg", // Deathtome
+  "/examples/cover-6.jpg", // Interdimensional
+  "/examples/cover-5.jpg", // Yellow Guitar (last = less visible)
 ];
 
 const Index = () => {

@@ -3,13 +3,13 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Main covers for hero (Yellow Guitar excluded for less visibility)
 const exampleCovers = [
-  "/examples/cover-1.jpg",
-  "/examples/cover-2.jpg",
-  "/examples/cover-3.jpg",
-  "/examples/cover-4.jpg",
-  "/examples/cover-5.jpg",
-  "/examples/cover-7.jpg",
+  "/examples/cover-1.jpg", // Die For You
+  "/examples/cover-2.jpg", // Heading Home
+  "/examples/cover-3.jpg", // Lost Without You
+  "/examples/cover-4.jpg", // Deathtome
+  "/examples/cover-6.jpg", // Interdimensional
 ];
 
 export const HeroSection = () => {
