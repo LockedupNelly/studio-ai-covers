@@ -29,6 +29,15 @@ interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
   generatedImage: string | null;
   isGenerating: boolean;
+  initialState?: {
+    genre?: string;
+    style?: string;
+    mood?: string;
+    textStyle?: string;
+    songTitle?: string;
+    artistName?: string;
+    hadReferenceImages?: boolean;
+  };
 }
 
 // Get all variants for all categories
@@ -45,18 +54,47 @@ const getAllTextStyleVariants = () => {
   return allVariants;
 };
 
-export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: GeneratorStudioProps) => {
+export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, initialState }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
-  const [songTitle, setSongTitle] = useState("");
-  const [artistName, setArtistName] = useState("");
-  const [genre, setGenre] = useState("Hip-Hop / Rap");
-  const [style, setStyle] = useState("");
-  const [mood, setMood] = useState("");
+  const [songTitle, setSongTitle] = useState(initialState?.songTitle || "");
+  const [artistName, setArtistName] = useState(initialState?.artistName || "");
+  const [genre, setGenre] = useState(initialState?.genre || "Hip-Hop / Rap");
+  const [style, setStyle] = useState(initialState?.style || "");
+  const [mood, setMood] = useState(initialState?.mood || "");
   const [customStyle, setCustomStyle] = useState("");
   const [parentalAdvisory] = useState<"yes" | "no">("no");
+  
+  // Track if we've shown the reference image notification
+  const [hasShownRefNotification, setHasShownRefNotification] = useState(false);
+  
+  // Set initial text style variant from initialState
+  const allTextStyleVariants = useMemo(() => getAllTextStyleVariants(), []);
+  
+  // Effect to set initial text style variant
+  useEffect(() => {
+    if (initialState?.textStyle) {
+      // Find the variant matching the style
+      const match = allTextStyleVariants.find(
+        v => v.variant.id === initialState.textStyle || v.category === initialState.textStyle
+      );
+      if (match) {
+        setSelectedVariant(match.variant);
+        setSelectedCategory(match.category);
+      }
+    }
+    
+    // Show notification about reference images if they were used
+    if (initialState?.hadReferenceImages && !hasShownRefNotification) {
+      setHasShownRefNotification(true);
+      toast.info("Reference images not restored", {
+        description: "If you used reference images, you'll need to re-upload them.",
+        duration: 5000,
+      });
+    }
+  }, [initialState, allTextStyleVariants, hasShownRefNotification]);
   
   const [studioMode, setStudioMode] = useState<"create" | "audio">("create");
   const [inspirationImages, setInspirationImages] = useState<string[]>([]);
@@ -71,8 +109,6 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  
-  const allTextStyleVariants = useMemo(() => getAllTextStyleVariants(), []);
   
   const placeholderMessages = [
     { title: "Cover will appear here", subtitle: "Generate to see your cover" },
@@ -739,6 +775,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating }: Ge
                                 mood,
                                 songTitle: songTitle.trim(),
                                 artistName: artistName.trim(),
+                                hadReferenceImages: inspirationImages.length > 0,
                               }
                             })}
                             disabled={isGenerating}

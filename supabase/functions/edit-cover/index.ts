@@ -1,23 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Subscription tier limits (monthly generation counts)
-const SUBSCRIPTION_TIERS = {
-  "prod_TaUTWhd9yIEw4B": { name: "starter", limit: 50 },
-  "prod_TaUUCtQXelHcBD": { name: "pro", limit: 150 },
-  "prod_TaUUG2rRmV18Nz": { name: "studio", limit: 500 },
-};
-
-// Get current month in YYYY-MM format
-const getCurrentMonthYear = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
 const logStep = (step: string, details?: any) => {
@@ -140,88 +126,18 @@ serve(async (req) => {
 
     // ========== AUTHENTICATION & CREDIT CHECK ==========
     const authHeader = req.headers.get("Authorization");
-    let userEmail: string | null = null;
-    let hasUnlimitedAccess = false;
-    let subscriptionTier: string | null = null;
-    let subscriptionLimit: number | null = null;
 
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: userData } = await supabaseClient.auth.getUser(token);
       if (userData?.user) {
         userId = userData.user.id;
-        userEmail = userData.user.email || null;
-        logStep("User authenticated", { userId, email: userEmail });
-
-        // Check for subscription and determine tier/limits
-        if (userEmail) {
-          const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-          if (stripeKey) {
-            try {
-              const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-              const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-              
-              if (customers.data.length > 0) {
-                const subscriptions = await stripe.subscriptions.list({
-                  customer: customers.data[0].id,
-                  status: "active",
-                  limit: 10,
-                });
-
-                for (const sub of subscriptions.data) {
-                  const productId = sub.items.data[0]?.price?.product as string;
-                  const tierInfo = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
-                  
-                  if (tierInfo) {
-                    subscriptionTier = tierInfo.name;
-                    subscriptionLimit = tierInfo.limit;
-                    hasUnlimitedAccess = true; // All subscription tiers skip credit check
-                    logStep("User has subscription", { tier: subscriptionTier, limit: subscriptionLimit });
-                    break;
-                  }
-                }
-              }
-            } catch (stripeError) {
-              logStep("Stripe check error (continuing)", { error: stripeError instanceof Error ? stripeError.message : String(stripeError) });
-            }
-          }
-        }
-      }
-    }
-
-    // If user has subscription, check and enforce monthly limits
-    if (subscriptionTier && subscriptionLimit && userId) {
-      const currentMonth = getCurrentMonthYear();
-      
-      // Get current usage
-      const { data: usageData, error: usageError } = await supabaseClient
-        .from("subscription_usage")
-        .select("generation_count")
-        .eq("user_id", userId)
-        .eq("month_year", currentMonth)
-        .maybeSingle();
-
-      if (usageError) {
-        logStep("Error fetching usage (non-blocking)", { error: usageError.message });
-      }
-
-      const currentUsage = usageData?.generation_count || 0;
-      logStep("Current monthly usage", { month: currentMonth, usage: currentUsage, limit: subscriptionLimit });
-
-      // Check if limit exceeded
-      if (currentUsage >= subscriptionLimit) {
-        logStep("Monthly limit exceeded", { usage: currentUsage, limit: subscriptionLimit });
-        return new Response(
-          JSON.stringify({ 
-            error: `Monthly generation limit reached (${currentUsage}/${subscriptionLimit}). Your limit resets at the start of next month.` 
-          }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        logStep("User authenticated", { userId });
       }
     }
 
     // ========== CREDIT DEDUCTION (BEFORE EDIT) ==========
-    if (userId && !hasUnlimitedAccess) {
+    if (userId) {
       // Fetch current credits
       const { data: creditsData, error: creditsError } = await supabaseClient
         .from("user_credits")
@@ -523,34 +439,6 @@ OUTPUT: The album cover with the styled text integrated into the scene.`;
         
         clearTimeout(timeout);
         
-        // ========== INCREMENT SUBSCRIPTION USAGE (ON SUCCESS) ==========
-        if (userId && hasUnlimitedAccess && subscriptionTier) {
-          const currentMonth = getCurrentMonthYear();
-          try {
-            const { data: existingUsage } = await supabaseClient
-              .from("subscription_usage")
-              .select("generation_count")
-              .eq("user_id", userId)
-              .eq("month_year", currentMonth)
-              .maybeSingle();
-
-            if (existingUsage) {
-              await supabaseClient
-                .from("subscription_usage")
-                .update({ generation_count: existingUsage.generation_count + 1 })
-                .eq("user_id", userId)
-                .eq("month_year", currentMonth);
-            } else {
-              await supabaseClient
-                .from("subscription_usage")
-                .insert({ user_id: userId, month_year: currentMonth, generation_count: 1 });
-            }
-            logStep("Subscription usage incremented", { month: currentMonth });
-          } catch (usageError) {
-            logStep("Error incrementing usage (non-blocking)", { error: usageError instanceof Error ? usageError.message : String(usageError) });
-          }
-        }
-        
         return new Response(JSON.stringify({ 
           imageUrl: finalImageUrl,
           baseArtworkUrl: cleanBaseUrl,
@@ -829,35 +717,6 @@ OUTPUT: The same album cover artwork with the styled text overlay added.`;
     const finalImageUrl = currentImageUrl;
 
     clearTimeout(timeout);
-    
-    // ========== INCREMENT SUBSCRIPTION USAGE (ON SUCCESS) ==========
-    if (userId && hasUnlimitedAccess && subscriptionTier) {
-      const currentMonth = getCurrentMonthYear();
-      try {
-        // Try to upsert the usage record
-        const { data: existingUsage } = await supabaseClient
-          .from("subscription_usage")
-          .select("generation_count")
-          .eq("user_id", userId)
-          .eq("month_year", currentMonth)
-          .maybeSingle();
-
-        if (existingUsage) {
-          await supabaseClient
-            .from("subscription_usage")
-            .update({ generation_count: existingUsage.generation_count + 1 })
-            .eq("user_id", userId)
-            .eq("month_year", currentMonth);
-        } else {
-          await supabaseClient
-            .from("subscription_usage")
-            .insert({ user_id: userId, month_year: currentMonth, generation_count: 1 });
-        }
-        logStep("Subscription usage incremented", { month: currentMonth });
-      } catch (usageError) {
-        logStep("Error incrementing usage (non-blocking)", { error: usageError instanceof Error ? usageError.message : String(usageError) });
-      }
-    }
     
     logStep("Cover edited successfully");
 

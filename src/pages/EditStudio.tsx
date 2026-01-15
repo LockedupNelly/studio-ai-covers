@@ -56,6 +56,7 @@ interface EditState {
   songTitle?: string | null;
   artistName?: string | null;
   coverAnalysis?: CoverAnalysis | null;
+  hadReferenceImages?: boolean;
 }
 
 const EditStudio = () => {
@@ -919,6 +920,7 @@ const EditStudio = () => {
                     textStyle: currentState.textStyle,
                     songTitle: currentState.songTitle,
                     artistName: currentState.artistName,
+                    hadReferenceImages: passedState?.hadReferenceImages,
                   } 
                 })}
                 className="px-2 md:px-3 h-7 md:h-8"
