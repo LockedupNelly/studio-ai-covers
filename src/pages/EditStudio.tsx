@@ -213,10 +213,11 @@ const EditStudio = () => {
     }
   }, [user, loading, navigate]);
   
-  // Reset image loaded state when image changes
+  // Reset image loaded state when BASE image changes (not previewUrl)
+  // Don't reset when previewUrl changes to avoid flashing/blacking out
   useEffect(() => {
     setIsImageLoaded(false);
-  }, [imageUrl, previewUrl]);
+  }, [imageUrl]);
   
   // Handle selecting a cover from the selector  
   const handleSelectCover = (cover: {
@@ -243,6 +244,11 @@ const EditStudio = () => {
     }));
     setEditHistory([cover.image_url]);
     setHistoryIndex(0);
+  };
+
+  // Handle going back to design studio
+  const handleBackToDesignStudio = () => {
+    navigate("/design-studio");
   };
 
   // Handle clearing the selected cover to go back to selector
@@ -902,7 +908,7 @@ const EditStudio = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => navigate("/", { 
+                onClick={() => navigate("/design-studio", { 
                   state: { 
                     returnedImage: imageUrl,
                     genre: currentState.genre,
