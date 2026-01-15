@@ -1893,12 +1893,14 @@ const EditStudio = () => {
                                   } else {
                                     // Selected but not active - just make it active
                                     setActiveTexture(t.id);
+                                    setActiveLighting(null); // Deactivate lighting section
                                   }
                                 } else {
                                   // Not selected - add and make active
                                   setTextures([...textures, t.id]);
                                   setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
                                   setActiveTexture(t.id);
+                                  setActiveLighting(null); // Deactivate lighting section
                                 }
                               }}
                               disabled={isEditing}
@@ -1997,12 +1999,14 @@ const EditStudio = () => {
                                   } else {
                                     // Selected but not active - just make it active
                                     setActiveLighting(l.id);
+                                    setActiveTexture(null); // Deactivate texture section
                                   }
                                 } else {
                                   // Not selected - add and make active
                                   setLightings([...lightings, l.id]);
                                   setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
                                   setActiveLighting(l.id);
+                                  setActiveTexture(null); // Deactivate texture section
                                 }
                               }}
                               disabled={isEditing}
