@@ -476,44 +476,15 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
 
           {/* Audio Analyzer Mode */}
           {studioMode === "audio" && (
-            <div className="space-y-6">
-              {/* Song Title + Artist Name for Audio Mode */}
-              <div className="grid grid-cols-2 gap-3 max-w-xl">
-                <div className="space-y-1">
-                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                    Song Title
-                  </label>
-                  <Input
-                    placeholder="Song title..."
-                    value={songTitle}
-                    onChange={(e) => { setSongTitle(e.target.value); setFormModifiedSinceGeneration(true); }}
-                    disabled={isGenerating}
-                    className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className={`text-xs font-semibold tracking-wider uppercase ${labelClass}`}>
-                    Artist Name
-                  </label>
-                  <Input
-                    placeholder="Artist name..."
-                    value={artistName}
-                    onChange={(e) => { setArtistName(e.target.value); setFormModifiedSinceGeneration(true); }}
-                    disabled={isGenerating}
-                    className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
-                  />
-                </div>
-              </div>
-
-              {/* Audio Analyzer Component */}
-              <div className={`rounded-xl border p-6 ${cardBgClass}`}>
-                <AudioAnalyzer 
-                  themeMode="dark" 
-                  onAnalysisComplete={handleAudioAnalysisComplete}
-                  onGenerateSuggestion={handleGenerateFromSuggestion}
-                />
-              </div>
-            </div>
+            <AudioAnalyzer 
+              onGenerate={onGenerate}
+              generatedImage={generatedImage}
+              isGenerating={isGenerating}
+              songTitle={songTitle}
+              setSongTitle={(value) => { setSongTitle(value); setFormModifiedSinceGeneration(true); }}
+              artistName={artistName}
+              setArtistName={(value) => { setArtistName(value); setFormModifiedSinceGeneration(true); }}
+            />
           )}
 
           {/* Create Cover Mode */}

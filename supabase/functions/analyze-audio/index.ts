@@ -70,23 +70,40 @@ serve(async (req) => {
     // Since we can't transcribe directly, we'll analyze based on file metadata and generate suggestions
     // For a real implementation, you'd use a speech-to-text service first
     
-    // Create a prompt for the AI to generate cover art suggestions based on audio context
+    // Create a prompt for the AI to generate TWO DIFFERENT cover art concepts
     const analysisPrompt = `You are an AI assistant that helps generate album cover art descriptions. 
     
 A user has uploaded an audio file (${extension} format, ${Math.round(binaryAudio.length / 1024)}KB).
 
-Based on common music patterns and the file context, generate a creative album cover description that would work well for this type of audio content.
+Based on common music patterns and the file context, generate TWO COMPLETELY DIFFERENT creative album cover concepts that would work well for this type of audio content.
+
+The two concepts should be artistically distinct - different visual themes, different moods, different artistic approaches. NOT just variations of the same idea.
 
 Return a JSON object with the following structure:
 {
-  "suggestedPrompt": "A detailed description for album cover art generation (50-100 words, vivid and artistic)",
+  "suggestedPrompt": "A brief base description (30-50 words)",
   "detectedMood": "One of: Aggressive, Dark, Mysterious, Raw, Euphoric, Uplifting, Playful, Vibrant, Romantic, Sensual, Chill, Intimate, Melancholic, Ethereal, Nostalgic, Dreamy, Warm, Peaceful, Grand, Dramatic",
   "suggestedGenre": "One of: Hip-Hop / Rap, Pop, EDM, R&B, Rock, Alternative, Indie, Metal, Country, Jazz, Classical",
-  "suggestedStyle": "A visual style that matches the mood (e.g., Grunge Collage, Neon Glow, Vintage Film, etc.)",
-  "confidence": "A number 0-100 indicating how confident the suggestion is"
+  "suggestedStyle": "A visual style",
+  "confidence": 80,
+  "conceptA": {
+    "prompt": "First detailed album cover concept (60-100 words, vivid and artistic, completely unique direction)",
+    "mood": "The mood for this concept",
+    "style": "Visual style (e.g., Grunge Collage, Neon Glow, Vintage Film, Surreal, Oil Painting, etc.)"
+  },
+  "conceptB": {
+    "prompt": "Second detailed album cover concept (60-100 words, COMPLETELY DIFFERENT artistic direction from conceptA)",
+    "mood": "The mood for this concept (can be different from conceptA)",
+    "style": "Visual style (DIFFERENT from conceptA)"
+  }
 }
 
-Generate creative and varied suggestions each time. Be artistic and imaginative with the cover art description.`
+IMPORTANT: conceptA and conceptB MUST be distinctly different artistic visions. For example:
+- If conceptA is dark and moody, conceptB could be bright and colorful
+- If conceptA is abstract, conceptB could be realistic
+- If conceptA features nature, conceptB could be urban/futuristic
+
+Generate creative and varied suggestions. Be artistic and imaginative.`
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
