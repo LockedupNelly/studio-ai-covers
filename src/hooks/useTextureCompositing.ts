@@ -26,7 +26,8 @@ interface CompositeAllLayersConfig {
   accentColor?: { hex: string; opacity: number; blendMode?: BlendMode };
   parentalAdvisory?: {
     imageUrl: string;
-    position: "bottom-right" | "bottom-left" | "bottom-center";
+    position: "bottom-right" | "bottom-left" | "bottom-center" | "top-right" | "top-left" | "top-center";
+    size: "small" | "medium" | "large";
     inverted: boolean;
   };
 }
@@ -154,24 +155,30 @@ export const useTextureCompositing = () => {
 
       // Apply parental advisory (always on top, normal blend mode)
       if (paImg && config.parentalAdvisory) {
-        const paWidth = size * 0.22;
+        // Size multiplier based on size setting
+        const sizeMultiplier = config.parentalAdvisory.size === "small" ? 0.15 : 
+                               config.parentalAdvisory.size === "large" ? 0.28 : 0.22;
+        const paWidth = size * sizeMultiplier;
         const paHeight = (paImg.height / paImg.width) * paWidth;
         const padding = size * 0.03;
 
+        // Horizontal position
         let x: number;
-        const y = size - paHeight - padding;
+        const position = config.parentalAdvisory.position;
+        if (position.includes("left")) {
+          x = padding;
+        } else if (position.includes("center")) {
+          x = (size - paWidth) / 2;
+        } else {
+          x = size - paWidth - padding;
+        }
 
-        switch (config.parentalAdvisory.position) {
-          case "bottom-left":
-            x = padding;
-            break;
-          case "bottom-center":
-            x = (size - paWidth) / 2;
-            break;
-          case "bottom-right":
-          default:
-            x = size - paWidth - padding;
-            break;
+        // Vertical position
+        let y: number;
+        if (position.startsWith("top")) {
+          y = padding;
+        } else {
+          y = size - paHeight - padding;
         }
 
         ctx.save();
