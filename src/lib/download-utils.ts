@@ -1,8 +1,18 @@
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Media } from "@capacitor-community/media";
 import {
   applyMainColorToImageData,
   applyAccentColorToImageData,
 } from "@/lib/color-blend-math";
+
+/**
+ * Check if running as a native Capacitor app
+ */
+export const isNativeApp = (): boolean => {
+  return Capacitor.isNativePlatform();
+};
 
 /**
  * Check if the device is mobile (iOS or Android)
@@ -16,6 +26,69 @@ export const isMobileDevice = (): boolean => {
  */
 export const canShareFiles = (): boolean => {
   return typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+};
+
+/**
+ * Convert blob to base64 string
+ */
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix to get pure base64
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.readAsDataURL(blob);
+  });
+};
+
+/**
+ * Save image to device Photos/Gallery using Capacitor Media plugin
+ */
+const saveToPhotosNative = async (blob: Blob, filename: string): Promise<boolean> => {
+  try {
+    // Convert blob to base64
+    const base64Data = await blobToBase64(blob);
+    
+    // First write to temporary file
+    const tempFileName = `${filename}.jpg`;
+    const savedFile = await Filesystem.writeFile({
+      path: tempFileName,
+      data: base64Data,
+      directory: Directory.Cache,
+    });
+    
+    // Get the full file path
+    const filePath = savedFile.uri;
+    
+    // Save to Photos gallery
+    await Media.savePhoto({
+      path: filePath,
+      albumIdentifier: undefined, // Save to default camera roll
+    });
+    
+    // Clean up temp file
+    try {
+      await Filesystem.deleteFile({
+        path: tempFileName,
+        directory: Directory.Cache,
+      });
+    } catch {
+      // Ignore cleanup errors
+    }
+    
+    toast.success("Saved to Photos!", {
+      description: "Your cover art is now in your photo library",
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Failed to save to Photos:", error);
+    throw error;
+  }
 };
 
 export interface OverlayConfig {
@@ -228,28 +301,36 @@ export const downloadImage = async (
       throw new Error("Failed to create image blob");
     }
 
-    const finalFilename = `${filename.replace(/\s+/g, "-")}-${width}x${height}.jpg`;
-    const file = new File([blob], finalFilename, { type: "image/jpeg" });
+    const finalFilename = `${filename.replace(/\s+/g, "-")}-${width}x${height}`;
+    const file = new File([blob], `${finalFilename}.jpg`, { type: "image/jpeg" });
 
-    // Mobile: Use native share sheet (Save to Photos, AirDrop, etc.)
+    // NATIVE APP: Save directly to Photos gallery
+    if (isNativeApp()) {
+      try {
+        await saveToPhotosNative(blob, finalFilename);
+        return true;
+      } catch (nativeError) {
+        console.error("Native save failed:", nativeError);
+        toast.error("Couldn't save to Photos", {
+          description: "Please check app permissions and try again",
+        });
+        return false;
+      }
+    }
+
+    // MOBILE BROWSER: Use Web Share API for native share sheet
     if (isMobileDevice()) {
-      // Check if Web Share API with file sharing is available
       if (typeof navigator.share === 'function') {
         try {
-          // Try sharing the file directly
           const shareData: ShareData = {
             files: [file],
             title: "Cover Art",
           };
           
-          // Check if this specific share is supported
           if (typeof navigator.canShare === 'function' && navigator.canShare(shareData)) {
             await navigator.share(shareData);
-            // Don't show toast - the share sheet handles feedback
             return true;
           } else {
-            // canShare not supported or returned false, try share anyway
-            // Some browsers support share() but not canShare()
             await navigator.share(shareData);
             return true;
           }
@@ -257,26 +338,13 @@ export const downloadImage = async (
           const error = shareError as Error;
           
           if (error.name === 'AbortError') {
-            // User dismissed the share sheet - this is normal
             return false;
           }
-          
-          if (error.name === 'NotAllowedError') {
-            // Permission denied or not in secure context
-            console.log("Share not allowed:", error.message);
-          } else if (error.name === 'TypeError') {
-            // Files not supported, try without files as URL share
-            console.log("File share not supported, trying URL share");
-          } else {
-            console.log("Share failed:", error.name, error.message);
-          }
-          
-          // Fall through to blob URL fallback
+          console.log("Share failed:", error.name, error.message);
         }
       }
       
-      // Fallback: Open image in new tab for manual save
-      // This is the only reliable cross-browser fallback on mobile
+      // Fallback: Open image in new tab
       const blobUrl = URL.createObjectURL(blob);
       const newTab = window.open(blobUrl, '_blank');
       
@@ -289,7 +357,6 @@ export const downloadImage = async (
         return true;
       }
       
-      // Last resort: navigate to blob URL
       window.location.href = blobUrl;
       toast.info("Tap and hold the image", { 
         description: "Then select 'Save to Photos'",
