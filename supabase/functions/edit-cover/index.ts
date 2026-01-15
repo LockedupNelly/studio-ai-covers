@@ -11,6 +11,64 @@ const logStep = (step: string, details?: any) => {
   console.log(`[EDIT-COVER] ${step}${detailsStr}`);
 };
 
+// Rate limit configuration: 10 requests per minute per user
+const RATE_LIMIT = {
+  maxRequests: 10,
+  windowMinutes: 1
+};
+
+// Check rate limit for a user action
+async function checkRateLimit(supabase: any, userId: string, action: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT.windowMinutes * 60 * 1000);
+  
+  try {
+    // Get current rate limit record
+    const { data: existing } = await supabase
+      .from("rate_limits")
+      .select("request_count, window_start")
+      .eq("user_id", userId)
+      .eq("action", action)
+      .maybeSingle();
+
+    if (!existing) {
+      // First request - create record
+      await supabase
+        .from("rate_limits")
+        .insert({ user_id: userId, action, request_count: 1, window_start: new Date().toISOString() });
+      return true;
+    }
+
+    // Check if window expired
+    if (new Date(existing.window_start) < windowStart) {
+      // Reset window
+      await supabase
+        .from("rate_limits")
+        .update({ request_count: 1, window_start: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("action", action);
+      return true;
+    }
+
+    // Check if under limit
+    if (existing.request_count >= RATE_LIMIT.maxRequests) {
+      logStep("Rate limit exceeded", { userId, action, count: existing.request_count });
+      return false;
+    }
+
+    // Increment counter
+    await supabase
+      .from("rate_limits")
+      .update({ request_count: existing.request_count + 1 })
+      .eq("user_id", userId)
+      .eq("action", action);
+    
+    return true;
+  } catch (error) {
+    logStep("Rate limit check error (allowing request)", { error: error instanceof Error ? error.message : String(error) });
+    return true; // Fail-open
+  }
+}
+
 type ExtractedText = {
   items: Array<{
     text: string;
@@ -133,6 +191,19 @@ serve(async (req) => {
       if (userData?.user) {
         userId = userData.user.id;
         logStep("User authenticated", { userId });
+      }
+    }
+
+    // ========== RATE LIMIT CHECK ==========
+    if (userId) {
+      const allowed = await checkRateLimit(supabaseClient, userId, "edit");
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Rate limit exceeded. Please wait a moment before editing more covers." 
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
