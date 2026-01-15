@@ -249,9 +249,20 @@ const EditStudio = () => {
     setHistoryIndex(0);
   };
 
-  // Handle going back to design studio
+  // Handle going back to design studio with state restoration
   const handleBackToDesignStudio = () => {
-    navigate("/design-studio");
+    navigate("/design-studio", {
+      state: {
+        genre: currentState.genre,
+        style: currentState.style !== "None" ? currentState.style : undefined,
+        mood: currentState.mood !== "None" ? currentState.mood : undefined,
+        textStyle: currentState.textStyle || undefined,
+        songTitle: currentState.songTitle || undefined,
+        artistName: currentState.artistName || undefined,
+        prompt: currentState.prompt || undefined,
+        hadReferenceImages: passedState?.hadReferenceImages || false,
+      }
+    });
   };
 
   // Handle clearing the selected cover to go back to selector
@@ -437,6 +448,11 @@ const EditStudio = () => {
   // Canvas compositing is used instead which handles CORS properly
 
   const handleApplyEdits = async () => {
+    // Prevent rapid clicks while processing
+    if (isEditing || isApplyingTexture || isPreviewRendering) {
+      return;
+    }
+    
     const instructions = buildEditInstructions();
     
     // Check if we have canvas-only overlays (applied locally, not via AI)
@@ -882,6 +898,22 @@ const EditStudio = () => {
     textures.length > 0 || lightings.length > 0 || 
     parentalAdvisory !== "none" ||
     customInstructions.trim();
+  
+  // Determine if the current changes are canvas-only (overlays that don't use credits)
+  const isCanvasOnlyChange = useMemo(() => {
+    const hasAIChanges = 
+      (style !== currentState.style && style !== "None") || 
+      (mood !== currentState.mood && mood !== "None") || 
+      hasTextStyleVariantChange ||
+      customInstructions.trim();
+    
+    const hasOverlayChanges = 
+      mainColor || accentColor || 
+      textures.length > 0 || lightings.length > 0 || 
+      parentalAdvisory !== "none";
+    
+    return !hasAIChanges && hasOverlayChanges;
+  }, [style, mood, hasTextStyleVariantChange, customInstructions, mainColor, accentColor, textures, lightings, parentalAdvisory, currentState.style, currentState.mood]);
   
   const canGoPrev = historyIndex > 0;
   const canGoNext = historyIndex < editHistory.length - 1;
@@ -1454,7 +1486,7 @@ const EditStudio = () => {
                   {/* Apply Edit button - full width row */}
                   <Button
                     onClick={handleApplyEdits}
-                    disabled={isEditing || isUpscaling || !hasChanges}
+                    disabled={isEditing || isUpscaling || isApplyingTexture || isPreviewRendering || !hasChanges}
                     className="w-full gap-2 h-11 mb-2"
                   >
                     {isEditing ? (
@@ -1465,7 +1497,7 @@ const EditStudio = () => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        Apply Edit (1 Credit)
+                        {isCanvasOnlyChange ? "Apply Overlays (free)" : "Apply Edit (1 Credit)"}
                       </>
                     )}
                   </Button>
@@ -1601,7 +1633,7 @@ const EditStudio = () => {
                   <div className="flex flex-wrap gap-3">
                     <Button
                       onClick={handleApplyEdits}
-                      disabled={isEditing || !hasChanges}
+                      disabled={isEditing || isApplyingTexture || isPreviewRendering || !hasChanges}
                       className="flex-1 min-w-[200px] gap-2"
                       size="lg"
                     >
@@ -1613,7 +1645,7 @@ const EditStudio = () => {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4" />
-                          Apply Edits (1 credit)
+                          {isCanvasOnlyChange ? "Apply Overlays (free)" : "Apply Edits (1 credit)"}
                         </>
                       )}
                     </Button>

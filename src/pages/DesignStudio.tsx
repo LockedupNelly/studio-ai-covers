@@ -16,6 +16,7 @@ interface ReturnedState {
   textStyle?: string;
   songTitle?: string;
   artistName?: string;
+  prompt?: string;
   hadReferenceImages?: boolean;
 }
 
@@ -242,6 +243,7 @@ const DesignStudio = () => {
             textStyle: returnedState.textStyle,
             songTitle: returnedState.songTitle,
             artistName: returnedState.artistName,
+            prompt: returnedState.prompt,
             hadReferenceImages: returnedState.hadReferenceImages,
           } : undefined}
         />

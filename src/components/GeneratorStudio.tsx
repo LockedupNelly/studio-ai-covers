@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music } from "lucide-react";
+import { Wand2, Download, RefreshCw, Clock, Coins, Sparkles, Image, Maximize2, X, Paperclip, Music, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,6 +36,7 @@ interface GeneratorStudioProps {
     textStyle?: string;
     songTitle?: string;
     artistName?: string;
+    prompt?: string;
     hadReferenceImages?: boolean;
   };
 }
@@ -58,7 +59,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
   const { hasUnlimitedGenerations } = useCredits();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialState?.prompt || "");
   const [songTitle, setSongTitle] = useState(initialState?.songTitle || "");
   const [artistName, setArtistName] = useState(initialState?.artistName || "");
   const [genre, setGenre] = useState(initialState?.genre || "Hip-Hop / Rap");
@@ -333,6 +334,24 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
     toast.success(`Selected: ${variant.name}`);
   };
 
+  // Reset all form fields to default state
+  const handleResetForm = () => {
+    setPrompt("");
+    setSongTitle("");
+    setArtistName("");
+    setGenre("Hip-Hop / Rap");
+    setStyle("");
+    setMood("");
+    setCustomStyle("");
+    setInspirationImages([]);
+    setSelectedVariant(null);
+    setSelectedCategory(null);
+    toast.info("Form reset", { description: "All fields have been cleared" });
+  };
+
+  // Check if form has data that can be reset
+  const hasFormData = !!(prompt || songTitle || artistName || style || mood || selectedVariant || inspirationImages.length > 0);
+
   const estimatedTime = "~ 45 Seconds";
 
   const labelClass = "text-primary";
@@ -405,6 +424,25 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                           </>
                         )}
                       </div>
+                      {/* Reset Button */}
+                      {hasFormData && !isGenerating && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={handleResetForm}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-foreground/60 hover:text-foreground transition-all text-xs"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span className="font-medium">Reset</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Clear all form fields</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                     <p className={`text-xs md:text-sm ${mutedTextClass}`}>
                       Professional album artwork generation.
