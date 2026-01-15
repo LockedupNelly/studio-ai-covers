@@ -2247,12 +2247,12 @@ const EditStudio = () => {
           }
         }}
       >
-        <DialogContent className="max-w-sm border-2 border-zinc-400/60">
-          <DialogHeader>
-            <DialogTitle>Save to Photos</DialogTitle>
+        <DialogContent className="max-w-sm border-2 border-zinc-400/60 text-center">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-center">Save to Photos</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-center">
               {sharePreparing
                 ? "Preparing your image…"
                 : "Tap Save to open your phone's save options (Photos, AirDrop, etc.)."}
