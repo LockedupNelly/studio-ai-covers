@@ -1116,12 +1116,18 @@ const EditStudio = () => {
                               key={t.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  // Direct toggle - remove on first click
-                                  setTextures(textures.filter(id => id !== t.id));
-                                  const { [t.id]: _, ...rest } = textureIntensities;
-                                  setTextureIntensities(rest);
-                                  const { [t.id]: __, ...restRotations } = textureRotations;
-                                  setTextureRotations(restRotations);
+                                  const isActive = textures[textures.length - 1] === t.id;
+                                  if (isActive) {
+                                    // Already active - remove it
+                                    setTextures(textures.filter(id => id !== t.id));
+                                    const { [t.id]: _, ...rest } = textureIntensities;
+                                    setTextureIntensities(rest);
+                                    const { [t.id]: __, ...restRotations } = textureRotations;
+                                    setTextureRotations(restRotations);
+                                  } else {
+                                    // Selected but not active - make it active (move to end)
+                                    setTextures([...textures.filter(id => id !== t.id), t.id]);
+                                  }
                                 } else {
                                   setTextures([...textures, t.id]);
                                   setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
@@ -1130,7 +1136,9 @@ const EditStudio = () => {
                               disabled={isEditing}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
-                                  ? "border-primary ring-2 ring-primary"
+                                  ? textures[textures.length - 1] === t.id
+                                    ? "border-white ring-1 ring-white"
+                                    : "border-primary ring-1 ring-primary"
                                   : "border-border"
                               }`}
                               style={{
@@ -1207,12 +1215,18 @@ const EditStudio = () => {
                               key={l.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  // Direct toggle - remove on first click
-                                  setLightings(lightings.filter(id => id !== l.id));
-                                  const { [l.id]: _, ...rest } = lightingRotations;
-                                  setLightingRotations(rest);
-                                  const { [l.id]: __, ...restIntensity } = lightingIntensities;
-                                  setLightingIntensities(restIntensity);
+                                  const isActive = lightings[lightings.length - 1] === l.id;
+                                  if (isActive) {
+                                    // Already active - remove it
+                                    setLightings(lightings.filter(id => id !== l.id));
+                                    const { [l.id]: _, ...rest } = lightingRotations;
+                                    setLightingRotations(rest);
+                                    const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                    setLightingIntensities(restIntensity);
+                                  } else {
+                                    // Selected but not active - make it active (move to end)
+                                    setLightings([...lightings.filter(id => id !== l.id), l.id]);
+                                  }
                                 } else {
                                   setLightings([...lightings, l.id]);
                                   setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
@@ -1221,7 +1235,9 @@ const EditStudio = () => {
                               disabled={isEditing}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex items-end justify-center relative shrink-0 ${
                                 isSelected
-                                  ? "border-primary ring-2 ring-primary"
+                                  ? lightings[lightings.length - 1] === l.id
+                                    ? "border-white ring-1 ring-white"
+                                    : "border-primary ring-1 ring-primary"
                                   : "border-border"
                               }`}
                               style={{
@@ -1886,8 +1902,8 @@ const EditStudio = () => {
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
                                   ? isActive
-                                    ? "border-white ring-2 ring-white"
-                                    : "border-primary ring-2 ring-primary"
+                                    ? "border-white ring-1 ring-white"
+                                    : "border-primary ring-1 ring-primary"
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
@@ -1986,8 +2002,8 @@ const EditStudio = () => {
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
                                   ? activeLighting === l.id
-                                    ? "border-white ring-2 ring-white"
-                                    : "border-primary ring-2 ring-primary"
+                                    ? "border-white ring-1 ring-white"
+                                    : "border-primary ring-1 ring-primary"
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
