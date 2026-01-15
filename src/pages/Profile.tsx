@@ -399,7 +399,7 @@ const Profile = () => {
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => navigate("/", { 
+                            onClick={() => navigate("/design-studio", { 
                               state: { 
                                 returnedImage: gen.image_url,
                                 genre: gen.genre,
