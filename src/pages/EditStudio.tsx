@@ -1106,7 +1106,7 @@ const EditStudio = () => {
                                 isSelected
                                   ? textures[textures.length - 1] === t.id 
                                     ? "border-white ring-2 ring-white/50" 
-                                    : "border-white/60 ring-1 ring-white/30"
+                                    : "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
                               style={{
@@ -1207,7 +1207,7 @@ const EditStudio = () => {
                                 isSelected
                                   ? lightings[lightings.length - 1] === l.id 
                                     ? "border-white ring-2 ring-white/50" 
-                                    : "border-white/60 ring-1 ring-white/30"
+                                    : "border-primary ring-1 ring-primary/50"
                                   : "border-border"
                               }`}
                               style={{
@@ -1871,7 +1871,9 @@ const EditStudio = () => {
                               title={t.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? "border-white ring-2 ring-white/50"
+                                  ? isActive
+                                    ? "border-white ring-2 ring-white/50"
+                                    : "border-primary ring-2 ring-primary/50"
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
@@ -1969,7 +1971,9 @@ const EditStudio = () => {
                               title={l.name}
                               className={`aspect-square rounded-lg border-2 transition-all overflow-hidden flex flex-col items-center justify-center relative ${
                                 isSelected
-                                  ? "border-white ring-2 ring-white/50"
+                                  ? activeLighting === l.id
+                                    ? "border-white ring-2 ring-white/50"
+                                    : "border-primary ring-2 ring-primary/50"
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
