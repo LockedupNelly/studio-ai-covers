@@ -55,7 +55,7 @@ const DesignStudio = () => {
     genre: string,
     style: string,
     mood: string,
-    referenceImage?: string,
+    referenceImages?: string[],
     textStyleReferenceImage?: string
   ) => {
     setIsGenerating(true);
@@ -148,7 +148,7 @@ const DesignStudio = () => {
         
         try {
           const { data, error } = await supabase.functions.invoke("generate-cover", {
-            body: { prompt, genre, style, mood, referenceImage, textStyleReferenceImage },
+            body: { prompt, genre, style, mood, referenceImages, textStyleReferenceImage },
           });
 
           if (timedOut) break;

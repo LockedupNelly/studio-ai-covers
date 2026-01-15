@@ -43,13 +43,13 @@ serve(async (req) => {
   let previousCredits = 0;
 
   try {
-    const { prompt, genre, style, mood, referenceImage, textStyleReferenceImage } = await req.json();
+    const { prompt, genre, style, mood, referenceImages, textStyleReferenceImage } = await req.json();
     logStep("Request received", { 
       prompt: prompt?.slice(0, 50), 
       genre, 
       style, 
       mood, 
-      hasReferenceImage: !!referenceImage,
+      referenceImageCount: referenceImages?.length || 0,
       hasTextStyleReference: !!textStyleReferenceImage 
     });
 
@@ -575,19 +575,80 @@ ${technicalSection}
         }
       }
 
-      // Build multimodal content parts - IMAGE FIRST for better style matching
+      // Process inspiration/reference images (limit to 3 for token efficiency)
+      const inspirationImagesBase64: string[] = [];
+      if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+        const imagesToProcess = referenceImages.slice(0, 3); // Max 3 inspiration images
+        logStep("Processing inspiration images", { count: imagesToProcess.length });
+        
+        for (const imgData of imagesToProcess) {
+          try {
+            if (imgData.startsWith("data:image")) {
+              // Already base64 data URL - extract the base64 part
+              const base64Part = imgData.split(",")[1];
+              if (base64Part) {
+                inspirationImagesBase64.push(base64Part);
+              }
+            } else if (imgData.startsWith("http")) {
+              // Fetch from URL
+              const imageResponse = await fetch(imgData);
+              if (imageResponse.ok) {
+                const imageBuffer = await imageResponse.arrayBuffer();
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+                inspirationImagesBase64.push(base64);
+              }
+            }
+          } catch (imgError) {
+            logStep("Error processing inspiration image", { error: imgError instanceof Error ? imgError.message : String(imgError) });
+          }
+        }
+        logStep("Inspiration images processed", { successCount: inspirationImagesBase64.length });
+      }
+
+      // Build multimodal content parts - INSPIRATION IMAGES FIRST, then TEXT STYLE, then PROMPT
       const contentParts: any[] = [];
       
+      // Add inspiration images FIRST if available
+      if (inspirationImagesBase64.length > 0) {
+        contentParts.push({
+          text: `===== INSPIRATION REFERENCE IMAGES =====
+Study these reference images for visual inspiration. Extract and apply:
+- Color palette and color harmony
+- Mood and atmospheric qualities
+- Composition style and visual flow
+- Texture treatments and surface qualities
+- Overall aesthetic direction
+
+IMPORTANT: Use these as INSPIRATION and AESTHETIC GUIDANCE only. The final cover must:
+- Still follow the specified genre (${genre}) conventions
+- Apply the selected style (${style}) treatment
+- Match the user's described concept
+- Be ORIGINAL artwork - not a copy or derivative of these references
+- Ignore any text in these reference images - only use the song title and artist name provided`
+        });
+        
+        // Add each inspiration image
+        for (const base64 of inspirationImagesBase64) {
+          contentParts.push({
+            inlineData: {
+              mimeType: "image/png",
+              data: base64
+            }
+          });
+        }
+        
+        logStep("Added inspiration images to multimodal request", { count: inspirationImagesBase64.length });
+      }
+      
+      // Add text style reference if available
       if (textStyleImageBase64) {
-        // 1. Brief intro priming the AI to study the reference
         contentParts.push({
           text: `===== TEXT STYLE VISUAL REFERENCE =====
-CRITICAL: Study this reference image carefully FIRST. This shows the EXACT typography style you must replicate.
+CRITICAL: Study this reference image carefully. This shows the EXACT typography style you must replicate.
 The song title must match: the letterforms, effects, textures, glow, distortion, and overall styling shown here.
 Use this as your PRIMARY visual target for typography.`
         });
         
-        // 2. The reference image FIRST (visual anchor before instructions)
         contentParts.push({
           inlineData: {
             mimeType: "image/png",
@@ -595,16 +656,18 @@ Use this as your PRIMARY visual target for typography.`
           }
         });
         
-        // 3. Reinforcement after seeing the image, then full instructions
+        logStep("Added text style reference image to multimodal request");
+      }
+      
+      // Add the main prompt (after all reference images)
+      if (inspirationImagesBase64.length > 0 || textStyleImageBase64) {
         contentParts.push({
-          text: `Now that you've seen the exact text style to replicate, here are your full generation instructions:
+          text: `Now generate the album cover following these instructions:
 
 ${unifiedPrompt}`
         });
-        
-        logStep("Added text style reference image FIRST in multimodal request for better style matching");
       } else {
-        // No reference image - just the prompt
+        // No reference images - just the prompt
         contentParts.push({ text: unifiedPrompt });
       }
 

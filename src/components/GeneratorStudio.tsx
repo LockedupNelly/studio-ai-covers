@@ -26,7 +26,7 @@ import {
 } from "@/lib/studio-config";
 
 interface GeneratorStudioProps {
-  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImage?: string, textStyleReferenceImage?: string) => void;
+  onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImages?: string[], textStyleReferenceImage?: string) => void;
   generatedImage: string | null;
   isGenerating: boolean;
   initialState?: {
@@ -262,7 +262,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
 
     const finalStyle = style === "Other" ? customStyle : (style === "None" || !style ? "" : style);
     const finalMood = mood === "None" || !mood ? "" : mood;
-    onGenerate(fullPrompt, genre, finalStyle, finalMood, undefined, textStyleRefImage);
+    onGenerate(fullPrompt, genre, finalStyle, finalMood, inspirationImages.length > 0 ? inspirationImages : undefined, textStyleRefImage);
   };
 
   const handleGenerateFromSuggestion = (suggestion: { prompt: string; mood: string; style: string }, suggestedGenre: string) => {
@@ -302,7 +302,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
     
     fullPrompt += " | CRITICAL: The text must be deeply integrated into the cover design.";
 
-    onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, undefined, textStyleRefImage);
+    onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, inspirationImages.length > 0 ? inspirationImages : undefined, textStyleRefImage);
   };
 
   const handleDownload = async () => {
