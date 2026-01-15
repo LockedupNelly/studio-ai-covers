@@ -1940,9 +1940,95 @@ const EditStudio = () => {
                   
                   {/* Parental Advisory */}
                   <div className="bg-card rounded-xl border border-border p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase mb-3">
-                      <ShieldAlert className="w-4 h-4 text-primary" />
-                      Parental Advisory
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+                        <ShieldAlert className="w-4 h-4 text-primary" />
+                        Parental Advisory
+                      </div>
+                      
+                      {parentalAdvisory !== "none" && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Size */}
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                            <span className="text-[9px] text-muted-foreground">Size</span>
+                            {[
+                              { id: "small", label: "S" },
+                              { id: "medium", label: "M" },
+                              { id: "large", label: "L" },
+                            ].map(size => (
+                              <button
+                                key={size.id}
+                                onClick={() => setPaSize(size.id as typeof paSize)}
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                  paSize === size.id
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-foreground/70 hover:bg-secondary"
+                                }`}
+                              >
+                                {size.label}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          {/* Position */}
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
+                            <span className="text-[9px] text-muted-foreground">Pos</span>
+                            {[
+                              { id: "top", label: "T" },
+                              { id: "bottom", label: "B" },
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => {
+                                  const horizontal = paPosition.includes("left") ? "left" : 
+                                                     paPosition.includes("center") ? "center" : "right";
+                                  setPaPosition(`${pos.id}-${horizontal}` as typeof paPosition);
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                  paPosition.startsWith(pos.id)
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-foreground/70 hover:bg-secondary"
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                            <span className="text-muted-foreground/50">|</span>
+                            {[
+                              { id: "left", label: "L" },
+                              { id: "center", label: "C" },
+                              { id: "right", label: "R" },
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => {
+                                  const vertical = paPosition.startsWith("top") ? "top" : "bottom";
+                                  setPaPosition(`${vertical}-${pos.id}` as typeof paPosition);
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                                  paPosition.includes(pos.id)
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-foreground/70 hover:bg-secondary"
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          {/* Color */}
+                          <button
+                            onClick={() => setPaInverted(!paInverted)}
+                            className={`px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                              paInverted
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary/50 text-foreground/70 hover:bg-secondary"
+                            }`}
+                          >
+                            {paInverted ? "White" : "Black"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-6 gap-1.5 mb-3">
@@ -1984,90 +2070,6 @@ const EditStudio = () => {
                         );
                       })}
                     </div>
-                    
-                    {parentalAdvisory !== "none" && (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* Size */}
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
-                          <span className="text-[9px] text-muted-foreground">Size</span>
-                          {[
-                            { id: "small", label: "S" },
-                            { id: "medium", label: "M" },
-                            { id: "large", label: "L" },
-                          ].map(size => (
-                            <button
-                              key={size.id}
-                              onClick={() => setPaSize(size.id as typeof paSize)}
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
-                                paSize === size.id
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-foreground/70 hover:bg-secondary"
-                              }`}
-                            >
-                              {size.label}
-                            </button>
-                          ))}
-                        </div>
-                        
-                        {/* Position */}
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded px-1.5 py-0.5">
-                          <span className="text-[9px] text-muted-foreground">Pos</span>
-                          {[
-                            { id: "top", label: "T" },
-                            { id: "bottom", label: "B" },
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              onClick={() => {
-                                const horizontal = paPosition.includes("left") ? "left" : 
-                                                   paPosition.includes("center") ? "center" : "right";
-                                setPaPosition(`${pos.id}-${horizontal}` as typeof paPosition);
-                              }}
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
-                                paPosition.startsWith(pos.id)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-foreground/70 hover:bg-secondary"
-                              }`}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                          <span className="text-muted-foreground/50">|</span>
-                          {[
-                            { id: "left", label: "L" },
-                            { id: "center", label: "C" },
-                            { id: "right", label: "R" },
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              onClick={() => {
-                                const vertical = paPosition.startsWith("top") ? "top" : "bottom";
-                                setPaPosition(`${vertical}-${pos.id}` as typeof paPosition);
-                              }}
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
-                                paPosition.includes(pos.id)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-foreground/70 hover:bg-secondary"
-                              }`}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
-                        
-                        {/* Color */}
-                        <button
-                          onClick={() => setPaInverted(!paInverted)}
-                          className={`px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
-                            paInverted
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary/50 text-foreground/70 hover:bg-secondary"
-                          }`}
-                        >
-                          {paInverted ? "White" : "Black"}
-                        </button>
-                      </div>
-                    )}
                   </div>
                   
                   {/* Custom Instructions - Compact */}
