@@ -136,6 +136,9 @@ const EditStudio = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [upscaledImageUrl, setUpscaledImageUrl] = useState<string | null>(null);
   
+  // Image loading state
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  
   // Build preview config for the unified render pipeline
   const previewConfig = useMemo(() => {
     // Build lighting layers
@@ -207,6 +210,11 @@ const EditStudio = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+  
+  // Reset image loaded state when image changes
+  useEffect(() => {
+    setIsImageLoaded(false);
+  }, [imageUrl, previewUrl]);
   
   // Handle selecting a cover from the selector  
   const handleSelectCover = (cover: {
@@ -924,12 +932,19 @@ const EditStudio = () => {
                   >
                     {imageUrl ? (
                       <>
+                        {/* Loading skeleton */}
+                        {!isImageLoaded && (
+                          <div className="absolute inset-0 bg-secondary animate-pulse" />
+                        )}
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
                           src={previewUrl || imageUrl}
                           alt="Cover preview"
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          loading="eager"
+                          decoding="async"
+                          onLoad={() => setIsImageLoaded(true)}
                         />
                         
                         {/* Preview rendering indicator */}
@@ -1240,6 +1255,8 @@ const EditStudio = () => {
                                   alt={pa.name}
                                   className="w-3/4 h-auto object-contain"
                                   style={{ filter: paInverted ? "invert(1)" : "none" }}
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               ) : (
                                 <span className="text-[10px] text-muted-foreground">None</span>
@@ -1457,12 +1474,19 @@ const EditStudio = () => {
                   <div ref={coverPreviewRef} className="group/cover aspect-square bg-card rounded-xl border border-border overflow-hidden relative">
                     {imageUrl ? (
                       <>
+                        {/* Loading skeleton */}
+                        {!isImageLoaded && (
+                          <div className="absolute inset-0 bg-secondary animate-pulse" />
+                        )}
                         {/* UNIFIED PREVIEW: Use canvas-rendered preview when available (WYSIWYG) */}
                         {/* This ensures preview matches Apply/Download exactly */}
                         <img
                           src={previewUrl || imageUrl}
                           alt="Cover preview"
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          loading="eager"
+                          decoding="async"
+                          onLoad={() => setIsImageLoaded(true)}
                         />
                         
                         {/* Preview rendering indicator */}
@@ -1885,6 +1909,8 @@ const EditStudio = () => {
                                 alt={pa.name}
                                 className="w-3/4 h-auto object-contain"
                                 style={{ filter: paInverted ? "invert(1)" : "none" }}
+                                loading="lazy"
+                                decoding="async"
                               />
                             ) : (
                               <span className="text-[9px] text-muted-foreground">None</span>
@@ -1979,6 +2005,8 @@ const EditStudio = () => {
                 alt="Cover fullscreen"
                 className="max-w-[90vw] max-h-[80vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
+                loading="eager"
+                decoding="async"
               />
             </div>
           </div>
