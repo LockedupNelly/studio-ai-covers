@@ -111,6 +111,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
   const [progressStage, setProgressStage] = useState(0);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   
+  // Track if form was modified since last generation (for Re-Generate button state)
+  const [formModifiedSinceGeneration, setFormModifiedSinceGeneration] = useState(true);
+  
+  // Determine if we should show "Re-Generate" (has cover AND no changes made)
+  const showRegenerate = generatedImage && !formModifiedSinceGeneration && !isGenerating;
+  
   const placeholderMessages = [
     { title: "Cover will appear here", subtitle: "Generate to see your cover" },
   ];
@@ -192,6 +198,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
 
   const handleGenreChange = (newGenre: string) => {
     setGenre(newGenre);
+    setFormModifiedSinceGeneration(true);
   };
 
   const handleInspirationUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,6 +216,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
       const reader = new FileReader();
       reader.onload = (ev) => {
         setInspirationImages(prev => [...prev, ev.target?.result as string]);
+        setFormModifiedSinceGeneration(true);
       };
       reader.readAsDataURL(file);
     });
@@ -216,6 +224,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
 
   const removeInspirationImage = (index: number) => {
     setInspirationImages(prev => prev.filter((_, i) => i !== index));
+    setFormModifiedSinceGeneration(true);
   };
 
   const handleGenerate = () => {
@@ -264,6 +273,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
     const finalStyle = style === "Other" ? customStyle : (style === "None" || !style ? "" : style);
     const finalMood = mood === "None" || !mood ? "" : mood;
     onGenerate(fullPrompt, genre, finalStyle, finalMood, inspirationImages.length > 0 ? inspirationImages : undefined, textStyleRefImage);
+    
+    // Mark form as unchanged after generation starts
+    setFormModifiedSinceGeneration(false);
   };
 
   const handleGenerateFromSuggestion = (suggestion: { prompt: string; mood: string; style: string }, suggestedGenre: string) => {
@@ -304,6 +316,9 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
     fullPrompt += " | CRITICAL: The text must be deeply integrated into the cover design.";
 
     onGenerate(fullPrompt, suggestedGenre, suggestion.style, suggestion.mood, inspirationImages.length > 0 ? inspirationImages : undefined, textStyleRefImage);
+    
+    // Mark form as unchanged after generation starts
+    setFormModifiedSinceGeneration(false);
   };
 
   const handleDownload = async () => {
@@ -331,6 +346,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
   const handleSelectTextStyle = (category: string, variant: TextStyleVariant) => {
     setSelectedCategory(category);
     setSelectedVariant(variant);
+    setFormModifiedSinceGeneration(true);
     toast.success(`Selected: ${variant.name}`);
   };
 
@@ -465,7 +481,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                   <Input
                     placeholder="Song title..."
                     value={songTitle}
-                    onChange={(e) => setSongTitle(e.target.value)}
+                    onChange={(e) => { setSongTitle(e.target.value); setFormModifiedSinceGeneration(true); }}
                     disabled={isGenerating}
                     className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                   />
@@ -477,7 +493,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                   <Input
                     placeholder="Artist name..."
                     value={artistName}
-                    onChange={(e) => setArtistName(e.target.value)}
+                    onChange={(e) => { setArtistName(e.target.value); setFormModifiedSinceGeneration(true); }}
                     disabled={isGenerating}
                     className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                   />
@@ -509,7 +525,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                     <Input
                       placeholder="Song title..."
                       value={songTitle}
-                      onChange={(e) => setSongTitle(e.target.value)}
+                      onChange={(e) => { setSongTitle(e.target.value); setFormModifiedSinceGeneration(true); }}
                       disabled={isGenerating}
                       className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                     />
@@ -521,7 +537,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                     <Input
                       placeholder="Artist name..."
                       value={artistName}
-                      onChange={(e) => setArtistName(e.target.value)}
+                      onChange={(e) => { setArtistName(e.target.value); setFormModifiedSinceGeneration(true); }}
                       disabled={isGenerating}
                       className={`h-10 text-base ${inputBgClass} placeholder:text-foreground/40`}
                     />
@@ -550,7 +566,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                     <label className={`text-xs font-semibold tracking-wider uppercase ${mutedLabelClass}`}>
                       Style
                     </label>
-                    <Select value={style} onValueChange={setStyle}>
+                    <Select value={style} onValueChange={(v) => { setStyle(v); setFormModifiedSinceGeneration(true); }}>
                       <SelectTrigger className={`h-10 ${inputBgClass}`}>
                         <SelectValue placeholder="Style" />
                       </SelectTrigger>
@@ -566,7 +582,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                     <label className={`text-xs font-semibold tracking-wider uppercase ${mutedLabelClass}`}>
                       Mood
                     </label>
-                    <Select value={mood} onValueChange={setMood}>
+                    <Select value={mood} onValueChange={(v) => { setMood(v); setFormModifiedSinceGeneration(true); }}>
                       <SelectTrigger className={`h-10 ${inputBgClass}`}>
                         <SelectValue placeholder="Mood" />
                       </SelectTrigger>
@@ -660,7 +676,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                     <Textarea
                       placeholder={`Describe the vibe, imagery, or story of your album...`}
                       value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
+                      onChange={(e) => { setPrompt(e.target.value); setFormModifiedSinceGeneration(true); }}
                       disabled={isGenerating}
                       className={`min-h-[120px] resize-none text-base pr-32 ${inputBgClass} placeholder:text-foreground/40`}
                     />
@@ -725,6 +741,11 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                         <RefreshCw className="w-5 h-5 animate-spin" />
                         Generating...
                       </>
+                    ) : showRegenerate ? (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        Re-Generate Cover Art
+                      </>
                     ) : (
                       <>
                         <Wand2 className="w-5 h-5" />
@@ -758,35 +779,13 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                         </div>
                       </div>
                       
-                      <div className="relative flex-1 min-h-0 group">
+                      <div className="relative flex-1 min-h-0">
                         <div className="aspect-square max-h-full mx-auto rounded-lg overflow-hidden border-2 border-gray-500 relative">
                           <img
                             src={generatedImage}
                             alt="Generated cover art"
                             className="w-full h-full object-cover"
                           />
-                          {/* Regenerate hover overlay */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="lg"
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || !songTitle.trim() || !artistName.trim() || !prompt.trim()}
-                                    className="bg-background/90 hover:bg-background border-border"
-                                  >
-                                    <RefreshCw className="w-5 h-5 mr-2" />
-                                    Regenerate
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Generate a new version</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
                         </div>
                       </div>
 
