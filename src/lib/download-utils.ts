@@ -231,51 +231,71 @@ export const downloadImage = async (
     const finalFilename = `${filename.replace(/\s+/g, "-")}-${width}x${height}.jpg`;
     const file = new File([blob], finalFilename, { type: "image/jpeg" });
 
-    // Mobile: Try Web Share API first (best way to save to Photos)
+    // Mobile: Use native share sheet (Save to Photos, AirDrop, etc.)
     if (isMobileDevice()) {
-      // Try Web Share API with file sharing
-      if (canShareFiles()) {
+      // Check if Web Share API with file sharing is available
+      if (typeof navigator.share === 'function') {
         try {
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: "Cover Art",
-            });
-            toast.success("Shared!", { 
-              description: "Choose 'Save Image' to add to Photos" 
-            });
+          // Try sharing the file directly
+          const shareData: ShareData = {
+            files: [file],
+            title: "Cover Art",
+          };
+          
+          // Check if this specific share is supported
+          if (typeof navigator.canShare === 'function' && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            // Don't show toast - the share sheet handles feedback
+            return true;
+          } else {
+            // canShare not supported or returned false, try share anyway
+            // Some browsers support share() but not canShare()
+            await navigator.share(shareData);
             return true;
           }
         } catch (shareError) {
-          if ((shareError as Error).name === 'AbortError') {
-            return false; // User cancelled
+          const error = shareError as Error;
+          
+          if (error.name === 'AbortError') {
+            // User dismissed the share sheet - this is normal
+            return false;
           }
-          console.log("Share failed, trying blob URL:", shareError);
+          
+          if (error.name === 'NotAllowedError') {
+            // Permission denied or not in secure context
+            console.log("Share not allowed:", error.message);
+          } else if (error.name === 'TypeError') {
+            // Files not supported, try without files as URL share
+            console.log("File share not supported, trying URL share");
+          } else {
+            console.log("Share failed:", error.name, error.message);
+          }
+          
+          // Fall through to blob URL fallback
         }
       }
       
-      // Mobile fallback: Open blob URL in new tab for long-press save
-      // This works better than anchor download on iOS/Android
+      // Fallback: Open image in new tab for manual save
+      // This is the only reliable cross-browser fallback on mobile
       const blobUrl = URL.createObjectURL(blob);
       const newTab = window.open(blobUrl, '_blank');
       
       if (newTab) {
-        toast.success("Image opened!", { 
+        toast.info("Image opened in new tab", { 
           description: "Long-press the image → Save to Photos",
-          duration: 5000,
+          duration: 6000,
         });
-        // Clean up blob URL after a delay (give user time to save)
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-        return true;
-      } else {
-        // Popup blocked - try direct navigation
-        window.location.href = blobUrl;
-        toast.info("Image loading...", { 
-          description: "Long-press to save to Photos",
-          duration: 5000,
-        });
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
         return true;
       }
+      
+      // Last resort: navigate to blob URL
+      window.location.href = blobUrl;
+      toast.info("Tap and hold the image", { 
+        description: "Then select 'Save to Photos'",
+        duration: 6000,
+      });
+      return true;
     }
 
     // Desktop: Traditional download works fine
