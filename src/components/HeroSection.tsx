@@ -45,13 +45,13 @@ export const HeroSection = () => {
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-display tracking-tight mb-6 leading-[1.1]">
               <span className="text-foreground">Create </span>
               <span className="relative inline-block">
-                
+                <span className="text-primary">Stunning</span>
                 <svg className="absolute -bottom-2 left-0 w-full h-4 text-primary/40" viewBox="0 0 200 16" fill="none">
                   <path d="M2 14C50 2 150 2 198 14" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                 </svg>
               </span>
               <br />
-              <span className="text-foreground">Album Covers</span>
+              <span className="text-foreground">Cover Art</span>
             </h1>
 
             {/* Subheadline */}
