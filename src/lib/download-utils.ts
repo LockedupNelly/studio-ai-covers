@@ -229,69 +229,106 @@ export const downloadImage = async (
     }
 
     const finalFilename = `${filename.replace(/\s+/g, "-")}-${width}x${height}.jpg`;
-    const file = new File([blob], finalFilename, { type: "image/jpeg" });
 
-    // Mobile: Use native share sheet (Save to Photos, AirDrop, etc.)
+    // Mobile: Try native share sheet first (this gives "Save Image" option)
     if (isMobileDevice()) {
+      const file = new File([blob], finalFilename, { type: "image/jpeg" });
+      
       // Check if Web Share API with file sharing is available
       if (typeof navigator.share === 'function') {
         try {
-          // Try sharing the file directly
           const shareData: ShareData = {
             files: [file],
             title: "Cover Art",
           };
           
-          // Check if this specific share is supported
-          if (typeof navigator.canShare === 'function' && navigator.canShare(shareData)) {
+          // Check if sharing files is supported
+          const canShare = typeof navigator.canShare === 'function' 
+            ? navigator.canShare(shareData) 
+            : true; // If canShare doesn't exist, try anyway
+          
+          if (canShare) {
             await navigator.share(shareData);
-            // Don't show toast - the share sheet handles feedback
-            return true;
-          } else {
-            // canShare not supported or returned false, try share anyway
-            // Some browsers support share() but not canShare()
-            await navigator.share(shareData);
+            // User successfully shared/saved - no toast needed
             return true;
           }
         } catch (shareError) {
           const error = shareError as Error;
           
           if (error.name === 'AbortError') {
-            // User dismissed the share sheet - this is normal
+            // User cancelled share sheet - this is fine
             return false;
           }
           
-          if (error.name === 'NotAllowedError') {
-            // Permission denied or not in secure context
-            console.log("Share not allowed:", error.message);
-          } else if (error.name === 'TypeError') {
-            // Files not supported, try without files as URL share
-            console.log("File share not supported, trying URL share");
-          } else {
-            console.log("Share failed:", error.name, error.message);
-          }
-          
-          // Fall through to blob URL fallback
+          console.log("Share failed, using fallback:", error.name, error.message);
+          // Fall through to fallback
         }
       }
       
-      // Fallback: Open image in new tab for manual save
-      // This is the only reliable cross-browser fallback on mobile
-      const blobUrl = URL.createObjectURL(blob);
+      // Fallback: Create a data URL and open in new tab
+      // This allows long-press to save on iOS/Android
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      
+      // Create a minimal HTML page with just the image for cleaner saving
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Save Image</title>
+            <style>
+              * { margin: 0; padding: 0; }
+              body { 
+                background: #000; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                min-height: 100vh;
+              }
+              img { 
+                max-width: 100%; 
+                max-height: 100vh; 
+                object-fit: contain;
+              }
+              .hint {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(255,255,255,0.9);
+                color: #000;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-family: system-ui, sans-serif;
+                font-size: 14px;
+                text-align: center;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" alt="Cover Art">
+            <div class="hint">Tap and hold image → Save to Photos</div>
+          </body>
+        </html>
+      `;
+      
+      const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(htmlBlob);
       const newTab = window.open(blobUrl, '_blank');
       
       if (newTab) {
-        toast.info("Image opened in new tab", { 
-          description: "Long-press the image → Save to Photos",
-          duration: 6000,
+        toast.info("Long-press the image to save", { 
+          description: "Then select 'Save to Photos'",
+          duration: 5000,
         });
         setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
         return true;
       }
       
-      // Last resort: navigate to blob URL
-      window.location.href = blobUrl;
-      toast.info("Tap and hold the image", { 
+      // Last fallback: direct image blob URL
+      const imgBlobUrl = URL.createObjectURL(blob);
+      window.location.href = imgBlobUrl;
+      toast.info("Long-press the image to save", { 
         description: "Then select 'Save to Photos'",
         duration: 6000,
       });
