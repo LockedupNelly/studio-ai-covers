@@ -1148,15 +1148,23 @@ const EditStudio = () => {
                               }`}
                               style={{
                                 width: 'calc((100% - 1rem) / 3.5)',
-                                background: t.image ? `url(${t.image}) center/cover` : "var(--secondary)" 
+                                background: !t.image ? "var(--secondary)" : undefined
                               }}
                             >
+                              {t.image && (
+                                <img 
+                                  src={t.image} 
+                                  alt={t.name}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              )}
                               {isSelected && (
-                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
                                   <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate">
+                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate z-10">
                                 {t.name}
                               </span>
                             </button>
@@ -1247,15 +1255,23 @@ const EditStudio = () => {
                               }`}
                               style={{
                                 width: 'calc((100% - 1rem) / 3.5)',
-                                background: l.image ? `url(${l.image}) center/cover` : "var(--secondary)" 
+                                background: !l.image ? "var(--secondary)" : undefined
                               }}
                             >
+                              {l.image && (
+                                <img 
+                                  src={l.image} 
+                                  alt={l.name}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              )}
                               {isSelected && (
-                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
                                   <Check className="w-2.5 h-2.5 text-primary-foreground" />
                                 </div>
                               )}
-                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate">
+                              <span className="text-[9px] font-medium text-white bg-black/60 backdrop-blur-sm px-1 py-0.5 w-full text-center truncate z-10">
                                 {l.name}
                               </span>
                             </button>
@@ -1918,12 +1934,18 @@ const EditStudio = () => {
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
-                                background: t.image 
-                                  ? `url(${t.image}) center/cover` 
-                                  : t.gradient || "var(--secondary)" 
+                                background: !t.image ? (t.gradient || "var(--secondary)") : undefined
                               }}
                             >
-                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                              {t.image && (
+                                <img 
+                                  src={t.image} 
+                                  alt={t.name}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              )}
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight z-10">
                                 {t.name}
                               </span>
                             </button>
@@ -2024,12 +2046,18 @@ const EditStudio = () => {
                                   : "border-border hover:border-white/50"
                               }`}
                               style={{ 
-                                background: l.image 
-                                  ? `url(${l.image}) center/cover` 
-                                  : l.gradient || "var(--secondary)" 
+                                background: !l.image ? (l.gradient || "var(--secondary)") : undefined
                               }}
                             >
-                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight">
+                              {l.image && (
+                                <img 
+                                  src={l.image} 
+                                  alt={l.name}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              )}
+                              <span className="text-[8px] font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-center px-0.5 leading-tight z-10">
                                 {l.name}
                               </span>
                             </button>
