@@ -2219,28 +2219,19 @@ const EditStudio = () => {
           }
         }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm border-2 border-zinc-400/60">
           <DialogHeader>
             <DialogTitle>Save to Photos</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               {sharePreparing
                 ? "Preparing your image…"
-                : "Tap Share to open your phone’s save options (Photos, AirDrop, etc.)."}
+                : "Tap Save to open your phone's save options (Photos, AirDrop, etc.)."}
             </p>
-            <div className="flex gap-2">
+            <div className="flex justify-center">
               <Button
                 type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShareDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
                 disabled={sharePreparing || !shareFile}
                 onClick={async () => {
                   if (!shareFile) return;
@@ -2256,7 +2247,7 @@ const EditStudio = () => {
                   }
                 }}
               >
-                Share
+                Save
               </Button>
             </div>
           </div>
