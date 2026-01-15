@@ -1884,16 +1884,20 @@ const EditStudio = () => {
                               key={t.id}
                               onClick={() => {
                                 if (isSelected) {
-                                  // Deselect
-                                  setTextures(textures.filter(id => id !== t.id));
-                                  const { [t.id]: _, ...rest } = textureIntensities;
-                                  setTextureIntensities(rest);
                                   if (isActive) {
+                                    // Already active - remove it
+                                    setTextures(textures.filter(id => id !== t.id));
+                                    const { [t.id]: _, ...rest } = textureIntensities;
+                                    setTextureIntensities(rest);
                                     setActiveTexture(textures.length > 1 ? textures.find(id => id !== t.id) || null : null);
+                                  } else {
+                                    // Selected but not active - just make it active
+                                    setActiveTexture(t.id);
                                   }
                                 } else {
-                                  // Select
+                                  // Not selected - add and make active
                                   setTextures([...textures, t.id]);
+                                  setTextureIntensities({ ...textureIntensities, [t.id]: 50 });
                                   setActiveTexture(t.id);
                                 }
                               }}
@@ -1980,18 +1984,22 @@ const EditStudio = () => {
                             <button
                               key={l.id}
                               onClick={() => {
+                                const isActive = activeLighting === l.id;
                                 if (isSelected) {
-                                  // Deselect
-                                  setLightings(lightings.filter(id => id !== l.id));
-                                  const { [l.id]: _, ...rest } = lightingRotations;
-                                  setLightingRotations(rest);
-                                  const { [l.id]: __, ...restIntensity } = lightingIntensities;
-                                  setLightingIntensities(restIntensity);
-                                  if (activeLighting === l.id) {
+                                  if (isActive) {
+                                    // Already active - remove it
+                                    setLightings(lightings.filter(id => id !== l.id));
+                                    const { [l.id]: _, ...rest } = lightingRotations;
+                                    setLightingRotations(rest);
+                                    const { [l.id]: __, ...restIntensity } = lightingIntensities;
+                                    setLightingIntensities(restIntensity);
                                     setActiveLighting(lightings.length > 1 ? lightings.find(id => id !== l.id) || null : null);
+                                  } else {
+                                    // Selected but not active - just make it active
+                                    setActiveLighting(l.id);
                                   }
                                 } else {
-                                  // Select
+                                  // Not selected - add and make active
                                   setLightings([...lightings, l.id]);
                                   setLightingIntensities({ ...lightingIntensities, [l.id]: 100 });
                                   setActiveLighting(l.id);
