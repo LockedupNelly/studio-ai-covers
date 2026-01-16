@@ -25,6 +25,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { CoverSelector } from "@/components/CoverSelector";
 import { downloadImage, isMobileDevice } from "@/lib/download-utils";
+import { SEO } from "@/components/SEO";
 import {
   visualStyles,
   moodOptions,
@@ -969,7 +970,9 @@ const EditStudio = () => {
   }
   
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO pageKey="editStudio" />
+      <div className="min-h-screen bg-background">
       <Header />
       
       <main className={isMobile ? "pt-16 pb-4" : "pt-24 pb-16"}>
@@ -2306,6 +2309,7 @@ const EditStudio = () => {
       
       <Footer />
     </div>
+    </>
   );
 };
 

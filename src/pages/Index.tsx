@@ -6,7 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Layers, Palette, Sun, Wand2, Image as ImageIcon, Star, Check, Sparkles, MessageCircle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import { SEO } from "@/components/SEO";
+import { HomepageStructuredData, ReviewSchema } from "@/components/StructuredData";
 // All 6 covers for examples section (Yellow Guitar at end for less visibility)
 const exampleCovers = [
   "/examples/cover-1.jpg", // Die For You
@@ -32,15 +33,27 @@ const Index = () => {
     );
   }
 
+  // Reviews data for structured data
+  const reviews = [
+    { author: "Marcus J.", reviewBody: "Finally, cover art that matches my sound. The AI understood exactly what I needed.", ratingValue: 5 },
+    { author: "Luna S.", reviewBody: "Saved me hundreds on designers. The quality is insane for the price.", ratingValue: 5 },
+    { author: "DJ Krave", reviewBody: "The textures and effects in Edit Studio are game-changing. My covers stand out now.", ratingValue: 5 }
+  ];
+
   return (
-    <div className="min-h-screen bg-background relative">
+    <>
+      <SEO pageKey="home" />
+      <HomepageStructuredData />
+      <ReviewSchema reviews={reviews} />
       
-      <WelcomeModal />
-      <Header />
-      
-      <main className="pt-16 relative z-10">
-        {/* Hero section */}
-        <HeroSection />
+      <div className="min-h-screen bg-background relative">
+        
+        <WelcomeModal />
+        <Header />
+        
+        <main className="pt-16 relative z-10">
+          {/* Hero section */}
+          <HeroSection />
         
         {/* Example Covers Section - Flows directly from hero */}
         <section id="examples" className="relative -mt-4 md:-mt-8 py-4 md:py-6 px-4 overflow-hidden">
@@ -517,6 +530,7 @@ const Index = () => {
       
       <Footer />
     </div>
+    </>
   );
 };
 

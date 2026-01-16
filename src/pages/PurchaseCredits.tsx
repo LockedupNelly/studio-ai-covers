@@ -9,11 +9,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { CREDIT_PACKAGES } from "@/lib/stripe-config";
+import { SEO } from "@/components/SEO";
+import { ProductSchema, BreadcrumbSchema } from "@/components/StructuredData";
+import { SITE_CONFIG } from "@/lib/seo-config";
 
 const PurchaseCredits = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
+
+  const breadcrumbs = [
+    { name: "Home", url: SITE_CONFIG.url },
+    { name: "Purchase Credits", url: `${SITE_CONFIG.url}/purchase-credits` }
+  ];
 
   const handlePurchase = async (packageId: string) => {
     if (!user) {
@@ -43,8 +51,13 @@ const PurchaseCredits = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <>
+      <SEO pageKey="purchaseCredits" />
+      <ProductSchema />
+      <BreadcrumbSchema items={breadcrumbs} />
+      
+      <div className="min-h-screen bg-background">
+        <Header />
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 md:px-8 max-w-4xl">
@@ -132,6 +145,7 @@ const PurchaseCredits = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 
