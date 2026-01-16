@@ -75,45 +75,51 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      // Check if user already has a referral code
-      const { data: existing, error: fetchError } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user.id)
-        .is("referred_user_id", null)
-        .limit(1);
+      // Fetch all referrals for this user using secure function (excludes email)
+      const { data: allReferrals, error: fetchError } = await supabase
+        .rpc('get_user_referrals', { p_user_id: user.id });
 
       if (fetchError) {
-        console.error("Error fetching referral:", fetchError);
+        console.error("Error fetching referrals:", fetchError);
         return;
       }
 
-      if (existing && existing.length > 0) {
-        setReferralCode(existing[0].referral_code);
+      if (allReferrals && allReferrals.length > 0) {
+        // Find an unused referral code
+        const unusedReferral = allReferrals.find((r: any) => !r.referred_user_id);
+        if (unusedReferral) {
+          setReferralCode(unusedReferral.referral_code);
+        } else {
+          // All codes are used, create a new one
+          const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+          const { data: newReferral, error: insertError } = await supabase
+            .from("referrals")
+            .insert({ referrer_id: user.id, referral_code: code })
+            .select("id, referral_code, referrer_id, referred_user_id, credits_awarded, created_at, converted_at, status")
+            .single();
+
+          if (insertError) {
+            console.error("Error creating referral:", insertError);
+          } else if (newReferral) {
+            setReferralCode(newReferral.referral_code);
+          }
+        }
+        setReferrals(allReferrals);
       } else {
-        // Generate new referral code
+        // No referrals exist, create first one
         const code = Math.random().toString(36).substring(2, 10).toUpperCase();
         const { data: newReferral, error: insertError } = await supabase
           .from("referrals")
           .insert({ referrer_id: user.id, referral_code: code })
-          .select()
+          .select("id, referral_code, referrer_id, referred_user_id, credits_awarded, created_at, converted_at, status")
           .single();
 
         if (insertError) {
           console.error("Error creating referral:", insertError);
-        } else {
+        } else if (newReferral) {
           setReferralCode(newReferral.referral_code);
+          setReferrals([newReferral]);
         }
-      }
-
-      // Fetch all referrals for stats
-      const { data: allReferrals } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user.id);
-
-      if (allReferrals) {
-        setReferrals(allReferrals);
       }
     } catch (error) {
       console.error("Error with referral code:", error);

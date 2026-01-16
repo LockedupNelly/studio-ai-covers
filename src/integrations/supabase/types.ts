@@ -199,10 +199,61 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referrals_public: {
+        Row: {
+          converted_at: string | null
+          created_at: string | null
+          credits_awarded: boolean | null
+          id: string | null
+          referral_code: string | null
+          referred_user_id: string | null
+          referrer_id: string | null
+          status: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string | null
+          credits_awarded?: boolean | null
+          id?: string | null
+          referral_code?: string | null
+          referred_user_id?: string | null
+          referrer_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string | null
+          credits_awarded?: boolean | null
+          id?: string | null
+          referral_code?: string | null
+          referred_user_id?: string | null
+          referrer_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_referral_code: { Args: never; Returns: string }
+      get_user_referrals: {
+        Args: { p_user_id: string }
+        Returns: {
+          converted_at: string | null
+          created_at: string | null
+          credits_awarded: boolean | null
+          id: string | null
+          referral_code: string | null
+          referred_user_id: string | null
+          referrer_id: string | null
+          status: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "referrals_public"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
