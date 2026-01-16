@@ -89,29 +89,29 @@ export const HeroSection = () => {
             <div className="relative aspect-square">
               {/* Main featured cover */}
               <div className="absolute inset-[12%] z-30 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 transform hover:scale-[1.02] transition-transform duration-500">
-                <img src={exampleCovers[0]} alt="Featured cover" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                <img src={exampleCovers[0]} alt="AI-generated album cover art - dark atmospheric hip-hop design with bold typography" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                 {/* Shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
               </div>
 
               {/* Floating cover 1 - top left */}
               <div className="absolute -top-2 -left-2 sm:top-0 sm:left-0 w-[32%] z-20 rounded-xl overflow-hidden shadow-xl shadow-black/40 transform -rotate-12 hover:rotate-0 transition-transform duration-500">
-                <img src={exampleCovers[1]} alt="Cover example" className="w-full aspect-square object-cover" loading="eager" fetchPriority="high" />
+                <img src={exampleCovers[1]} alt="Moody urban album cover art with neon lighting effects" className="w-full aspect-square object-cover" loading="eager" fetchPriority="high" />
               </div>
 
               {/* Floating cover 2 - top right */}
               <div className="absolute -top-2 -right-2 sm:top-0 sm:right-0 w-[28%] z-20 rounded-xl overflow-hidden shadow-xl shadow-black/40 transform rotate-12 hover:rotate-0 transition-transform duration-500">
-                <img src={exampleCovers[2]} alt="Cover example" className="w-full aspect-square object-cover" loading="eager" fetchPriority="high" />
+                <img src={exampleCovers[2]} alt="Emotional R&B single cover with minimalist design" className="w-full aspect-square object-cover" loading="eager" fetchPriority="high" />
               </div>
 
               {/* Floating cover 3 - bottom left */}
               <div className="absolute -bottom-2 -left-2 sm:bottom-0 sm:left-0 w-[26%] z-20 rounded-xl overflow-hidden shadow-xl shadow-black/40 transform rotate-6 hover:rotate-0 transition-transform duration-500">
-                <img src={exampleCovers[3]} alt="Cover example" className="w-full aspect-square object-cover" loading="eager" />
+                <img src={exampleCovers[3]} alt="Dark metal album artwork with dramatic lighting" className="w-full aspect-square object-cover" loading="eager" />
               </div>
 
               {/* Floating cover 4 - bottom right */}
               <div className="absolute -bottom-2 -right-2 sm:bottom-0 sm:right-0 w-[30%] z-20 rounded-xl overflow-hidden shadow-xl shadow-black/40 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-                <img src={exampleCovers[4]} alt="Cover example" className="w-full aspect-square object-cover" loading="eager" />
+                <img src={exampleCovers[4]} alt="Futuristic electronic music cover with abstract elements" className="w-full aspect-square object-cover" loading="eager" />
               </div>
             </div>
           </div>

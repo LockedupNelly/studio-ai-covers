@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO } from "@/components/SEO";
 
 interface ReturnedState {
   returnedImage?: string;
@@ -229,27 +230,30 @@ const DesignStudio = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-20 pb-8">
-        <GeneratorStudio 
-          onGenerate={handleGenerate}
-          generatedImage={generatedImage}
-          isGenerating={isGenerating}
-          initialState={returnedState ? {
-            genre: returnedState.genre,
-            style: returnedState.style,
-            mood: returnedState.mood,
-            textStyle: returnedState.textStyle,
-            songTitle: returnedState.songTitle,
-            artistName: returnedState.artistName,
-            prompt: returnedState.prompt,
-            hadReferenceImages: returnedState.hadReferenceImages,
-          } : undefined}
-        />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <SEO pageKey="designStudio" />
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-20 pb-8">
+          <GeneratorStudio 
+            onGenerate={handleGenerate}
+            generatedImage={generatedImage}
+            isGenerating={isGenerating}
+            initialState={returnedState ? {
+              genre: returnedState.genre,
+              style: returnedState.style,
+              mood: returnedState.mood,
+              textStyle: returnedState.textStyle,
+              songTitle: returnedState.songTitle,
+              artistName: returnedState.artistName,
+              prompt: returnedState.prompt,
+              hadReferenceImages: returnedState.hadReferenceImages,
+            } : undefined}
+          />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 };
 

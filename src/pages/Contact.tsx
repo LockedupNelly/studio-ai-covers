@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO } from "@/components/SEO";
+import { BreadcrumbSchema } from "@/components/StructuredData";
+import { SITE_CONFIG } from "@/lib/seo-config";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,6 +20,11 @@ const Contact = () => {
     subject: "",
     message: "",
   });
+
+  const breadcrumbs = [
+    { name: "Home", url: SITE_CONFIG.url },
+    { name: "Contact", url: `${SITE_CONFIG.url}/contact` }
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +48,12 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+    <>
+      <SEO pageKey="contact" />
+      <BreadcrumbSchema items={breadcrumbs} />
+      
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
 
       <main className="flex-1 container mx-auto px-4 pt-24 pb-16 max-w-4xl">
         <div className="text-center mb-12">
@@ -148,6 +160,7 @@ const Contact = () => {
 
       <Footer />
     </div>
+    </>
   );
 };
 
