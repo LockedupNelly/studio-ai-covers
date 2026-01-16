@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Image as ImageIcon, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,78 @@ interface Generation {
 interface CoverSelectorProps {
   onSelect: (cover: Generation) => void;
 }
+
+// Lazy-loaded thumbnail component with blur placeholder
+const LazyThumbnail = ({ 
+  src, 
+  alt, 
+  className 
+}: { 
+  src: string; 
+  alt: string; 
+  className: string;
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "100px" } // Start loading 100px before entering viewport
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Generate optimized thumbnail URL
+  // If it's a Supabase Storage URL, we can use transform parameters
+  const getThumbnailUrl = (url: string): string => {
+    // Check if it's a Supabase storage URL
+    if (url.includes('/storage/v1/object/')) {
+      // Use Supabase image transformation for smaller size
+      // Add width=200 for thumbnail
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}width=200&quality=80`;
+    }
+    // For other URLs (like replicate), return as-is
+    return url;
+  };
+
+  return (
+    <div ref={imgRef} className={`${className} relative bg-secondary/50`}>
+      {/* Blur placeholder */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary to-secondary/50 animate-pulse" />
+      )}
+      
+      {/* Actual image - only load when in view */}
+      {isInView && (
+        <img
+          src={getThumbnailUrl(src)}
+          alt={alt}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setIsLoaded(true)} // Still show placeholder on error
+        />
+      )}
+    </div>
+  );
+};
 
 export const CoverSelector = ({ onSelect }: CoverSelectorProps) => {
   const { user } = useAuth();
@@ -119,10 +191,10 @@ export const CoverSelector = ({ onSelect }: CoverSelectorProps) => {
                 onClick={() => onSelect(cover)}
                 className={`flex-shrink-0 ${coverSize} rounded-xl overflow-hidden border-2 border-transparent hover:border-primary transition-all hover:scale-105 shadow-md hover:shadow-lg`}
               >
-                <img
+                <LazyThumbnail
                   src={cover.image_url}
-                  alt="Cover"
-                  className="w-full h-full object-cover"
+                  alt={cover.song_title ? `${cover.song_title} cover art` : "Album cover art"}
+                  className="w-full h-full"
                 />
               </button>
             ))}
