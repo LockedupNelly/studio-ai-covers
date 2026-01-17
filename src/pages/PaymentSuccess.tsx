@@ -14,13 +14,26 @@ const PaymentSuccessContent = () => {
   const { refetch } = useCredits();
 
   useEffect(() => {
+    // Google Ads Purchase Conversion Tracking
+    const sessionId = searchParams.get("session_id") || "";
+    
+    if (typeof window !== "undefined" && typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'conversion', {
+        'send_to': 'AW-17884178029/LlDSCJzBs-cbEO3M689C',
+        'value': 1.0,
+        'currency': 'CAD',
+        'transaction_id': sessionId
+      });
+      console.log('[Analytics] Google Ads conversion tracked', { sessionId });
+    }
+
     // Refresh credits/subscription status after successful payment
     const timer = setTimeout(() => {
       refetch();
     }, 1000); // Small delay to allow webhook to process
     
     return () => clearTimeout(timer);
-  }, [refetch]);
+  }, [refetch, searchParams]);
 
   return (
     <div className="min-h-screen bg-background">

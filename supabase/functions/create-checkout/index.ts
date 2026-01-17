@@ -82,7 +82,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:5173";
     
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -92,7 +92,7 @@ serve(async (req) => {
         },
       ],
       mode,
-      success_url: `${origin}/payment-success?type=${type}`,
+      success_url: `${origin}/payment-success?type=${type}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/payment-canceled`,
       metadata: {
         user_id: user.id,
@@ -100,7 +100,9 @@ serve(async (req) => {
         packageId: packageId || "",
         tier: tier || "",
       },
-    });
+    };
+    
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
