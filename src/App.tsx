@@ -20,6 +20,7 @@ import EditStudio from "./pages/EditStudio";
 import ResetPassword from "./pages/ResetPassword";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
+import AdminExport from "./pages/AdminExport";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/admin/export" element={<AdminExport />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
