@@ -11,6 +11,7 @@ import { SEO } from "@/components/SEO";
 
 interface ReturnedState {
   returnedImage?: string;
+  generationId?: string;
   genre?: string;
   style?: string;
   mood?: string;
@@ -32,6 +33,9 @@ const DesignStudio = () => {
   const returnedState = location.state as ReturnedState | null;
   const [generatedImage, setGeneratedImage] = useState<string | null>(
     returnedState?.returnedImage || null
+  );
+  const [generationId, setGenerationId] = useState<string | null>(
+    returnedState?.generationId || null
   );
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -172,6 +176,7 @@ const DesignStudio = () => {
 
           if (data?.imageUrl) {
             setGeneratedImage(data.imageUrl);
+            setGenerationId(data.generationId || null);
             refetchCredits();
 
             toast.success("Cover art generated!", {
@@ -238,6 +243,7 @@ const DesignStudio = () => {
           <GeneratorStudio 
             onGenerate={handleGenerate}
             generatedImage={generatedImage}
+            generationId={generationId}
             isGenerating={isGenerating}
             initialState={returnedState ? {
               genre: returnedState.genre,
