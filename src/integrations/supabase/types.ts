@@ -49,42 +49,59 @@ export type Database = {
           artist_name: string | null
           cover_analysis: Json | null
           created_at: string
+          edit_instructions: string | null
           genre: string
           id: string
           image_url: string
           mood: string
+          parent_id: string | null
           prompt: string
           song_title: string | null
           style: string
           user_id: string
+          version: number
         }
         Insert: {
           artist_name?: string | null
           cover_analysis?: Json | null
           created_at?: string
+          edit_instructions?: string | null
           genre: string
           id?: string
           image_url: string
           mood: string
+          parent_id?: string | null
           prompt: string
           song_title?: string | null
           style: string
           user_id: string
+          version?: number
         }
         Update: {
           artist_name?: string | null
           cover_analysis?: Json | null
           created_at?: string
+          edit_instructions?: string | null
           genre?: string
           id?: string
           image_url?: string
           mood?: string
+          parent_id?: string | null
           prompt?: string
           song_title?: string | null
           style?: string
           user_id?: string
+          version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "generations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {

@@ -53,7 +53,7 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from("generations")
-      .select("id, prompt, genre, style, mood, image_url, created_at, song_title, artist_name, cover_analysis")
+      .select("id, prompt, genre, style, mood, image_url, created_at, song_title, artist_name, cover_analysis, parent_id, version, edit_instructions")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .range(safeOffset, safeOffset + safeLimit - 1);

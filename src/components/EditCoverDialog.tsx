@@ -11,14 +11,30 @@ interface EditCoverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   imageUrl: string | null;
-  onEditComplete: (newImageUrl: string) => void;
+  onEditComplete: (newImageUrl: string, newGenerationId?: string) => void;
+  generationId?: string | null;
+  genre?: string;
+  style?: string;
+  mood?: string;
+  prompt?: string;
+  songTitle?: string | null;
+  artistName?: string | null;
+  coverAnalysis?: any;
 }
 
 export const EditCoverDialog = ({ 
   open, 
   onOpenChange, 
   imageUrl,
-  onEditComplete
+  onEditComplete,
+  generationId,
+  genre,
+  style,
+  mood,
+  prompt,
+  songTitle,
+  artistName,
+  coverAnalysis,
 }: EditCoverDialogProps) => {
   const [editInstructions, setEditInstructions] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +59,14 @@ export const EditCoverDialog = ({
         body: {
           imageUrl,
           instructions: editInstructions.trim(),
+          generationId: generationId || null,
+          genre: genre || null,
+          style: style || null,
+          mood: mood || null,
+          prompt: prompt || null,
+          songTitle: songTitle || null,
+          artistName: artistName || null,
+          coverAnalysis: coverAnalysis || null,
         },
       });
 
@@ -51,7 +75,7 @@ export const EditCoverDialog = ({
       if (data?.imageUrl) {
         clearInterval(progressInterval);
         setProgress(100);
-        onEditComplete(data.imageUrl);
+        onEditComplete(data.imageUrl, data.generationId);
         toast.success("Cover edited successfully!");
         onOpenChange(false);
         setEditInstructions("");

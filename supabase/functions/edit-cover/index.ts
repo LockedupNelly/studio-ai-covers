@@ -158,7 +158,12 @@ serve(async (req) => {
       coverAnalysis,
       editMode,
       baseArtworkUrl,
-      typography
+      typography,
+      generationId,  // Parent generation ID for version tracking
+      genre,
+      style,
+      mood,
+      prompt
     } = body;
     
     logStep("Request received", {
@@ -171,6 +176,7 @@ serve(async (req) => {
       artistName,
       hasCoverAnalysis: !!coverAnalysis,
       hasTypography: !!typography,
+      generationId: generationId || "none",
     });
 
     const effectiveImageUrl = baseArtworkUrl || imageUrl;
@@ -791,7 +797,81 @@ OUTPUT: The same album cover artwork with the styled text overlay added.`;
     
     logStep("Cover edited successfully");
 
-    return new Response(JSON.stringify({ imageUrl: finalImageUrl }), {
+    // ========== SAVE EDITED VERSION TO GENERATIONS TABLE ==========
+    let savedGenerationId: string | null = null;
+    if (userId) {
+      try {
+        // If we have a parent generation, look up its version and metadata
+        let parentVersion = 0;
+        let parentData: any = null;
+        
+        if (generationId) {
+          const { data: parentGen } = await supabaseClient
+            .from("generations")
+            .select("version, prompt, genre, style, mood, song_title, artist_name, cover_analysis, parent_id")
+            .eq("id", generationId)
+            .maybeSingle();
+          
+          if (parentGen) {
+            parentData = parentGen;
+            parentVersion = parentGen.version || 1;
+          }
+        }
+        
+        // Determine the root parent ID (for linking all versions together)
+        const rootParentId = parentData?.parent_id || generationId || null;
+        
+        // Insert the edited version as a new generation
+        const { data: newGen, error: insertError } = await supabaseClient
+          .from("generations")
+          .insert({
+            user_id: userId,
+            image_url: finalImageUrl,
+            prompt: prompt || parentData?.prompt || "Edited cover",
+            genre: genre || parentData?.genre || "Unknown",
+            style: style || parentData?.style || "Unknown",
+            mood: mood || parentData?.mood || "Unknown",
+            song_title: songTitle || parentData?.song_title || null,
+            artist_name: artistName || parentData?.artist_name || null,
+            cover_analysis: coverAnalysis || parentData?.cover_analysis || null,
+            parent_id: rootParentId,
+            version: parentVersion + 1,
+            edit_instructions: instructions || effectiveInstructions || null,
+          })
+          .select("id")
+          .single();
+        
+        if (insertError) {
+          logStep("Failed to save generation", { error: insertError.message });
+        } else {
+          savedGenerationId = newGen?.id || null;
+          logStep("Saved edited generation", { 
+            generationId: savedGenerationId, 
+            parentId: rootParentId,
+            version: parentVersion + 1 
+          });
+        }
+        
+        // Log credit transaction for the edit
+        await supabaseClient
+          .from("credit_transactions")
+          .insert({
+            user_id: userId,
+            amount: -1,
+            type: "edit",
+            description: `Cover edit v${parentVersion + 1}: ${(instructions || effectiveInstructions || "").slice(0, 50)}`,
+          });
+          
+      } catch (saveError) {
+        logStep("Error saving generation", { error: saveError instanceof Error ? saveError.message : String(saveError) });
+        // Don't fail the request if saving fails - user still gets their image
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      imageUrl: finalImageUrl,
+      generationId: savedGenerationId 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
