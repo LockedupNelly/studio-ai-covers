@@ -673,7 +673,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                 <div className="space-y-2">
                   <div className="relative">
                     <Textarea
-                      placeholder={`Describe the vibe, imagery, or story of your album...`}
+                      placeholder="Describe the vision of your cover..."
                       value={prompt}
                       onChange={(e) => { setPrompt(e.target.value); setFormModifiedSinceGeneration(true); }}
                       disabled={isGenerating}
