@@ -63,7 +63,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
   const [prompt, setPrompt] = useState(initialState?.prompt || "");
   const [songTitle, setSongTitle] = useState(initialState?.songTitle || "");
   const [artistName, setArtistName] = useState(initialState?.artistName || "");
-  const [genre, setGenre] = useState(initialState?.genre || "Hip-Hop / Rap");
+  const [genre, setGenre] = useState(initialState?.genre || "HipHop");
   const [style, setStyle] = useState(initialState?.style || "");
   const [mood, setMood] = useState(initialState?.mood || "");
   const [customStyle, setCustomStyle] = useState("");
@@ -389,7 +389,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
     setPrompt("");
     setSongTitle("");
     setArtistName("");
-    setGenre("Hip-Hop / Rap");
+    setGenre("HipHop");
     setStyle("");
     setMood("");
     setCustomStyle("");
@@ -650,7 +650,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                     </button>
                     
                     {/* All text style variants */}
-                    {allTextStyleVariants.map(({ category, variant }) => (
+                    {allTextStyleVariants.map(({ category, variant }, index) => (
                       <button
                         key={`${category}-${variant.id}`}
                         onClick={() => handleSelectTextStyle(category, variant)}
@@ -664,6 +664,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                           src={variant.previewImage} 
                           alt={variant.name}
                           className="w-full h-full object-cover"
+                          loading={index < 6 ? "eager" : "lazy"}
                         />
                       </button>
                     ))}
