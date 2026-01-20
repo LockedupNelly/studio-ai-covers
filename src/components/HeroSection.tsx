@@ -20,9 +20,9 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-background" />
       
       {/* Red glow from top */}
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/20 rounded-full blur-[150px]" />
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[120px]" />
-      <div className="absolute top-20 left-0 w-[300px] h-[300px] bg-red-700/10 rounded-full blur-[100px]" />
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/20 rounded-full blur-[60px] md:blur-[150px]" />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[50px] md:blur-[120px]" />
+      <div className="absolute top-20 left-0 w-[300px] h-[300px] bg-red-700/10 rounded-full blur-[40px] md:blur-[100px]" />
       
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />

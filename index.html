@@ -7,6 +7,9 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://coverartmaker.com/" />
     
+    <!-- Preload LCP image for instant hero render -->
+    <link rel="preload" as="image" href="/examples/cover-1.jpg" fetchpriority="high">
+    
     <!-- Preload critical fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,13 +27,15 @@
     gtag('config', 'AW-17884178029');
     </script>
     
-    <!-- Microsoft Clarity -->
+    <!-- Microsoft Clarity - deferred for performance -->
     <script type="text/javascript">
-      (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "ukm4hqvflq");
+      setTimeout(function(){
+        (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "ukm4hqvflq");
+      }, 3000);
     </script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
