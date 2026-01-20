@@ -138,11 +138,13 @@ const createVariantsWithDescriptions = (
   descriptions: Record<number, string>,
   count: number = 10
 ): TextStyleVariant[] => {
+  // Use webp for creative (already converted), png for others (pending conversion)
+  const extension = styleId === 'creative' ? 'webp' : 'png';
   return Array.from({ length: count }, (_, index) => ({
     id: `${styleId}-${index + 1}`,
     name: `V${index + 1}`,
     description: `${styleName} style variation ${index + 1}`,
-    previewImage: `/text-styles/${styleId}/${styleId}-${index + 1}.png`,
+    previewImage: `/text-styles/${styleId}/${styleId}-${index + 1}.${extension}`,
     promptInstructions: descriptions[index + 1] || `Apply the ${styleName} text style as shown in the reference image. Match the exact letterforms, effects, colors, and styling.`
   }));
 };
