@@ -109,8 +109,8 @@ const Index = () => {
         <section className="relative py-12 md:py-16 px-4 overflow-hidden">
           {/* Background with red glow from sides */}
           <div className="absolute inset-0 bg-background" />
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[300px] h-[500px] bg-red-600/10 rounded-full blur-[120px]" />
-          <div className="absolute top-1/2 -translate-y-1/2 right-0 w-[300px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[300px] h-[500px] bg-red-600/10 rounded-full blur-[50px] md:blur-[120px]" />
+          <div className="absolute top-1/2 -translate-y-1/2 right-0 w-[300px] h-[500px] bg-primary/10 rounded-full blur-[50px] md:blur-[120px]" />
           
           <div className="container mx-auto max-w-5xl relative z-10">
             {/* Main headline */}
@@ -246,7 +246,7 @@ const Index = () => {
         <section className="relative py-8 md:py-12 px-4 overflow-hidden -mt-4">
           {/* Subtle continuation of background */}
           <div className="absolute inset-0 bg-background" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-white/5 rounded-full blur-[120px]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-white/5 rounded-full blur-[50px] md:blur-[120px]" />
           
           <div className="container mx-auto max-w-4xl relative z-10">
             <div className="text-center mb-8">
@@ -341,7 +341,7 @@ const Index = () => {
         <section className="relative py-16 md:py-24 px-4 overflow-hidden">
           {/* Natural gradient transition to lighter tones */}
           <div className="absolute inset-0 bg-gradient-to-b from-background via-zinc-900/80 to-zinc-800/60" />
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-white/8 rounded-full blur-[150px]" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-white/8 rounded-full blur-[60px] md:blur-[150px]" />
           
           <div className="container mx-auto max-w-6xl relative z-10">
             {/* Visual Journey - Desktop */}
