@@ -736,30 +736,110 @@ const EditStudio = () => {
       }
       
       setProgress(100);
-      
+
       // Validate finalImageUrl before saving
       if (!finalImageUrl || finalImageUrl.length < 100) {
         throw new Error("Failed to generate image - result was empty");
       }
-      
+
+      // Persist as a new version so it appears in "My Creations"
+      let persistedGenerationId: string | null = null;
+      let persistedVersion: number | null = null;
+
+      const activeGenId = currentState.generationId || originalState.generationId;
+      if (user && activeGenId) {
+        try {
+          const blob = await (await fetch(finalImageUrl)).blob();
+
+          // Determine root + next version
+          const { data: currentGen, error: currentErr } = await supabase
+            .from("generations")
+            .select("id, parent_id")
+            .eq("id", activeGenId)
+            .eq("user_id", user.id)
+            .single();
+
+          if (currentErr) throw currentErr;
+
+          const rootId = currentGen.parent_id ?? currentGen.id;
+
+          const { data: lastVersionRow } = await supabase
+            .from("generations")
+            .select("version")
+            .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
+            .order("version", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const nextVersion = (lastVersionRow?.version ?? 1) + 1;
+
+          // Upload to storage
+          const filename = `${user.id}/${Date.now()}-edit-studio-v${nextVersion}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("covers")
+            .upload(filename, blob, {
+              contentType: blob.type || "image/jpeg",
+              upsert: false,
+            });
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from("covers").getPublicUrl(filename);
+          const publicUrl = urlData.publicUrl;
+
+          const autoEditInstructions =
+            instructions?.trim() ||
+            (isCanvasOnlyEdit ? "Overlays applied" : textOnlyEdit ? "Text style updated" : "Edited cover");
+
+          // Insert generation version
+          const { data: inserted, error: insertError } = await supabase
+            .from("generations")
+            .insert({
+              user_id: user.id,
+              parent_id: rootId,
+              version: nextVersion,
+              edit_instructions: autoEditInstructions,
+              image_url: publicUrl,
+              prompt: currentState.prompt || originalState.prompt || "",
+              genre: currentState.genre || originalState.genre || "",
+              style: currentState.style || originalState.style || "None",
+              mood: currentState.mood || originalState.mood || "None",
+              song_title: currentState.songTitle ?? originalState.songTitle ?? null,
+              artist_name: currentState.artistName ?? originalState.artistName ?? null,
+              cover_analysis: (currentState.coverAnalysis ?? originalState.coverAnalysis ?? null) as any,
+            })
+            .select("id")
+            .single();
+
+          if (insertError) throw insertError;
+
+          persistedGenerationId = inserted?.id || null;
+          persistedVersion = nextVersion;
+          finalImageUrl = publicUrl;
+        } catch (e) {
+          console.error("Auto-save to My Creations failed:", e);
+          // Keep the applied edit locally even if saving fails
+        }
+      }
+
       // Update history
       const newHistory = [...editHistory.slice(0, historyIndex + 1), finalImageUrl];
       setEditHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
-      
+
       setImageUrl(finalImageUrl);
-      
+
       // Update current state to reflect what was applied
       const appliedVariantId = selectedVariant ? `${textStyle}-${selectedVariant.id}` : null;
       setCurrentState({
         ...currentState,
         imageUrl: finalImageUrl,
+        generationId: persistedGenerationId ?? currentState.generationId,
         style: style !== "None" ? style : currentState.style,
         mood: mood !== "None" ? mood : currentState.mood,
         textStyle: textStyle || currentState.textStyle,
         textStyleVariantId: appliedVariantId || currentState.textStyleVariantId,
       });
-      
+
       // Reset single-use options (these are now baked into the image)
       setMainColor("");
       setAccentColor("");
@@ -772,13 +852,15 @@ const EditStudio = () => {
       setParentalAdvisory("none");
       setPaInverted(false);
       setCustomInstructions("");
-      
-      toast.success("Edits applied!", { 
-        description: isCanvasOnlyEdit 
-          ? "Overlays applied" 
-          : textOnlyEdit 
-            ? "Text layer updated (background preserved)" 
-            : "Your cover has been updated"
+
+      toast.success(persistedVersion ? "Saved to My Creations" : "Edits applied!", {
+        description: persistedVersion
+          ? `Version ${persistedVersion} added to your history`
+          : isCanvasOnlyEdit
+            ? "Overlays applied"
+            : textOnlyEdit
+              ? "Text layer updated (background preserved)"
+              : "Your cover has been updated",
       });
     } catch (error) {
       console.error("Edit error:", error);
