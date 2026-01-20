@@ -19,19 +19,8 @@ const exampleCovers = [
 ];
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-muted-foreground text-sm">Loading...</span>
-        </div>
-      </div>
-    );
-  }
 
   // Reviews data for structured data
   const reviews = [
@@ -85,11 +74,11 @@ const Index = () => {
                         zIndex: idx === 2 || idx === 3 ? 3 : idx === 1 || idx === 4 ? 2 : 1,
                       }}
                     >
-                      <img 
+                    <img 
                         src={cover} 
                         alt={`Example cover ${idx + 1}`}
                         className="w-full h-full object-cover"
-                        loading="eager"
+                        loading="lazy"
                       />
                     </div>
                   );
@@ -108,7 +97,7 @@ const Index = () => {
                     src={cover} 
                     alt={`Example cover ${idx + 1}`}
                     className="w-full h-full object-cover"
-                    loading="eager"
+                    loading="lazy"
                   />
                 </div>
               ))}
