@@ -146,6 +146,25 @@ export const CoverSelector = ({ onSelect }: CoverSelectorProps) => {
   // Responsive cover size
   const coverSize = isMobile ? "w-24 h-24" : "w-36 h-36";
 
+  // Guest experience - show a helpful message without user data
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-4 md:p-8">
+        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mb-4">
+          <ImageIcon className="w-7 h-7 md:w-8 md:8 text-foreground/30" />
+        </div>
+        
+        <h3 className="font-display text-base md:text-lg tracking-wide mb-2">EDIT STUDIO</h3>
+        <p className="text-xs md:text-sm text-muted-foreground text-center mb-4 max-w-sm">
+          Apply textures, lighting effects, color adjustments, and more to your cover art.
+        </p>
+        <p className="text-xs text-muted-foreground text-center max-w-xs">
+          Sign in to access your creations or generate a cover first in the Design Studio.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center h-full p-4 md:p-8">
       <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mb-4">
