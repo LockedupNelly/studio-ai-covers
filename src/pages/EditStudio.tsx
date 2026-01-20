@@ -59,6 +59,7 @@ interface EditState {
   artistName?: string | null;
   coverAnalysis?: CoverAnalysis | null;
   hadReferenceImages?: boolean;
+  generationId?: string | null;
 }
 
 const EditStudio = () => {
@@ -93,6 +94,7 @@ const EditStudio = () => {
     songTitle: passedState?.songTitle || null,
     artistName: passedState?.artistName || null,
     coverAnalysis: passedState?.coverAnalysis || null,
+    generationId: passedState?.generationId || null,
   });
   
   // Store the base artwork (without text) for non-destructive text edits
@@ -560,6 +562,11 @@ const EditStudio = () => {
             editMode: "text_layer",
             imageUrl: imageUrl, // Current image (may have text)
             baseArtworkUrl: baseArtworkUrl || null, // Cached clean base (if available)
+            generationId: originalState.generationId || null,
+            genre: originalState.genre || null,
+            style: originalState.style || null,
+            mood: originalState.mood || null,
+            prompt: originalState.prompt || null,
             typography: {
               songTitle: currentState.songTitle,
               artistName: currentState.artistName,
@@ -600,6 +607,11 @@ const EditStudio = () => {
             songTitle: originalState.songTitle,
             artistName: originalState.artistName,
             coverAnalysis: originalState.coverAnalysis,
+            generationId: originalState.generationId || null,
+            genre: originalState.genre || null,
+            style: originalState.style || null,
+            mood: originalState.mood || null,
+            prompt: originalState.prompt || null,
           },
         });
         
