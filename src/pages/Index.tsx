@@ -10,12 +10,12 @@ import { SEO } from "@/components/SEO";
 import { HomepageStructuredData, ReviewSchema } from "@/components/StructuredData";
 // All 6 covers for examples section (Yellow Guitar at end for less visibility)
 const exampleCovers = [
-  "/examples/cover-1.jpg", // Die For You
-  "/examples/cover-2.jpg", // Heading Home
-  "/examples/cover-3.jpg", // Lost Without You
-  "/examples/cover-4.jpg", // Deathtome
-  "/examples/cover-6.jpg", // Interdimensional
-  "/examples/cover-5.jpg", // Yellow Guitar (last = less visible)
+  "/examples/cover-1.webp", // Die For You
+  "/examples/cover-2.webp", // Heading Home
+  "/examples/cover-3.webp", // Lost Without You
+  "/examples/cover-4.webp", // Deathtome
+  "/examples/cover-6.webp", // Interdimensional
+  "/examples/cover-5.webp", // Yellow Guitar (last = less visible)
 ];
 
 const Index = () => {
