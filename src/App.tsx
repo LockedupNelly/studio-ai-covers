@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import AdminExport from "./pages/AdminExport";
+import AdminGenerations from "./pages/AdminGenerations";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/admin/export" element={<AdminExport />} />
+              <Route path="/admin/generations" element={<AdminGenerations />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
