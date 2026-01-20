@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
 
 // Main covers for hero (Yellow Guitar excluded for less visibility)
-const exampleCovers = ["/examples/cover-1.jpg",
+const exampleCovers = ["/examples/cover-1.webp",
 // Die For You
-"/examples/cover-2.jpg",
+"/examples/cover-2.webp",
 // Heading Home
-"/examples/cover-3.jpg",
+"/examples/cover-3.webp",
 // Lost Without You
-"/examples/cover-4.jpg",
+"/examples/cover-4.webp",
 // Deathtome
-"/examples/cover-6.jpg" // Interdimensional
+"/examples/cover-6.webp" // Interdimensional
 ];
 export const HeroSection = () => {
   const navigate = useNavigate();
