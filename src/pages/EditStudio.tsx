@@ -869,6 +869,105 @@ const EditStudio = () => {
       toast.error("Download failed", { description: "Please try again" });
     }
   };
+
+  const handleSaveToCreations = async () => {
+    if (!user) {
+      toast.error("Please sign in to save");
+      return;
+    }
+
+    const activeGenId = currentState.generationId || originalState.generationId;
+    if (!activeGenId) {
+      toast.error("Can't save this yet", {
+        description: "Generate a cover first so it can be versioned.",
+      });
+      return;
+    }
+
+    if (!imageUrl) return;
+
+    try {
+      // Always bake a high-res 3000x3000 output matching the preview pipeline
+      const bakedDataUrl = await compositeAllLayers(imageUrl, previewConfig);
+      const blob = await (await fetch(bakedDataUrl)).blob();
+
+      // Determine root + next version
+      const { data: currentGen, error: currentErr } = await supabase
+        .from("generations")
+        .select("id, parent_id")
+        .eq("id", activeGenId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (currentErr) throw currentErr;
+
+      const rootId = currentGen.parent_id ?? currentGen.id;
+
+      const { data: lastVersionRow } = await supabase
+        .from("generations")
+        .select("version")
+        .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextVersion = (lastVersionRow?.version ?? 1) + 1;
+
+      // Upload to storage
+      const filename = `${user.id}/${Date.now()}-edit-studio-v${nextVersion}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("covers")
+        .upload(filename, blob, {
+          contentType: blob.type || "image/jpeg",
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("covers").getPublicUrl(filename);
+      const publicUrl = urlData.publicUrl;
+
+      // Insert generation version
+      const { data: inserted, error: insertError } = await supabase
+        .from("generations")
+        .insert({
+          user_id: user.id,
+          parent_id: rootId,
+          version: nextVersion,
+          edit_instructions: "Saved from Edit Studio",
+          image_url: publicUrl,
+          prompt: currentState.prompt || originalState.prompt || "",
+          genre: currentState.genre || originalState.genre || "",
+          style: currentState.style || originalState.style || "None",
+          mood: currentState.mood || originalState.mood || "None",
+          song_title: currentState.songTitle ?? originalState.songTitle ?? null,
+          artist_name: currentState.artistName ?? originalState.artistName ?? null,
+          cover_analysis: (currentState.coverAnalysis ?? originalState.coverAnalysis ?? null) as any,
+        })
+        .select("id")
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Update local state so the next save chains correctly
+      setCurrentState((prev) => ({
+        ...prev,
+        imageUrl: publicUrl,
+        generationId: inserted?.id || activeGenId,
+      }));
+      setImageUrl(publicUrl);
+      setEditHistory((prev) => [...prev, publicUrl]);
+      setHistoryIndex((prev) => prev + 1);
+
+      toast.success("Saved to My Creations", {
+        description: `Version ${nextVersion} added to your history`,
+      });
+    } catch (e: any) {
+      console.error("Save to creations failed:", e);
+      toast.error("Save failed", {
+        description: e?.message || "Please try again",
+      });
+    }
+  };
   
   // Long-press handlers removed
   
@@ -1568,7 +1667,7 @@ const EditStudio = () => {
                     )}
                   </Button>
                   {/* Two buttons row - smaller */}
-                  <div className="grid grid-cols-3 gap-2 pb-4">
+                  <div className="grid grid-cols-4 gap-2 pb-4">
                     <Button
                       onClick={handleBackToSelector}
                       variant="ghost"
@@ -1577,6 +1676,15 @@ const EditStudio = () => {
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                       Change
+                    </Button>
+                    <Button
+                      onClick={handleSaveToCreations}
+                      variant="outline"
+                      className="h-9 gap-1 text-xs"
+                      disabled={isEditing || !imageUrl || !user}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      Save
                     </Button>
                     <Button
                       onClick={handleDownload}
