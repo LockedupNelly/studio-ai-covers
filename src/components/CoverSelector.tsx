@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Image as ImageIcon, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Image as ImageIcon, ChevronLeft, ChevronRight, Loader2, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 interface CoverAnalysis {
   dominantColors?: string[];
@@ -102,6 +104,7 @@ const LazyThumbnail = ({
 
 export const CoverSelector = ({ onSelect }: CoverSelectorProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [covers, setCovers] = useState<Generation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,16 +154,24 @@ export const CoverSelector = ({ onSelect }: CoverSelectorProps) => {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4 md:p-8">
         <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mb-4">
-          <ImageIcon className="w-7 h-7 md:w-8 md:8 text-foreground/30" />
+          <ImageIcon className="w-7 h-7 md:w-8 md:h-8 text-foreground/30" />
         </div>
         
         <h3 className="font-display text-base md:text-lg tracking-wide mb-2">EDIT STUDIO</h3>
         <p className="text-xs md:text-sm text-muted-foreground text-center mb-4 max-w-sm">
           Apply textures, lighting effects, color adjustments, and more to your cover art.
         </p>
-        <p className="text-xs text-muted-foreground text-center max-w-xs">
+        <p className="text-xs text-muted-foreground text-center max-w-xs mb-6">
           Sign in to access your creations or generate a cover first in the Design Studio.
         </p>
+        
+        <Button
+          onClick={() => navigate("/auth", { state: { returnTo: "/edit-studio" } })}
+          className="gap-2"
+        >
+          <LogIn className="w-4 h-4" />
+          Sign In
+        </Button>
       </div>
     );
   }
