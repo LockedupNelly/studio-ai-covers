@@ -265,16 +265,7 @@ const DesignStudio = () => {
     }
   }, [user, pendingGeneration, executeGeneration]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-muted-foreground text-sm">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  // No loading blocker - render page immediately while auth resolves in background
 
   return (
     <>
