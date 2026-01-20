@@ -489,21 +489,23 @@ const Profile = () => {
                           className="w-full h-full object-cover"
                         />
                         
-                        {/* Version badge - clickable if multiple versions */}
-                        {versionCount > 1 && (
-                          <button
-                            onClick={() => openVersionViewer(gen.id)}
-                            className="absolute top-2 right-2 z-10"
+                        {/* Version badge - always visible, highlighted if multiple versions */}
+                        <button
+                          onClick={() => openVersionViewer(gen.id)}
+                          className="absolute top-2 right-2 z-10"
+                        >
+                          <Badge 
+                            variant="secondary" 
+                            className={`border cursor-pointer transition-all flex items-center gap-1 ${
+                              versionCount > 1 
+                                ? "bg-primary/90 text-primary-foreground hover:bg-primary border-primary" 
+                                : "bg-background/90 hover:bg-background border-border"
+                            }`}
                           >
-                            <Badge 
-                              variant="secondary" 
-                              className="bg-background/90 hover:bg-background border border-border cursor-pointer transition-colors flex items-center gap-1"
-                            >
-                              <Layers className="w-3 h-3" />
-                              {versionCount} versions
-                            </Badge>
-                          </button>
-                        )}
+                            <Layers className="w-3 h-3" />
+                            {versionCount > 1 ? `${versionCount} versions` : "v1"}
+                          </Badge>
+                        </button>
                         
                         <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-3">
                           <div className="grid grid-cols-2 gap-2 md:gap-3">
@@ -531,20 +533,11 @@ const Profile = () => {
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() => navigate("/design-studio", { 
-                                state: { 
-                                  returnedImage: gen.image_url,
-                                  genre: gen.genre,
-                                  style: gen.style,
-                                  mood: gen.mood,
-                                  songTitle: gen.song_title,
-                                  artistName: gen.artist_name,
-                                } 
-                              })}
-                              title="Rerun in Design Studio"
+                              onClick={() => openVersionViewer(gen.id)}
+                              title="View Version History"
                               className="h-10 w-10 md:h-11 md:w-11 p-0"
                             >
-                              <RotateCw className="w-4 h-4 md:w-5 md:h-5" />
+                              <Layers className="w-4 h-4 md:w-5 md:h-5" />
                             </Button>
                             <Button
                               size="sm"
