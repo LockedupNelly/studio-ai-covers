@@ -2,7 +2,7 @@
 
 // Genre options
 export const genres = [
-  "Hip-Hop / Rap",
+  "HipHop",
   "Pop",
   "EDM",
   "R&B",
