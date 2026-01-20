@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { EditCoverDialog } from "@/components/EditCoverDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TextStyleVariant, getTextStyleVariants, hasVariants } from "@/lib/text-style-variants";
+import { TextStyleThumbnail } from "@/components/TextStyleThumbnail";
 import { Progress } from "@/components/ui/progress";
 import { downloadImage } from "@/lib/download-utils";
 import { 
@@ -651,24 +652,14 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                     
                     {/* All text style variants with skeleton placeholder */}
                     {allTextStyleVariants.map(({ category, variant }, index) => (
-                      <button
+                      <TextStyleThumbnail
                         key={`${category}-${variant.id}`}
+                        src={variant.previewImage}
+                        alt={variant.name}
+                        isSelected={selectedVariant?.id === variant.id && selectedCategory === category}
                         onClick={() => handleSelectTextStyle(category, variant)}
-                        className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all bg-secondary ${
-                          selectedVariant?.id === variant.id && selectedCategory === category
-                            ? "border-primary ring-2 ring-primary/20"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <img 
-                          src={variant.previewImage} 
-                          alt={variant.name}
-                          className="w-full h-full object-cover"
-                          loading={index < 6 ? "eager" : "lazy"}
-                          decoding={index < 6 ? "sync" : "async"}
-                          fetchPriority={index < 3 ? "high" : undefined}
-                        />
-                      </button>
+                        priority={index < 4}
+                      />
                     ))}
                   </div>
                   {selectedVariant && (
