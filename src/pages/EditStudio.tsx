@@ -221,11 +221,8 @@ const EditStudio = () => {
     debounceMs: 100,
   });
   
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
+  // No longer redirect unauthenticated users - let them explore
+  // Features requiring auth (like saving) will prompt login when used
   
   // Track the actual image src being displayed (preview takes precedence)
   const displaySrc = previewUrl || imageUrl;

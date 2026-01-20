@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,10 @@ import { z } from "zod";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
+interface LocationState {
+  returnTo?: string;
+}
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -23,13 +27,17 @@ const Auth = () => {
   
   const { signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the return path from location state (e.g., /design-studio)
+  const returnTo = (location.state as LocationState)?.returnTo || "/";
 
   // Redirect if already logged in - use useEffect to avoid render-time navigation
   useEffect(() => {
     if (!loading && user) {
-      navigate("/", { replace: true });
+      navigate(returnTo, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, returnTo]);
 
   // If we're in the middle of an OAuth callback, show loading
   // Check both hash fragments (implicit flow) AND query params (PKCE flow with ?code=)
@@ -141,7 +149,7 @@ const Auth = () => {
         toast.success("Welcome back!", {
           description: "You've successfully signed in.",
         });
-        navigate("/");
+        navigate(returnTo);
       } else {
         console.log("[Auth] Attempting sign up with email:", email);
 
@@ -179,7 +187,7 @@ const Auth = () => {
         toast.success("Account created!", {
           description: "Welcome to Cover Art Maker.",
         });
-        navigate("/");
+        navigate(returnTo);
       }
     } catch (error) {
       console.error("[Auth] Unexpected error:", error);

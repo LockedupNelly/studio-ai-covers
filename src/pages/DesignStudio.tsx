@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -8,6 +8,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
+import { AuthPromptDialog } from "@/components/AuthPromptDialog";
 
 interface ReturnedState {
   returnedImage?: string;
@@ -22,9 +23,18 @@ interface ReturnedState {
   hadReferenceImages?: boolean;
 }
 
+interface PendingGeneration {
+  prompt: string;
+  genre: string;
+  style: string;
+  mood: string;
+  referenceImages?: string[];
+  textStyleReferenceImage?: string;
+}
+
 const DesignStudio = () => {
   const { user, loading } = useAuth();
-  const { credits, refetch: refetchCredits } = useCredits();
+  const { refetch: refetchCredits } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
   const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,12 +48,13 @@ const DesignStudio = () => {
     returnedState?.generationId || null
   );
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Auth prompt state for unauthenticated users
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [pendingGeneration, setPendingGeneration] = useState<PendingGeneration | null>(null);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
+  // No longer redirect unauthenticated users - let them explore
+  // Auth will be prompted when they try to generate
 
   useEffect(() => {
     const handleCoverEdited = (event: CustomEvent<{ imageUrl: string }>) => {
@@ -56,7 +67,8 @@ const DesignStudio = () => {
     };
   }, []);
 
-  const handleGenerate = async (
+  // Execute generation (the actual API call)
+  const executeGeneration = useCallback(async (
     prompt: string,
     genre: string,
     style: string,
@@ -217,7 +229,41 @@ const DesignStudio = () => {
         setIsGenerating(false);
       }
     }
-  };
+  }, [navigate, refetchCredits]);
+
+  // Handle generate request - check auth first
+  const handleGenerate = useCallback((
+    prompt: string,
+    genre: string,
+    style: string,
+    mood: string,
+    referenceImages?: string[],
+    textStyleReferenceImage?: string
+  ) => {
+    if (!user) {
+      // Store the pending generation and show auth prompt
+      setPendingGeneration({ prompt, genre, style, mood, referenceImages, textStyleReferenceImage });
+      setShowAuthPrompt(true);
+      return;
+    }
+    
+    // User is authenticated, proceed with generation
+    executeGeneration(prompt, genre, style, mood, referenceImages, textStyleReferenceImage);
+  }, [user, executeGeneration]);
+
+  // Execute pending generation after user authenticates
+  useEffect(() => {
+    if (user && pendingGeneration) {
+      const { prompt, genre, style, mood, referenceImages, textStyleReferenceImage } = pendingGeneration;
+      setPendingGeneration(null);
+      setShowAuthPrompt(false);
+      
+      // Small delay to ensure auth state is fully settled
+      setTimeout(() => {
+        executeGeneration(prompt, genre, style, mood, referenceImages, textStyleReferenceImage);
+      }, 500);
+    }
+  }, [user, pendingGeneration, executeGeneration]);
 
   if (loading) {
     return (
@@ -228,10 +274,6 @@ const DesignStudio = () => {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
@@ -259,6 +301,14 @@ const DesignStudio = () => {
         </main>
         <Footer />
       </div>
+      
+      {/* Auth prompt dialog for unauthenticated users */}
+      <AuthPromptDialog
+        open={showAuthPrompt}
+        onOpenChange={setShowAuthPrompt}
+        title="Sign in to generate"
+        description="Create a free account to generate your cover art. Your form data will be saved and generation will start automatically after signing in."
+      />
     </>
   );
 };
