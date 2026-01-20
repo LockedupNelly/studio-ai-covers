@@ -1148,16 +1148,7 @@ const EditStudio = () => {
   const isAtOriginal = historyIndex === 0;
   const totalVersions = editHistory.length;
   
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-muted-foreground">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  // No loading blocker - render page immediately while auth resolves in background
   
   return (
     <>
