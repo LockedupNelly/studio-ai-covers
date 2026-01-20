@@ -138,8 +138,9 @@ const createVariantsWithDescriptions = (
   descriptions: Record<number, string>,
   count: number = 10
 ): TextStyleVariant[] => {
-  // Use webp for creative (already converted), png for others (pending conversion)
-  const extension = styleId === 'creative' ? 'webp' : 'png';
+  // Use webp for converted styles, png for others (pending conversion)
+  const webpStyles = ['creative', 'dark'];
+  const extension = webpStyles.includes(styleId) ? 'webp' : 'png';
   return Array.from({ length: count }, (_, index) => ({
     id: `${styleId}-${index + 1}`,
     name: `V${index + 1}`,
