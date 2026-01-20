@@ -1543,7 +1543,6 @@ const EditStudio = () => {
                                   src={pa.image} 
                                   alt={pa.name}
                                   className="w-3/4 h-auto object-contain"
-                                  style={{ filter: paInverted ? "invert(1)" : "none" }}
                                   loading="lazy"
                                   decoding="async"
                                 />
@@ -1629,16 +1628,16 @@ const EditStudio = () => {
                             ))}
                           </div>
                           
-                          {/* Color */}
+                          {/* Invert */}
                           <button
                             onClick={() => setPaInverted(!paInverted)}
                             className={`px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
                               paInverted
-                                ? "bg-primary text-primary-foreground"
+                                ? "bg-destructive text-destructive-foreground"
                                 : "bg-secondary/50 text-foreground/70 hover:bg-secondary"
                             }`}
                           >
-                            {paInverted ? "White" : "Black"}
+                            Invert
                           </button>
                         </div>
                       )}
@@ -2348,16 +2347,16 @@ const EditStudio = () => {
                             ))}
                           </div>
                           
-                          {/* Color */}
+                          {/* Invert */}
                           <button
                             onClick={() => setPaInverted(!paInverted)}
                             className={`px-3 py-1 rounded text-[10px] font-medium transition-colors ${
                               paInverted
-                                ? "bg-primary text-primary-foreground"
+                                ? "bg-destructive text-destructive-foreground"
                                 : "bg-secondary/50 text-foreground/70 hover:bg-secondary"
                             }`}
                           >
-                            {paInverted ? "White" : "Black"}
+                            Invert
                           </button>
                         </div>
                       )}
@@ -2386,7 +2385,6 @@ const EditStudio = () => {
                                 src={pa.image} 
                                 alt={pa.name}
                                 className="w-3/4 h-auto object-contain"
-                                style={{ filter: paInverted ? "invert(1)" : "none" }}
                                 loading="lazy"
                                 decoding="async"
                               />
