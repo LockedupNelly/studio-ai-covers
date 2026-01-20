@@ -649,12 +649,12 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                       <span className={`text-[10px] font-medium ${!selectedVariant ? textClass : mutedTextClass}`}>AI Select</span>
                     </button>
                     
-                    {/* All text style variants */}
+                    {/* All text style variants with skeleton placeholder */}
                     {allTextStyleVariants.map(({ category, variant }, index) => (
                       <button
                         key={`${category}-${variant.id}`}
                         onClick={() => handleSelectTextStyle(category, variant)}
-                        className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all ${
+                        className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 overflow-hidden transition-all bg-secondary ${
                           selectedVariant?.id === variant.id && selectedCategory === category
                             ? "border-primary ring-2 ring-primary/20"
                             : "border-border hover:border-primary/50"
@@ -665,6 +665,8 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGe
                           alt={variant.name}
                           className="w-full h-full object-cover"
                           loading={index < 6 ? "eager" : "lazy"}
+                          decoding={index < 6 ? "sync" : "async"}
+                          fetchPriority={index < 3 ? "high" : undefined}
                         />
                       </button>
                     ))}
