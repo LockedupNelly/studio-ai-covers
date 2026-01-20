@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCallback } from "react";
 
 // Main covers for hero (Yellow Guitar excluded for less visibility)
 const exampleCovers = ["/examples/cover-1.jpg",
@@ -15,6 +16,12 @@ const exampleCovers = ["/examples/cover-1.jpg",
 ];
 export const HeroSection = () => {
   const navigate = useNavigate();
+  
+  // Prefetch DesignStudio chunk on hover for faster navigation
+  const prefetchDesignStudio = useCallback(() => {
+    import("@/pages/DesignStudio");
+  }, []);
+  
   return <section className="relative min-h-[85vh] md:min-h-[90vh] flex flex-col items-center justify-center pt-8 pb-24 overflow-hidden">
       {/* Dark background with red hues */}
       <div className="absolute inset-0 bg-background" />
@@ -57,7 +64,13 @@ export const HeroSection = () => {
 
             {/* CTA Button */}
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-              <Button size="lg" onClick={() => navigate("/design-studio")} className="gap-2 text-base px-8 py-6 rounded-full bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 shadow-[0_0_40px_rgba(239,68,68,0.25)] hover:shadow-[0_0_60px_rgba(239,68,68,0.4)] transition-all">
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/design-studio")} 
+                onMouseEnter={prefetchDesignStudio}
+                onTouchStart={prefetchDesignStudio}
+                className="gap-2 text-base px-8 py-6 rounded-full bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 shadow-[0_0_40px_rgba(239,68,68,0.25)] hover:shadow-[0_0_60px_rgba(239,68,68,0.4)] transition-all"
+              >
                 Start Creating Free
                 <ArrowRight className="w-5 h-5" />
               </Button>

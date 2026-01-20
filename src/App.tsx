@@ -1,8 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -11,6 +11,9 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+
+// Prefetch DesignStudio after homepage loads (most common next page)
+const prefetchDesignStudio = () => import("./pages/DesignStudio");
 
 // Lazy load heavy pages for faster initial bundle
 const DesignStudio = lazy(() => import("./pages/DesignStudio"));
@@ -28,12 +31,25 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const AdminExport = lazy(() => import("./pages/AdminExport"));
 const AdminGenerations = lazy(() => import("./pages/AdminGenerations"));
 
-// Minimal loading fallback
+// Minimal loading fallback - instant show with subtle animation
 const PageLoader = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-  </div>
+  <div className="min-h-screen bg-background" />
 );
+
+// Prefetch hook for route-based preloading
+const RoutePrefetcher = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Prefetch DesignStudio when on homepage
+    if (location.pathname === "/") {
+      const timer = setTimeout(prefetchDesignStudio, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
+  
+  return null;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +69,7 @@ const App = () => (
           <Toaster />
           <CookieConsent />
           <BrowserRouter>
+            <RoutePrefetcher />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
