@@ -944,10 +944,11 @@ ${unifiedPrompt}`
       logStep("Credit transaction logged", { newBalance: previousCredits - 1 });
     }
 
-    // Save generation to database
+    // Save generation to database and get the ID
+    let generationId: string | null = null;
     if (userId) {
       try {
-        const { error: saveError } = await supabaseClient.from("generations").insert({
+        const { data: savedGen, error: saveError } = await supabaseClient.from("generations").insert({
           user_id: userId,
           prompt: prompt,
           genre: genre,
@@ -956,12 +957,13 @@ ${unifiedPrompt}`
           image_url: finalImageUrl,
           song_title: songTitle,
           artist_name: artistName,
-        });
+        }).select("id").single();
 
         if (saveError) {
           logStep("Error saving generation", { error: saveError.message });
         } else {
-          logStep("Generation saved to database");
+          generationId = savedGen?.id || null;
+          logStep("Generation saved to database", { generationId });
         }
       } catch (saveErr) {
         logStep("Error saving generation", { error: saveErr instanceof Error ? saveErr.message : String(saveErr) });
@@ -969,7 +971,7 @@ ${unifiedPrompt}`
     }
 
     return new Response(
-      JSON.stringify({ imageUrl: finalImageUrl }),
+      JSON.stringify({ imageUrl: finalImageUrl, generationId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -28,6 +28,7 @@ import {
 interface GeneratorStudioProps {
   onGenerate: (prompt: string, genre: string, style: string, mood: string, referenceImages?: string[], textStyleReferenceImage?: string) => void;
   generatedImage: string | null;
+  generationId: string | null;
   isGenerating: boolean;
   initialState?: {
     genre?: string;
@@ -55,7 +56,7 @@ const getAllTextStyleVariants = () => {
   return allVariants;
 };
 
-export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, initialState }: GeneratorStudioProps) => {
+export const GeneratorStudio = ({ onGenerate, generatedImage, generationId, isGenerating, initialState }: GeneratorStudioProps) => {
   const { hasUnlimitedGenerations } = useCredits();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -843,6 +844,7 @@ export const GeneratorStudio = ({ onGenerate, generatedImage, isGenerating, init
                                 songTitle: songTitle.trim(),
                                 artistName: artistName.trim(),
                                 hadReferenceImages: inspirationImages.length > 0,
+                                generationId: generationId,
                               }
                             })}
                             disabled={isGenerating}
