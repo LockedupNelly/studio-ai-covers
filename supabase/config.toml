@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.export-customers]
 verify_jwt = true
+
+[functions.add-to-mailerlite]
+verify_jwt = false
