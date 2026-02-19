@@ -60,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           body: {
             email: session.user.email,
             name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+            groups: ["179877696389514680"],
           },
         }).catch(err => console.warn("MailerLite sync failed:", err));
       }
