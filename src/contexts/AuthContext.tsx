@@ -54,6 +54,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
+      // Sync new sign-ins to MailerLite (fire and forget)
+      if (event === "SIGNED_IN" && session?.user) {
+        supabase.functions.invoke("add-to-mailerlite", {
+          body: {
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+          },
+        }).catch(err => console.warn("MailerLite sync failed:", err));
+      }
+
       // Clean up OAuth params after callback
       const url = new URL(window.location.href);
       if (url.searchParams.has("code") || url.searchParams.has("error")) {
