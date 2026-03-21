@@ -37,7 +37,7 @@ const DesignStudio = () => {
   const { refetch: refetchCredits } = useCredits();
   const navigate = useNavigate();
   const location = useLocation();
-  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const generationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
   const returnedState = location.state as ReturnedState | null;
